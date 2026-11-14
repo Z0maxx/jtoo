@@ -203,6 +203,7 @@ export const OverlayScenes = [
 	'LeaderboardScene',
 	'ThanksScene'
 ] as const;
+// these weren't updated with the last big changes due to time constraints and relevance to the event format
 export const BrokenOverlayScenes = [
 	'MapScene',
 	'TournamentInfoScene',

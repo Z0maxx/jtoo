@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { OverlayScenes } from '$lib/types.svelte';
+	import { BrokenOverlayScenes, OverlayScenes } from '$lib/types.svelte';
 	import { fade } from 'svelte/transition';
 
-	let copied = $state({});
-	let baseUrl = page.url;
+	let copied: Record<string, string> = $state({});
+	let baseUrl = page.url.origin + '/';
+	let scenes = OverlayScenes.filter((s) => s && !BrokenOverlayScenes.includes(s));
 </script>
 
 <main class="mt-20 mb-20 flex flex-col items-center gap-10 self-center">
 	<div>
-		<h1 class="text-center text-8xl">Jump Fortress Playoffs 2026 Overlay</h1>
+		<h1 class="text-center text-8xl">JTOO (Jump Tournament OBS Overlay)</h1>
 	</div>
 	<div>
 		<h2 class="mb-2 text-center text-3xl">Docks</h2>
@@ -30,7 +31,16 @@
 			<li>set width to 1920 and height to 1080</li>
 			<li>remove Custom CSS</li>
 		</ul>
-		{@render URLButton('match', 'overlay')}
+		{@render URLButton('overlay', 'overlay')}
+	</div>
+	<div>
+		<h2 class="mb-2 text-center text-3xl">Mini Leaderboard</h2>
+		<hr class="hr" />
+		<ul class="m-auto mb-5 w-fit list-decimal italic">
+			<li>optional: add as a separate browser source</li>
+			<li>set width to 1920 and height to 1080</li>
+		</ul>
+		{@render URLButton('mini leaderboard', 'mini-leaderboard')}
 	</div>
 	<div>
 		<h2 class="mb-2 text-center text-3xl">Scenes</h2>
@@ -38,10 +48,8 @@
 		<ul class="m-auto mb-5 w-fit list-decimal italic">
 			<li>in OBS, add a scene for each of the following</li>
 			<div>
-				{#each OverlayScenes as scene, i (i)}
-					{#if scene}
-						<div class="ml-4 opacity-50">{scene}</div>
-					{/if}
+				{#each scenes as scene (scene)}
+					<div class="ml-4 opacity-80">{scene}</div>
 				{/each}
 			</div>
 			<li>in OBS, navigate to Tools -> WebSocket Server Settings -> Show Connect Info</li>
@@ -53,9 +61,34 @@
 			<li>selecting a scene in jtoo will now also select the scene of the same name in OBS</li>
 		</ul>
 	</div>
+	<div>
+		<h2 class="mb-2 text-center text-3xl">Live Timer Data</h2>
+		<hr class="hr" />
+		<ul class="m-auto mb-5 w-fit list-decimal italic">
+			<li>timers, checkpoints, and progress come from the ksn (jf) server websocket</li>
+			<li>
+				you can also sync your ingame observers using the <a
+					class="underline opacity-80"
+					href="https://github.com/jump-fortress/jf-relay-plugin">jf relay plugin</a
+				> websocket
+			</li>
+			<li>
+				tokens aren't public, DM mmarc (@itsmmarc) or Kingstripes (@kingstripes) on discord to
+				request them
+			</li>
+			<li>
+				on the jtoo controls page under connections, enter your token in ksn server websocket and/or
+				jf relay plugin websocket
+			</li>
+		</ul>
+	</div>
 </main>
 
-{#snippet URLButton(name: string, pageUrl: string, nobg?: boolean)}
+{#snippet URLButton(
+	name: string,
+	pageUrl: 'controls' | 'overlay' | 'mini-leaderboard',
+	nobg?: boolean
+)}
 	<div class="relative flex flex-col items-center gap-2">
 		<a href={resolve(`/${pageUrl}`)}>
 			<button
