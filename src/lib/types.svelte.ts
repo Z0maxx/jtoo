@@ -227,6 +227,8 @@ export type Settings = {
 	enableGradient: boolean;
 	enableTeamColors: boolean;
 	enablePOVGuide: boolean;
+	enableFundraisingSection: boolean;
+	enableFundraisingDonations: boolean;
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
 	ksnWebSocketToken: string;
@@ -235,6 +237,7 @@ export type Settings = {
 	obsWsIp: string;
 	obsWsPort: number | undefined;
 	obsWsPw: string;
+	fundraisingShowDonationSeconds: number;
 };
 
 export type Overlay = {
@@ -251,4 +254,36 @@ export type Items = {
 	maps: TFMap[];
 	stages: string[];
 	tournaments: Tournament[];
+};
+
+export type Subscriber<T> = {
+	id: string;
+	handler: (item: T) => void;
+};
+
+export type DonationsOverview = {
+	goal: number;
+	raised: number;
+	donationCount: number;
+};
+
+export type Donation = {
+	id: string;
+	name: string;
+	amount: number;
+	message?: string;
+	avatarUrl?: string;
+};
+
+export type DonationMilestone = {
+	goal: number;
+	description: string;
+	isActive: boolean;
+	isComplete: boolean;
+};
+
+export type FundraisingState = {
+	eventUrl: string;
+	lastDisplayedDonationId: string;
+	donations: Donation[];
 };
