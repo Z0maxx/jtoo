@@ -7,7 +7,8 @@ import {
 	type SteamID3,
 	TFMap,
 	Tournament,
-	type TempusID
+	type TempusID,
+	type FundraisingState
 } from './types.svelte';
 import { addPlayersFromSteamID3, getMap, getPlayer } from './util';
 import { Tempus2 } from './api/tempus2/api-tempus2';
@@ -40,6 +41,8 @@ export const defaultSettings: Settings = {
 	enableGradient: true,
 	enableTeamColors: true,
 	enablePOVGuide: false,
+	enableFundraisingSection: false,
+	enableFundraisingDonations: true,
 	useShortMapNames: true,
 	ksnWebSocketToken: '',
 	jfRelayWebSocketToken: '',
@@ -47,7 +50,8 @@ export const defaultSettings: Settings = {
 	overlayScene: 'DualPovMatchScene',
 	obsWsIp: '',
 	obsWsPort: undefined,
-	obsWsPw: ''
+	obsWsPw: '',
+	fundraisingShowDonationSeconds: 5
 };
 
 export const defaultOverlay: Overlay = {
@@ -66,6 +70,12 @@ export const defaultItems: Items = {
 	tournaments: [new Tournament()]
 };
 
+export const defaultFundraisingState: FundraisingState = {
+	eventUrl: '',
+	lastDisplayedDonationId: '',
+	donations: []
+};
+
 // overlay settings
 export const settings = new PersistentState('settings', defaultSettings, 'localStorage');
 
@@ -77,6 +87,12 @@ export const items = new PersistentState('items', defaultItems);
 
 // ws messages
 export const wsMessages: PersistentState<any[]> = new PersistentState('wsMessages', []);
+
+export const fundraisingState = new PersistentState(
+	'fundraisingState',
+	defaultFundraisingState,
+	'localStorage'
+);
 
 export function fullReset() {
 	settings.current = defaultSettings;
