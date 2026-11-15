@@ -63,7 +63,7 @@
 			{#if fundraisingState.current.eventUrl}
 				<FundraisingSection />
 			{:else}
-				<div class="text-6xl">DWB Event is not set</div>
+				<div class="text-6xl">Fundraising event is not set</div>
 			{/if}
 		{/if}
 	</div>
