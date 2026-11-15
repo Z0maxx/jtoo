@@ -91,3 +91,9 @@ export function toPairs(m: unknown): [string, number][] {
 	if (Array.isArray(m)) return m as [string, number][];
 	return Object.entries(m as Record<string, number>);
 }
+
+export function sleep(ms: number) {
+	return new Promise<void>((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
