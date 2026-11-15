@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay, items } from '$lib/storage.svelte';
+	import { settings, overlay, items, fundraisingState } from '$lib/storage.svelte';
 	import { Player, TFMap } from '$lib/types.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import WebSocketCheckpoints from '$lib/components/match/WebSocketCheckpoints.svelte';
@@ -11,6 +11,7 @@
 	import { getMap, getPlayer } from '$lib/util';
 	import { Steam } from '$lib/api/steam/api-steam';
 	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
+	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 </script>
@@ -57,7 +58,15 @@
   {settings.current.enablePOVGuide
 			? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 			: ''}"
-	></div>
+	>
+		{#if settings.current.enableFundraisingSection}
+			{#if fundraisingState.current.eventUrl}
+				<FundraisingSection />
+			{:else}
+				<div class="text-6xl">DWB Event is not set</div>
+			{/if}
+		{/if}
+	</div>
 	<div
 		class="aspect-video w-full
   {settings.current.enablePOVGuide
