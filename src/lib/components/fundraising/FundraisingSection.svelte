@@ -7,6 +7,7 @@
 
 	fundraisingState.current.lastDisplayedDonationId = '';
 	const displayedDonationCount = 3;
+  let iteratingDonations = false
 	const iterateDonations = () => settings.current.enableFundraisingDonations;
 	let donationPopupOpen = $state(false);
 	let popupDonation: Donation = $state({
@@ -109,6 +110,9 @@
 	});
 
 	async function displayNewDonations() {
+    if (iteratingDonations) return
+    iteratingDonations = true
+
 		const idx = donations.findIndex(
 			(d) => d.id === fundraisingState.current.lastDisplayedDonationId
 		);
@@ -133,6 +137,7 @@
 		}
 
 		displayedDonations = donations.toReversed().slice(0, displayedDonationCount);
+    iteratingDonations = false
 	}
 </script>
 
