@@ -38,6 +38,7 @@
 	import { getTournament, getMap } from '$lib/util';
 	import { onMount, setContext } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
@@ -100,6 +101,7 @@
 			<ManageMaps />
 			<AddTournament />
 			<ManageTournaments />
+			<SetFundraisingEvent />
 		</div>
 
 		<ItemInput placeholder="add stage" item="stages" />
@@ -286,6 +288,15 @@
 		<Checkbox desc="use player PRs" setting="enablePRs" />
 		<Checkbox desc="use avatars" setting="enableAvatars" />
 		<Checkbox desc="use tags" setting="enableTags" />
+		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
+		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
+		<label>
+			<input
+				class="input w-7 accent-ctp-lavender"
+				bind:value={settings.current.fundraisingShowDonationSeconds}
+			/>
+			<span>seconds to show each donation for</span>
+		</label>
 	</Accordion>
 
 	<!-- overlay -->
