@@ -73,7 +73,8 @@ export const defaultItems: Items = {
 export const defaultFundraisingState: FundraisingState = {
 	eventUrl: '',
 	lastDisplayedDonationId: '',
-	donations: []
+	donations: [],
+  stage: 0
 };
 
 // overlay settings

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Dwb } from '$lib/api/dwb/api-dwb';
+	import { fundraisingState } from '$lib/storage.svelte';
 	import type { DonationMilestone } from '$lib/types.svelte';
 	import { onDestroy } from 'svelte';
 
@@ -75,7 +76,7 @@
 	});
 </script>
 
-<div>
+<div class="duration-300 origin-top-right ease-in bg-emerald-950 border-2 border-emerald-900 rounded-md px-1 {fundraisingState.current.stage === 2 ? '-rotate-2' : ''} {fundraisingState.current.stage === 4 ? '-rotate-18' : ''}">
 	<h2 class="text-xl">Milestones</h2>
 	{#each milestones as milestone}
 		<div class="flex gap-2">
