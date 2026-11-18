@@ -6,7 +6,7 @@
 </script>
 
 <div
-	class="flex flex-col items-center rounded-md border-2 border-sky-800 bg-sky-900 px-2 transition-all duration-400 {open
+	class="z-50 flex flex-col items-center rounded-md border-2 border-sky-800 bg-sky-900 px-2 transition-all duration-400 {open
 		? 'mt-0 opacity-100'
 		: '-mt-10 opacity-0'}"
 >
