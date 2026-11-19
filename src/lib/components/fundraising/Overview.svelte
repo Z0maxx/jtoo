@@ -9,13 +9,12 @@
 	import { sleep } from '$lib/util';
 	import { fundraisingState } from '$lib/storage.svelte';
 
-  let stage = $state(0)
-	fundraisingState.current.stage = 0;
+  const store = fundraisingState.current
+  store.animationStage = 0
+  store.progressBar.raised = 0
+  store.progressBar.sumRaised = 0
 	const emptyImage = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 	let advancingProgressBar = false;
-	let raised = $state(0);
-  let sumRaised = 0
-  let sumGoal = $state(0)
 	let overview: DonationsOverview = $state({
 		goal: 0,
 		raised: 0,
@@ -24,8 +23,8 @@
 
 	const overviewSubId = Dwb.subscribeToDonationsOverview((newOverview) => {
 		overview = newOverview;
-    if (sumGoal === 0) {
-      sumGoal = overview.goal
+    if (store.sumGoal === 0) {
+      store.sumGoal = overview.goal
     }
 
 		advanceProgressBar();
@@ -36,40 +35,40 @@
 	});
 
 	let goalPercentage = $derived(() => {
-		return (raised / currentGoal()) * 100;
+		return (store.progressBar.raised / currentGoal()) * 100;
 	});
 
   let currentGoal = $derived(() => {
-		return stage === 0 ? overview.goal : 1000
+		return store.stage === 0 ? overview.goal : 1000
 	})
 
 	async function advanceProgressBar() {
 		if (advancingProgressBar) return;
 
 		advancingProgressBar = true;
-		while (sumRaised < overview.raised * 1.5) {
-      sumRaised++
-			raised++;
-			const percentage = goalPercentage();
-			if (percentage === 100) {
+    //while (store.progressBar.sumRaised < overview.raised) {
+		while (store.progressBar.raised < overview.raised * 1.5) {
+      store.progressBar.sumRaised++
+			store.progressBar.raised++;
+			if (goalPercentage() === 100) {
 				const explosionLeft = document.getElementById('explosion-left')! as HTMLImageElement;
 				const explosionRight = document.getElementById('explosion-right')! as HTMLImageElement;
 				explosionLeft.src = emptyImage;
 				explosionRight.src = emptyImage;
-				if (stage % 2 === 0) {
+				if (store.stage % 2 === 0) {
 					explosionRight.src = explosion;
 				} else {
 					explosionLeft.src = explosion;
 				}
 
-        stage++
-        sumGoal += currentGoal()
-				fundraisingState.current.stage = stage;
+        store.stage++
+        store.sumGoal += currentGoal()
+				store.animationStage = store.stage;
         setTimeout(() => {
-          fundraisingState.current.stage = 0
+          store.animationStage = 0
         }, 10 * 1000)
 
-				raised = 0;
+				store.progressBar.raised = 0;
 			}
 
 			await sleep(10);
@@ -81,23 +80,23 @@
 
 <div
 	class="relative z-10 origin-bottom-left duration-700 ease-[cubic-bezier(.81,-0.73,.83,.67)]
-  {fundraisingState.current.stage === 3 ? 'rotate-31' : ''}"
+  {store.animationStage === 3 ? 'rotate-31' : ''}"
 >
 	<div class="flex justify-between text-3xl">
 		<span
-			class="origin-bottom-right duration-500 ease-in {fundraisingState.current.stage === 6
+			class="origin-bottom-right duration-500 ease-in {store.animationStage === 6
 				? 'translate-x-[1em] translate-y-[-1em] rotate-180'
 				: ''}">${overview.raised} Raised</span
 		>
 		<span>{overview.donationCount} Donations</span>
-		<span class="duration-300 {fundraisingState.current.stage === 5 ? 'rotate-y-180' : ''}"
-			>${sumGoal} Goal</span
+		<span class="duration-300 {store.animationStage === 5 ? 'rotate-y-180' : ''}"
+			>${store.sumGoal} Goal</span
 		>
 	</div>
 	<div class="relative h-6 w-full">
 		<div
 			class="h-full w-full overflow-hidden rounded-md bg-gray-400
-      {stage % 2 === 1 ? 'rotate-y-180' : ''}"
+      {store.stage % 2 === 1 ? 'rotate-y-180' : ''}"
 		>
 			<div
 				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"

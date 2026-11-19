@@ -287,4 +287,10 @@ export type FundraisingState = {
 	lastDisplayedDonationId: string;
 	donations: Donation[];
   stage: number
+  animationStage: number
+  sumGoal: number
+  progressBar: {
+    raised: number
+    sumRaised: number
+  }
 };
