@@ -24,7 +24,10 @@
 
 	const overviewSubId = Dwb.subscribeToDonationsOverview((newOverview) => {
 		overview = newOverview;
-    sumGoal = overview.goal
+    if (sumGoal === 0) {
+      sumGoal = overview.goal
+    }
+
 		advanceProgressBar();
 	});
 
