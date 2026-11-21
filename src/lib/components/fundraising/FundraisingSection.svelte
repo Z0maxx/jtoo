@@ -4,24 +4,17 @@
 	import type { Donation } from '$lib/types.svelte';
 	import { sleep } from '$lib/util';
 	import { onDestroy } from 'svelte';
-	import DonationNotification from './DonationNotification.svelte';
 	import Milestones from './Milestones.svelte';
 	import Overview from './Overview.svelte';
 	import Donations from './Donations.svelte';
 	import Rtd from './Rtd.svelte';
 
+	fundraisingState.current.lastDisplayedDonationId = '';
+	fundraisingState.current.displayedDonations = [];
 	const displayedDonationCount = 7;
 	let iteratingDonations = false;
 	const iterateDonations = () => settings.current.enableFundraisingDonations;
-	let donationNotificationOpen = $state(false);
-	let currentDonation: Donation = $state({
-		id: '',
-		name: '',
-		amount: 0
-	});
-
-	let donations: Donation[] = $state([]);
-	let displayedDonations: Donation[] = $state([]);
+	let donations: Donation[] = [];
 	const donationsSubId = Dwb.subscribeToDonations((newDonations) => {
 		donations = newDonations;
 		displayNewDonations();
@@ -48,41 +41,40 @@
 
 			const donation = donations[i];
 			fundraisingState.current.lastDisplayedDonationId = donation.id;
-			displayedDonations = [donation, ...displayedDonations.slice(0, displayedDonationCount - 1)];
-			currentDonation = donation;
-			donationNotificationOpen = true;
+			fundraisingState.current.displayedDonations = [
+				donation,
+				...fundraisingState.current.displayedDonations.slice(0, displayedDonationCount - 1)
+			];
 			i++;
 			await sleep(settings.current.fundraisingShowDonationSeconds * 1000);
-			donationNotificationOpen = false;
-			await sleep(1 * 1000);
 		}
 
-		displayedDonations = donations.toReversed().slice(0, displayedDonationCount);
+		fundraisingState.current.displayedDonations = donations
+			.toReversed()
+			.slice(0, displayedDonationCount);
 		iteratingDonations = false;
 	}
 </script>
 
-<div class="relative mx-4 my-2 h-full">
+<div class="relative mx-4 my-2 h-full text-white">
 	<Overview />
 	<div class="mt-4 flex gap-4">
 		<div class="w-2/4">
 			<Milestones />
 		</div>
 		<div class="w-1/4">
-			{#if (settings.current.enableFundraisingRtd)}
-        <Rtd />
-      {/if}
+			{#if settings.current.enableFundraisingRtd}
+				<Rtd />
+			{/if}
 		</div>
 		<div class="w-1/4">
-			<Donations donations={displayedDonations} />
+			<Donations />
 		</div>
 	</div>
-	<div class="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-		<DonationNotification open={donationNotificationOpen} donation={currentDonation} />
-	</div>
 </div>
+
 <style>
-  :global(:root) {
-    --restore-animation-after: 2s
-  }
+	:global(:root) {
+		--restore-animation-after: 2s;
+	}
 </style>
