@@ -604,7 +604,11 @@ export class KSNWebSocket {
 		tournament.players = [...tournament.players];
 	}
 
+	/** Called with the token on every connect, so the page can open the console feeds too. */
+	onconnect: ((wsToken: string) => void) | undefined;
+
 	connect(wsToken: string) {
+		this.onconnect?.(wsToken);
 		if (this._ws && this._ws.readyState == ProxyWebSocket.OPEN) {
 			console.log('closing web socket connection...');
 			this._ws.close();

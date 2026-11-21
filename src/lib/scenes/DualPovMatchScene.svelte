@@ -8,11 +8,13 @@
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { getContext } from 'svelte';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { getMap, getPlayer } from '$lib/util';
+	import { getMap, getPlayer, msToFormattedTime } from '$lib/util';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import { Steam } from '$lib/api/steam/api-steam';
 	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
+	let live: ConsoleLive = getContext('consoleLive');
 </script>
 
 <!-- MARK: top bar -->
@@ -163,7 +165,7 @@
 	{@const avatarURL = player.avatarURL}
 	{@const tag = player.tag}
 	{@const name = player.name}
-	{@const playerTimer = steamID3 ? ksnWs.timer.getPlayerTimer(steamID3) : undefined}
+	{@const entry = live.entryFor(steamID3)}
 	<!-- {@const tempusPR = overlay.current[sideKey].tempusPrs
 		? overlay.current[sideKey].tempusPrs[overlay.current.map.shortName]
 		: ''} -->
@@ -220,10 +222,10 @@
 				>
 					{#if settings.current.enablePRs}
 						<div class="flex gap-2">
-							{#if playerTimer && playerTimer.prCs}
+							{#if entry && entry.prMs !== null}
 								<span class="text-xl opacity-80 {settings.current.font}">pr</span>
 								<span class="text-3xl">
-									{playerTimer.prFormatted}
+									{msToFormattedTime(entry.prMs)}
 								</span>
 							{/if}
 						</div>
