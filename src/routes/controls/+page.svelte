@@ -40,8 +40,17 @@
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
+	type Error = { state: boolean; msg: string };
+
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+
+	let error = $state({
+		invalidJfRelayToken: {
+			state: false,
+			msg: 'error: invalid token'
+		} as Error
+	});
 
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
@@ -63,6 +72,14 @@
 		});
 		importBootcampTournaments();
 	});
+
+	async function connectToJfRelay() {
+		error.invalidJfRelayToken.state = await new Promise<boolean>((res) => {
+			jfRelayWs?.connect(settings.current.jfRelayWebSocketToken);
+			jfRelayWs?.addEventListener('open', () => res(false));
+			jfRelayWs?.addEventListener('error', () => res(true));
+		});
+	}
 </script>
 
 <span class="self-center">jtoo controls</span>
@@ -230,22 +247,24 @@
 					<label for="input-websocket-jf">token: </label>
 					<input
 						type="password"
-						class="input w-60"
+						class="input w-60
+              {jfRelayWs?.wsState === WebSocket.OPEN ? 'border-b-green-700' : ''}"
 						id="input-websocket-jf"
 						value={settings.current.jfRelayWebSocketToken}
 						onchange={(e) => {
 							let target = e.target as HTMLInputElement;
-							settings.current.jfRelayWebSocketToken = target.value;
+							settings.current.jfRelayWebSocketToken = target.value.trim();
 						}}
 					/>
 				</div>
 				<div class="flex gap-2">
-					<button
-						class="button button-unselected hover:button-selected"
-						onclick={() => jfRelayWs!.connect(settings.current.jfRelayWebSocketToken.trim())}
+					<button class="button button-unselected hover:button-selected" onclick={connectToJfRelay}
 						>connect</button
 					>
 				</div>
+				{#if error.invalidJfRelayToken.state}
+					<div>{error.invalidJfRelayToken.msg}</div>
+				{/if}
 			</Accordion>
 		</section>
 	</Accordion>

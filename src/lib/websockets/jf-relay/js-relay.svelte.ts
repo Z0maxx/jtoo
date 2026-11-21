@@ -85,6 +85,14 @@ export class JFRelayWebSocket {
 		}
 	}
 
+	addEventListener(
+		type: keyof WebSocketEventMap,
+		listener: (this: WebSocket, ev: Event | CloseEvent | MessageEvent<any>) => any,
+		options?: boolean | AddEventListenerOptions
+	) {
+		this._ws?.addEventListener(type, listener, options);
+	}
+
 	// getters
 	get wsState(): number {
 		return this._wsState;
