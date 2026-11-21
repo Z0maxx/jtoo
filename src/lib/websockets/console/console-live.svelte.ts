@@ -100,6 +100,7 @@ export class ConsoleLive {
 	}
 
 	private url(path: string, params: Record<string, string> = {}): string {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const url = new URL(path, this.baseUrl + '/');
 		if (this.token) url.searchParams.set('token', this.token);
 		for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);

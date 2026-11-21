@@ -2,11 +2,8 @@ import { createSubscriber } from 'svelte/reactivity';
 
 // One requestAnimationFrame loop shared by every timer on the page. It only runs while
 // something reactive reads now(), and stops when the last reader goes away.
-let current = Date.now();
-
 const subscribe = createSubscriber((update) => {
 	let frame = requestAnimationFrame(function tick() {
-		current = Date.now();
 		update();
 		frame = requestAnimationFrame(tick);
 	});
@@ -14,8 +11,12 @@ const subscribe = createSubscriber((update) => {
 	return () => cancelAnimationFrame(frame);
 });
 
-/** The local time in epoch ms, updated every animation frame while it's being read. */
+/**
+ * The local time in epoch ms. Reactive readers re-run every animation frame. The time is
+ * read fresh on every call, so it's still right when frames are paused (a hidden tab) and
+ * something else, like a new snapshot, triggers the update.
+ */
 export function now(): number {
 	subscribe();
-	return current;
+	return Date.now();
 }

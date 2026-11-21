@@ -77,6 +77,7 @@ export class KSNWebSocket {
 		this._messages = KSN.defaultMessages();
 
 		// connect to websocket
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const url = new URL(consoleBaseUrl());
 		url.searchParams.set('token', wsToken);
 		this._ws = new ProxyWebSocket(url.toString());

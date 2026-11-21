@@ -20,7 +20,9 @@ const STEAM_BATCH = 100;
  */
 export function syncWithRace(live: ConsoleLive) {
 	// ids already asked for, so a failed or slow lookup isn't repeated every snapshot
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 	const requestedPlayers = new Set<SteamID3>();
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 	const requestedMaps = new Set<MapFileName>();
 	// the console's stage and map last applied to the labels. A label is only set when the
 	// console's value changes, so picking another one in the controls overrides it until then.
