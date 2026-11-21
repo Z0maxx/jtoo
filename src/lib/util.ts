@@ -1,5 +1,6 @@
 import { indexOf } from 'underscore';
-import { items, overlay } from './storage.svelte';
+import { items, overlay, settings } from './storage.svelte';
+import { DEFAULT_CONSOLE_URL } from './websockets/console/console-live.svelte';
 import {
 	Player,
 	TFMap,
@@ -11,6 +12,10 @@ import {
 	type TempusID
 } from './types.svelte';
 import { Steam } from './api/steam/api-steam';
+import type {
+	LeaderboardEntry as LiveLeaderboardEntry,
+	RaceWindow
+} from './websockets/console/live-types';
 
 export function getPlayer(steamID3: SteamID3 | undefined): Player {
 	if (!steamID3) return items.current.players[0];
@@ -90,4 +95,56 @@ export function toPairs(m: unknown): [string, number][] {
 	if (m instanceof Map) return [...m] as [string, number][];
 	if (Array.isArray(m)) return m as [string, number][];
 	return Object.entries(m as Record<string, number>);
+}
+
+// MARK: console live feed
+/** Formats integer ms like csToFormattedTime: mm:ss.cc, two decimals, truncated. */
+export function msToFormattedTime(
+	ms: number,
+	precision?: 'centiseconds' | 'seconds' | 'minutes'
+): string {
+	return csToFormattedTime(Math.floor(Math.max(0, ms) / 10), precision);
+}
+
+/** A gap in seconds with two decimals and a sign, e.g. +1.23. A zero gap is shown as 0.00. */
+export function msToGap(ms: number): string {
+	const cs = Math.trunc(ms / 10);
+	if (cs === 0) return '0.00';
+	return (cs > 0 ? '+' : '-') + csToFormattedGap(Math.abs(cs));
+}
+
+function csToFormattedGap(cs: Centiseconds): string {
+	// under a minute: 1.23, otherwise 1:02.34
+	if (cs < 6000) return csToSeconds(cs).toFixed(2);
+	const minutes = Math.floor(cs / 6000);
+	const rest = (cs % 6000) / 100;
+	return `${minutes}:${rest.toFixed(2).padStart(5, '0')}`;
+}
+
+/** The run timer to show for a leaderboard entry: ticking while running, else the last run. */
+export function runDisplayMs(
+	entry: Pick<LiveLeaderboardEntry, 'runStartedAt' | 'runEndedAt' | 'lastRunMs'> | undefined,
+	now: number
+): number {
+	if (!entry || entry.runStartedAt === null) return 0;
+	if (entry.runEndedAt === null) return Math.max(0, now - entry.runStartedAt);
+	return entry.lastRunMs ?? entry.runEndedAt - entry.runStartedAt;
+}
+
+/** Time left in a race window, clamped at 0. null when the race has no time limit. */
+export function countdownMs(window: RaceWindow | undefined, now: number): number | null {
+	if (!window || window.endsAt === null) return null;
+	return Math.max(0, window.endsAt - now);
+}
+
+/** A player's name, or their SteamID3 if JTOO doesn't know them yet. */
+export function playerLabel(steamID3: SteamID3, maxLength?: number): string {
+	const name = getPlayer(steamID3).name || `[U:1:${steamID3}]`;
+	if (maxLength && name.length > maxLength) return name.substring(0, maxLength) + '...';
+	return name;
+}
+
+/** The console URL from settings, or the default. */
+export function consoleBaseUrl(): string {
+	return settings.current.consoleBaseUrl?.trim() || DEFAULT_CONSOLE_URL;
 }

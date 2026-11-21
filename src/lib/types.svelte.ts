@@ -230,6 +230,7 @@ export type Settings = {
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
 	ksnWebSocketToken: string;
+	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;
 	obsWsIp: string;

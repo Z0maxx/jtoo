@@ -42,6 +42,7 @@ export const defaultSettings: Settings = {
 	enablePOVGuide: false,
 	useShortMapNames: true,
 	ksnWebSocketToken: '',
+	consoleBaseUrl: 'https://console.jumpfortress.tf',
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
