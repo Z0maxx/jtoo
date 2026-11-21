@@ -202,6 +202,7 @@ export type Settings = {
 	overlayScene: OverlayScene;
 	ksnWebSocketToken: string;
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
+	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;
 	obsWsIp: string;

@@ -59,6 +59,10 @@
 
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
+		// settings saved before this option existed don't have it; it defaults to on
+		if (settings.current.followConsoleStageMap === undefined) {
+			settings.current.followConsoleStageMap = true;
+		}
 		if (settings.current.ksnWebSocketToken) {
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
 		}
@@ -248,6 +252,7 @@
 						}}
 					/>
 				</div>
+				<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>
 			<Accordion title="jf relay plugin websocket" defaultstate="closed">
