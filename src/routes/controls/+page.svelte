@@ -14,14 +14,7 @@
 
 	import PlayerControl from '$lib/components/controls/PlayerControl.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import {
-		settings,
-		overlay,
-		items,
-		defaultStages,
-		defaultSettings,
-		importBootcampTournaments
-	} from '$lib/storage.svelte';
+	import { settings, overlay, items, defaultStages, defaultSettings } from '$lib/storage.svelte';
 	import {
 		BrokenOverlayScenes,
 		Fonts,
@@ -82,7 +75,6 @@
 				setScene(settings.current.overlayScene);
 			}
 		});
-		importBootcampTournaments();
 
 		return () => live.close();
 	});
@@ -210,9 +202,8 @@
 					/>
 				</div>
 				<div class="flex gap-2">
-					<button
-						class="button button-unselected hover:button-selected"
-						onclick={connectConsole}>connect</button
+					<button class="button button-unselected hover:button-selected" onclick={connectConsole}
+						>connect</button
 					>
 					<div class="flex gap-2">
 						<p>live feed:</p>
