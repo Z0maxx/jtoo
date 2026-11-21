@@ -9,8 +9,7 @@
 	import Overview from './Overview.svelte';
 	import Donations from './Donations.svelte';
 
-	fundraisingState.current.lastDisplayedDonationId = '';
-	const displayedDonationCount = 3;
+	const displayedDonationCount = 7;
 	let iteratingDonations = false;
 	const iterateDonations = () => settings.current.enableFundraisingDonations;
 	let donationNotificationOpen = $state(false);
@@ -40,7 +39,6 @@
 		);
 
 		let i = idx > -1 ? idx + 1 : 0;
-
 		while (i < donations.length) {
 			if (!iterateDonations()) {
 				await sleep(2 * 1000);
@@ -66,9 +64,10 @@
 <div class="relative mx-4 my-2 h-full">
 	<Overview />
 	<div class="mt-4 flex gap-4">
-		<div class="w-3/4">
+		<div class="w-2/4">
 			<Milestones />
 		</div>
+		<div class="w-1/4"></div>
 		<div class="w-1/4">
 			<Donations donations={displayedDonations} />
 		</div>
@@ -77,3 +76,9 @@
 		<DonationNotification open={donationNotificationOpen} donation={currentDonation} />
 	</div>
 </div>
+
+<style>
+	:global(:root) {
+		--restore-animation-after: 2s;
+	}
+</style>

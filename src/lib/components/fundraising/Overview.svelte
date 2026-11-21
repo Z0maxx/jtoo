@@ -9,10 +9,11 @@
 	import { sleep } from '$lib/util';
 	import { fundraisingState } from '$lib/storage.svelte';
 
-  const store = fundraisingState.current
-  store.animationStage = 0
-  store.progressBar.raised = 0
-  store.progressBar.sumRaised = 0
+	fundraisingState.current.progressBar.raised = 0;
+	fundraisingState.current.progressBar.sumRaised = 0;
+	fundraisingState.current.stage = 0;
+	fundraisingState.current.stage = 0;
+	fundraisingState.current.sumGoal = 0;
 	const emptyImage = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 	let advancingProgressBar = false;
 	let overview: DonationsOverview = $state({
@@ -23,9 +24,9 @@
 
 	const overviewSubId = Dwb.subscribeToDonationsOverview((newOverview) => {
 		overview = newOverview;
-    if (store.sumGoal === 0) {
-      store.sumGoal = overview.goal
-    }
+		if (fundraisingState.current.sumGoal === 0) {
+			fundraisingState.current.sumGoal = overview.goal;
+		}
 
 		advanceProgressBar();
 	});
@@ -35,40 +36,35 @@
 	});
 
 	let goalPercentage = $derived(() => {
-		return (store.progressBar.raised / currentGoal()) * 100;
+		return (fundraisingState.current.progressBar.raised / currentGoal()) * 100;
 	});
 
-  let currentGoal = $derived(() => {
-		return store.stage === 0 ? overview.goal : 1000
-	})
+	let currentGoal = $derived(() => {
+		return fundraisingState.current.stage === 0 ? overview.goal : 1000;
+	});
 
 	async function advanceProgressBar() {
 		if (advancingProgressBar) return;
 
 		advancingProgressBar = true;
-    //while (store.progressBar.sumRaised < overview.raised) {
-		while (store.progressBar.raised < overview.raised * 1.5) {
-      store.progressBar.sumRaised++
-			store.progressBar.raised++;
+		//while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
+		while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
+			fundraisingState.current.progressBar.sumRaised += 4;
+			fundraisingState.current.progressBar.raised += 4;
 			if (goalPercentage() === 100) {
 				const explosionLeft = document.getElementById('explosion-left')! as HTMLImageElement;
 				const explosionRight = document.getElementById('explosion-right')! as HTMLImageElement;
 				explosionLeft.src = emptyImage;
 				explosionRight.src = emptyImage;
-				if (store.stage % 2 === 0) {
+				if (fundraisingState.current.stage % 2 === 0) {
 					explosionRight.src = explosion;
 				} else {
 					explosionLeft.src = explosion;
 				}
 
-        store.stage++
-        store.sumGoal += currentGoal()
-				store.animationStage = store.stage;
-        setTimeout(() => {
-          store.animationStage = 0
-        }, 10 * 1000)
-
-				store.progressBar.raised = 0;
+				fundraisingState.current.stage++;
+				fundraisingState.current.sumGoal += currentGoal();
+				fundraisingState.current.progressBar.raised = 0;
 			}
 
 			await sleep(10);
@@ -79,24 +75,25 @@
 </script>
 
 <div
-	class="relative z-10 origin-bottom-left duration-700 ease-[cubic-bezier(.81,-0.73,.83,.67)]
-  {store.animationStage === 3 ? 'rotate-31' : ''}"
+	class="relative z-10 origin-bottom-left
+    {fundraisingState.current.stage === 1 ? 'progress-bar-animation-1' : ''}
+    {fundraisingState.current.stage === 6 ? 'progress-bar-animation-2' : ''}"
 >
 	<div class="flex justify-between text-3xl">
 		<span
-			class="origin-bottom-right duration-500 ease-in {store.animationStage === 6
-				? 'translate-x-[1em] translate-y-[-1em] rotate-180'
-				: ''}">${overview.raised} Raised</span
+			class="origin-bottom-right
+        {fundraisingState.current.stage === 2 ? 'raised-animation' : ''}"
+			>${overview.raised} Raised</span
 		>
 		<span>{overview.donationCount} Donations</span>
-		<span class="duration-300 {store.animationStage === 5 ? 'rotate-y-180' : ''}"
-			>${store.sumGoal} Goal</span
+		<span class={fundraisingState.current.stage === 5 ? 'goal-animation' : ''}
+			>${fundraisingState.current.sumGoal} Goal</span
 		>
 	</div>
 	<div class="relative h-6 w-full">
 		<div
 			class="h-full w-full overflow-hidden rounded-md bg-gray-400
-      {store.stage % 2 === 1 ? 'rotate-y-180' : ''}"
+        {fundraisingState.current.stage % 2 === 1 ? 'rotate-y-180' : ''}"
 		>
 			<div
 				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"
@@ -128,3 +125,111 @@
 		/>
 	</div>
 </div>
+
+<style>
+	:root {
+		--progress-bar-1-1-time: 400ms;
+		--progress-bar-2-time: 400ms;
+	}
+
+	@keyframes progress-bar-1-1 {
+		to {
+			rotate: -8deg;
+		}
+	}
+
+	@keyframes progress-bar-1-2 {
+		from {
+			rotate: -8deg;
+		}
+
+		to {
+			rotate: 30.8deg;
+		}
+	}
+
+	@keyframes progress-bar-restore-1 {
+		from {
+			rotate: 30.8deg;
+		}
+
+		to {
+			rotate: 0deg;
+		}
+	}
+
+	@keyframes progress-bar-2 {
+		from {
+			transform: translateX(0);
+		}
+
+		33% {
+			transform: translateX(calc(var(--spacing) * 4));
+		}
+
+		66% {
+			transform: translateX(0);
+		}
+
+		to {
+			transform: translateX(calc(var(--spacing) * -4));
+		}
+	}
+
+	@keyframes progress-bar-restore-2 {
+		from {
+			transform: translateX(calc(var(--spacing) * -4));
+		}
+
+		to {
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes raised {
+		from {
+			transform: translateY(0);
+			rotate: 0deg;
+		}
+
+		to {
+			transform: translateY(1em);
+			rotate: 180deg;
+		}
+	}
+
+	@keyframes goal {
+		from {
+			transform: rotateY(0deg);
+		}
+
+		to {
+			transform: rotateY(180deg);
+		}
+	}
+
+	.progress-bar-animation-1 {
+		animation:
+			progress-bar-1-1 var(--progress-bar-1-1-time) ease-out forwards,
+			progress-bar-1-2 800ms cubic-bezier(0.55, 1.7, 0, 0.63) var(--progress-bar-1-1-time) forwards,
+			progress-bar-restore-1 300ms ease-out var(--restore-animation-after) forwards;
+	}
+
+	.progress-bar-animation-2 {
+		animation:
+			progress-bar-2 var(--progress-bar-2-time) linear forwards,
+			progress-bar-restore-2 300ms ease-out var(--restore-animation-after) forwards;
+	}
+
+	.raised-animation {
+		animation:
+			raised 1000ms cubic-bezier(0.63, 2.06, 0, 0.14) forwards,
+			raised 300ms ease-out var(--restore-animation-after) reverse forwards;
+	}
+
+	.goal-animation {
+		animation:
+			goal 1000ms cubic-bezier(0.63, 2.06, 0, 0.14) forwards,
+			goal 300ms ease-out var(--restore-animation-after) reverse forwards;
+	}
+</style>
