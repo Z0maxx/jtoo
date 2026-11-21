@@ -286,7 +286,9 @@ export type DonationMilestone = {
 export type FundraisingState = {
 	eventUrl: string;
 	lastDisplayedDonationId: string;
+	lastDisplayedDonationWithMessageId: string;
 	donations: Donation[];
+	displayedDonations: Donation[];
 	stage: number;
 	sumGoal: number;
 	progressBar: {

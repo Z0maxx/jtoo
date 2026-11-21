@@ -74,7 +74,9 @@ export const defaultItems: Items = {
 export const defaultFundraisingState: FundraisingState = {
 	eventUrl: '',
 	lastDisplayedDonationId: '',
+	lastDisplayedDonationWithMessageId: '',
 	donations: [],
+	displayedDonations: [],
 	stage: 0,
 	sumGoal: 0,
 	progressBar: {
