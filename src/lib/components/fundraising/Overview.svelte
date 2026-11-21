@@ -4,7 +4,7 @@
 	import { onDestroy } from 'svelte';
 	import rocketSparks from '$lib/assets/rocket-sparks.gif';
 	import rocketProjectile from '$lib/assets/rocket-projectile.png';
-  import airstrikeProjectile from '$lib/assets/airstrike-projectile-2.png';
+  import airstrikeProjectile from '$lib/assets/airstrike-projectile.png';
 	import smoke from '$lib/assets/smoke.png';
 	import explosion from '$lib/assets/explosion.gif';
 	import { sleep } from '$lib/util';
@@ -102,14 +102,14 @@
 				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"
 				class="bg-size-cover relative h-full overflow-hidden bg-size-[auto_100%] bg-repeat-x"
 			>
-				<div class="absolute right-0 h-full bg-gray-400 aspect-[16/9]">
+				<div class="absolute right-0 h-full bg-gray-400 { isStageEven() ? 'aspect-[21/9]' : 'aspect-[25/9]' }">
 					<div class="relative h-full w-full">
 						<img
 							src={isStageEven() ? rocketProjectile : airstrikeProjectile}
 							alt="rocket-projectile"
 							class="absolute top-[50%] right-0 translate-y-[-50%] { isStageEven() ? 'h-1/2' : 'h-full' }"
 						/>
-						<img src={rocketSparks} alt="rocket-trail" class="absolute h-full -left-[20%]" />
+						<img src={rocketSparks} alt="rocket-trail" class="absolute h-full { isStageEven() ? '-left-[16%]' : '-left-[12%]' }" />
 					</div>
 				</div>
 			</div>
