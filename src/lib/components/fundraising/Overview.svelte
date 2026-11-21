@@ -4,7 +4,6 @@
 	import { onDestroy } from 'svelte';
 	import rocketSparks from '$lib/assets/rocket-sparks.gif';
 	import rocketProjectile from '$lib/assets/rocket-projectile.png';
-  import airstrikeProjectile from '$lib/assets/airstrike-projectile.png';
 	import smoke from '$lib/assets/smoke.png';
 	import explosion from '$lib/assets/explosion.gif';
 	import { sleep } from '$lib/util';
@@ -44,14 +43,14 @@
 		return fundraisingState.current.stage === 0 ? overview.goal : 1000;
 	});
 
-  const isStageEven = $derived(() => fundraisingState.current.stage % 2 === 0)
+	const isStageEven = $derived(() => fundraisingState.current.stage % 2 === 0);
 
 	async function advanceProgressBar() {
 		if (advancingProgressBar) return;
 
 		advancingProgressBar = true;
-		//while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
-		while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
+		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
+		//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
 			fundraisingState.current.progressBar.sumRaised += 4;
 			fundraisingState.current.progressBar.raised += 4;
 			if (goalPercentage() === 100) {
@@ -102,14 +101,14 @@
 				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"
 				class="bg-size-cover relative h-full overflow-hidden bg-size-[auto_100%] bg-repeat-x"
 			>
-				<div class="absolute right-0 h-full bg-gray-400 { isStageEven() ? 'aspect-[21/9]' : 'aspect-[25/9]' }">
+				<div class="absolute right-0 aspect-[21/9] h-full bg-gray-400">
 					<div class="relative h-full w-full">
 						<img
-							src={isStageEven() ? rocketProjectile : airstrikeProjectile}
+							src={rocketProjectile}
 							alt="rocket-projectile"
-							class="absolute top-[50%] right-0 translate-y-[-50%] { isStageEven() ? 'h-1/2' : 'h-full' }"
+							class="absolute top-[50%] right-0 h-1/2 translate-y-[-50%]"
 						/>
-						<img src={rocketSparks} alt="rocket-trail" class="absolute h-full { isStageEven() ? '-left-[16%]' : '-left-[12%]' }" />
+						<img src={rocketSparks} alt="rocket-trail" class="absolute -left-[16%] h-full" />
 					</div>
 				</div>
 			</div>
