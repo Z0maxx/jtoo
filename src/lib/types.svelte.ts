@@ -229,6 +229,7 @@ export type Settings = {
 	enablePOVGuide: boolean;
 	enableFundraisingSection: boolean;
 	enableFundraisingDonations: boolean;
+	enableFundraisingRtd: boolean;
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
 	ksnWebSocketToken: string;
@@ -286,11 +287,10 @@ export type FundraisingState = {
 	eventUrl: string;
 	lastDisplayedDonationId: string;
 	donations: Donation[];
-  stage: number
-  animationStage: number
-  sumGoal: number
-  progressBar: {
-    raised: number
-    sumRaised: number
-  }
+	stage: number;
+	sumGoal: number;
+	progressBar: {
+		raised: number;
+		sumRaised: number;
+	};
 };

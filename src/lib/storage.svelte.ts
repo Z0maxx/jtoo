@@ -43,6 +43,7 @@ export const defaultSettings: Settings = {
 	enablePOVGuide: false,
 	enableFundraisingSection: false,
 	enableFundraisingDonations: true,
+	enableFundraisingRtd: false,
 	useShortMapNames: true,
 	ksnWebSocketToken: '',
 	jfRelayWebSocketToken: '',
@@ -74,13 +75,12 @@ export const defaultFundraisingState: FundraisingState = {
 	eventUrl: '',
 	lastDisplayedDonationId: '',
 	donations: [],
-  stage: 0,
-  animationStage: 0,
-  sumGoal: 0,
-  progressBar: {
-    raised: 0,
-    sumRaised: 0
-  }
+	stage: 0,
+	sumGoal: 0,
+	progressBar: {
+		raised: 0,
+		sumRaised: 0
+	}
 };
 
 // overlay settings
