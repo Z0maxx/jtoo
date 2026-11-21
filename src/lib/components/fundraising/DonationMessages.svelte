@@ -75,7 +75,7 @@
 >
 	{#each donations as donation}
 		<div
-			class="flex flex-col items-center rounded-md border-2 bg-bordeaux px-2 py-1 transition-colors w-120 h-90
+			class="flex flex-col items-center rounded-md border-2 border-white bg-bordeaux px-2 py-1 transition-colors w-120 h-90
         {donation.id === replaced ? 'text-transparent' : ''}"
 		>
 			{#if donation.id !== ''}
