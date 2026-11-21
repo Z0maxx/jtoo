@@ -10,7 +10,8 @@
 	import ImportMap from '$lib/components/controls/ImportMap.svelte';
 	import ManagePlayers from '$lib/components/controls/ManagePlayers.svelte';
 	import ManageMaps from '$lib/components/controls/ManageMaps.svelte';
-	import AddTournament from '$lib/components/controls/AddTournament.svelte';
+	import EditBracket from '$lib/components/controls/EditBracket.svelte';
+	import ManageBrackets from '$lib/components/controls/ManageBrackets.svelte';
 
 	import PlayerControl from '$lib/components/controls/PlayerControl.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
@@ -20,16 +21,17 @@
 		Fonts,
 		MonoFonts,
 		OverlayScenes,
-		Tournament
+		TFClasses
 	} from '$lib/types.svelte';
 	// import * as _ from 'underscore';
 
 	import { obsConnect, setScene } from '$lib/websockets/obs/ws-obs';
-	import ManageTournaments from '$lib/components/controls/ManageTournaments.svelte';
+	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
+	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
-	import { getTournament, getMap, consoleBaseUrl } from '$lib/util';
+	import { getMap, consoleBaseUrl } from '$lib/util';
 	import { onMount, setContext } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 
@@ -38,10 +40,32 @@
 	// the controls open their own race feed, only to show whether the console is reachable
 	const live = new ConsoleLive();
 
+	// the event's players and maps come from console pools, imported on every startup
+	let poolImport: PoolImportResult | 'importing' | undefined = $state();
+	async function importPools() {
+		poolImport = 'importing';
+		poolImport = await importConsolePools();
+	}
+
+	// the console's tournaments, for picking the one the leaderboard scene shows
+	let tournaments: ConsoleTournamentList | undefined = $state();
+	let tournamentsError = $state('');
+	async function loadTournaments() {
+		const token = settings.current.ksnWebSocketToken.trim();
+		if (!token) return;
+		try {
+			tournaments = await fetchConsoleTournaments(token);
+			tournamentsError = '';
+		} catch (e) {
+			tournamentsError = e instanceof Error ? e.message : `${e}`;
+		}
+	}
+
 	function connectConsole() {
 		const token = settings.current.ksnWebSocketToken.trim();
 		ksnWs!.connect(token);
 		live.connect(token, consoleBaseUrl());
+		loadTournaments();
 	}
 
 	const feedStates: Record<FeedState, { state: string; color: string }> = {
@@ -59,6 +83,9 @@
 		if (settings.current.ksnWebSocketToken) {
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
 		}
+
+		importPools();
+		loadTournaments();
 
 		jfRelayWs = new JFRelayWebSocket();
 
@@ -111,8 +138,8 @@
 			<ManagePlayers />
 			<ImportMap />
 			<ManageMaps />
-			<AddTournament />
-			<ManageTournaments />
+			<EditBracket />
+			<ManageBrackets />
 		</div>
 
 		<ItemInput placeholder="add stage" item="stages" />
@@ -124,13 +151,36 @@
 			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
 			bind:value={settings.current.overlayScene}
 		/>
-		<span>tournament</span>
+
+		<div class="flex justify-between">
+			<span>leaderboard tournament</span>
+			<button class="button-remove" onclick={loadTournaments}>refresh</button>
+		</div>
+		{#if tournamentsError}
+			<span class="text-red-300">{tournamentsError}</span>
+		{/if}
 		<RadioInputs
-			opts={items.current.tournaments}
-			labelkey={['info', 'name']}
-			onchange={(value: Tournament) => {
-				overlay.current.tournament = value.id;
-			}}
+			opts={['', ...(tournaments?.tournaments.map((t) => t.id) ?? [])]}
+			optlabels={[
+				'follow active tournament',
+				...(tournaments?.tournaments.map(
+					(t) => t.name + (t.id === tournaments?.activeTournamentId ? ' (active)' : '')
+				) ?? [])
+			]}
+			bind:value={overlay.current.tournament}
+		/>
+
+		<span>bracket</span>
+		<RadioInputs
+			opts={(items.current.brackets ?? []).map((b) => b.id)}
+			optlabels={(items.current.brackets ?? []).map((b) => b.name)}
+			bind:value={overlay.current.bracket}
+		/>
+
+		<span>class</span>
+		<RadioInputs
+			opts={TFClasses.filter((c) => c !== 'overall')}
+			bind:value={settings.current.tfClass}
 		/>
 	</Accordion>
 
@@ -333,9 +383,9 @@
 
 		<span>map</span>
 		<RadioInputs
-			opts={getTournament(overlay.current.tournament).maps}
+			opts={poolMaps()}
 			optlabels={settings.current.useShortMapNames
-				? getTournament(overlay.current.tournament).maps.map((m) => getMap(m).shortName)
+				? poolMaps().map((m) => getMap(m).shortName || m)
 				: undefined}
 			bind:value={overlay.current.map}
 		/>

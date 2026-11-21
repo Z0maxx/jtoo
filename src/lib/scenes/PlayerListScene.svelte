@@ -5,9 +5,10 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/state';
 	import Flag from '$lib/components/util/Flag.svelte';
-	import { getTournament } from '$lib/util';
+	import { poolPlayers } from '$lib/console-pools.svelte';
+	import { getPlayer } from '$lib/util';
 
-	let tournament = $derived(getTournament(overlay.current.tournament));
+	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
 
 	const drawBG: boolean = !page.url.searchParams.has('nobg');
 </script>
@@ -38,12 +39,12 @@
 		<li></li>
 		<li></li>
 		{@render Header('name')}
-		{@render Header(`${tournament.info.class} rank`)}
+		{@render Header(`${tfClass} rank`)}
 		{@render Header('world records')}
 		{@render Header('top times')}
 
 		<hr class="hr" />
-		{#each items.current.players as player, i (i)}
+		{#each poolPlayers().map((id) => getPlayer(id)) as player, i (i)}
 			{#if player.name}
 				{@render PlayerSnippet(player)}
 				<hr class="hr" />
@@ -70,9 +71,10 @@
 		<Flag code={player.flag} class="rounded-xl text-[6rem]" />
 	</li>
 	{@render BodyCell(player.name)}
-	{@render BodyCell(player.rank![tournament.info.class].rank.toString())}
-	{@render BodyCell(player.WRs[tournament.info.class].toString())}
-	{@render BodyCell(player.TTs[tournament.info.class].toString())}
+	<!-- ranks, WRs and TTs come from Tempus Plaza, and aren't there for every player -->
+	{@render BodyCell(`${player.rank?.[tfClass]?.rank ?? '-'}`)}
+	{@render BodyCell(`${player.WRs?.[tfClass] ?? '-'}`)}
+	{@render BodyCell(`${player.TTs?.[tfClass] ?? '-'}`)}
 {/snippet}
 
 {#snippet BodyCell(content: string, noFilter: boolean = false)}

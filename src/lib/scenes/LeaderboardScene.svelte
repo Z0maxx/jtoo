@@ -57,9 +57,11 @@
 		return Number.isInteger(score) ? `${score}` : score.toFixed(2);
 	}
 
-	let scoreHeader = $derived(
-		tournament?.scoring === 'rjr-points' ? 'Points' : 'Average Placement'
-	);
+	let scoreHeader = $derived(tournament?.scoring === 'rjr-points' ? 'Points' : 'Average Placement');
+
+	function roundIsValid(round: TournamentRound) {
+		return !round.voided && round.finalized;
+	}
 </script>
 
 <!-- isolated border filter -->
@@ -91,24 +93,26 @@
 	{:else}
 		<ul class="flex justify-center gap-10 text-xl">
 			{#each rounds as round, i (round.roundIndex)}
-				<button onclick={() => (selected = i)}>
-					<li
-						class="{selectedRound === round
-							? 'bg-ctp-lavender-950/40'
-							: ''} rounded-xl p-2 pr-4 pl-4 {round.voided ? 'opacity-50' : ''}"
-					>
-						<div class={round.voided ? 'line-through' : ''}>
-							{round.stage || `round ${i + 1}`}
-						</div>
-						<div class="italic opacity-80">
-							{round.voided ? 'voided' : round.map}
-						</div>
-					</li>
-				</button>
+				{#if roundIsValid(round)}
+					<button onclick={() => (selected = i)}>
+						<li
+							class="{selectedRound === round
+								? 'bg-ctp-lavender-950/40'
+								: ''} rounded-xl p-2 pr-4 pl-4"
+						>
+							<div>
+								{round.stage || `round ${i + 1}`}
+							</div>
+							<div class="italic opacity-80">
+								{round.map}
+							</div>
+						</li>
+					</button>
+				{/if}
 			{/each}
 			<button onclick={() => (selected = -1)}>
 				<li class="{selected == -1 ? 'bg-ctp-lavender-950/40' : ''} rounded-xl p-2 pr-4 pl-4">
-					total
+					Total
 				</li>
 			</button>
 		</ul>
@@ -152,12 +156,11 @@
 				{/if}
 				{@render Header('Player')}
 				{#each rounds as round, i (round.roundIndex)}
-					<li
-						class="text-center text-xl italic opacity-60 {round.voided ? 'line-through' : ''}"
-						style:filter={getFiltersStyle()}
-					>
-						R{i + 1}
-					</li>
+					{#if roundIsValid(round)}
+						<li class="text-center text-xl italic opacity-60" style:filter={getFiltersStyle()}>
+							{round.stage}
+						</li>
+					{/if}
 				{/each}
 				{@render Header(scoreHeader)}
 
@@ -210,9 +213,7 @@
 	{@render PlayerCells(entry.steamId3)}
 	<!-- gap -->
 	<li class={settings.current.monoFont}>
-		{#if out}
-			{entry.status === 'disqualified' ? 'DQ' : 'WD'}
-		{:else if i > 0 && entry.prMs !== null && leaderPrMs !== null}
+		{#if i > 0 && entry.prMs !== null && leaderPrMs !== null}
 			{msToGap(entry.prMs - leaderPrMs)}
 		{:else}
 			--
@@ -220,7 +221,9 @@
 	</li>
 	<!-- pr -->
 	<li class={settings.current.monoFont}>
-		{#if entry.prMs !== null}
+		{#if !entry.prMs}
+			DNF
+		{:else if entry.prMs !== null}
 			{msToFormattedTime(entry.prMs)}
 		{/if}
 	</li>
@@ -232,13 +235,11 @@
 	{@render PlayerCells(standing.steamId3)}
 	<!-- placement per round -->
 	{#each rounds as round, i (round.roundIndex)}
-		<li
-			class="text-center text-xl {settings.current.monoFont} {round.voided
-				? 'line-through opacity-40'
-				: 'opacity-80'}"
-		>
-			{standing.placements[i] ?? '-'}
-		</li>
+		{#if roundIsValid(round)}
+			<li class="text-center text-xl {settings.current.monoFont}">
+				{standing.placements[i] ?? '-'}
+			</li>
+		{/if}
 	{/each}
 	<!-- score -->
 	<li class={settings.current.monoFont}>

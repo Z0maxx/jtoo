@@ -3,9 +3,10 @@
 	import { TFMap, type MapRun } from '$lib/types.svelte';
 	import { fade } from 'svelte/transition';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { csToFormattedTime, getPlayer, getTournament, secondsToCs } from '$lib/util';
+	import { csToFormattedTime, getMap, getPlayer, secondsToCs } from '$lib/util';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { getContext } from 'svelte';
+	import { poolMaps } from '$lib/console-pools.svelte';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 
@@ -27,7 +28,7 @@
 
 		let mapIndex: number | null = null;
 		for (let i = 0; i < pickedMaps.length; i++) {
-			if (pickedMaps[i].mapID == TFMap.fileNameToTfId(map.fileName)) {
+			if (pickedMaps[i].mapID == ksnWs.mapIdFor(map.fileName)) {
 				mapIndex = i;
 				break;
 			}
@@ -51,13 +52,13 @@
 		console.log(`running player prs for ${map.fileName}-------------`);
 		console.log(map.runs.soldier);
 		let tfclass: 'soldier' | 'demoman' =
-			getTournament(overlay.current.tournament).info.class == 'demoman' ? 'demoman' : 'soldier';
+			settings.current.tfClass == 'demoman' ? 'demoman' : 'soldier';
 		let result: { left: MapRun | undefined; right: MapRun | undefined } = {
 			left: undefined,
 			right: undefined
 		};
 
-		for (const run of map.runs[tfclass]) {
+		for (const run of map.runs?.[tfclass] ?? []) {
 			if (run.tempusID == leftPlayer.tempusID) {
 				result.left = run;
 				console.log(`found left pr for ${map.fileName}`);
@@ -75,7 +76,7 @@
 </script>
 
 <section>
-	{#each items.current.maps as map, i (i)}
+	{#each poolMaps().map((name) => getMap(name)) as map, i (i)}
 		{#if map.fileName}
 			{@render Map(map)}
 		{/if}

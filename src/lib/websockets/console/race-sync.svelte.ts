@@ -2,7 +2,7 @@ import { untrack } from 'svelte';
 import { items, overlay, settings } from '$lib/storage.svelte';
 import { Steam } from '$lib/api/steam/api-steam';
 import { Tempus2 } from '$lib/api/tempus2/api-tempus2';
-import type { MapFileName, SteamID3, Tournament } from '$lib/types.svelte';
+import type { MapFileName, SteamID3 } from '$lib/types.svelte';
 import type { ConsoleLive } from './console-live.svelte';
 import type { RaceSnapshot } from './live-types';
 
@@ -11,8 +11,8 @@ const STEAM_BATCH = 100;
 
 /**
  * Keeps JTOO's own data in step with the console's race: players on the board and the
- * map being played are added to the selected JTOO tournament, and fetched from Steam and
- * Tempus when JTOO doesn't know them yet. The stage and map labels follow the console too,
+ * map being played are fetched from Steam and Tempus when JTOO doesn't know them yet, for
+ * anyone or anything outside the imported console pools. The stage and map labels follow the console too,
  * unless that's turned off in the controls.
  *
  * Call it once during component initialisation, on the one page that should do this work
@@ -40,33 +40,8 @@ export function syncWithRace(live: ConsoleLive) {
 	});
 }
 
-/** The selected JTOO tournament's index (getTournament falls back to the first one). */
-function tournamentIndex(): number {
-	const id = overlay.current.tournament;
-	if (!id) return 0;
-	return items.current.tournaments.findIndex((t) => t.id == id);
-}
-
-function updateTournament(update: (t: Tournament) => Tournament) {
-	const index = tournamentIndex();
-	if (index < 0 || !items.current.tournaments[index]) return;
-	items.current.tournaments = items.current.tournaments.map((t, i) =>
-		i === index ? update(t) : t
-	);
-}
-
 function syncPlayers(race: RaceSnapshot, requested: Set<SteamID3>) {
 	const onBoard = race.leaderboard.map((e) => e.steamId3);
-
-	// add everyone on the board to the selected tournament
-	const tournament = items.current.tournaments[tournamentIndex()];
-	if (tournament) {
-		const inTournament = new Set(tournament.players);
-		const missing = onBoard.filter((id) => !inTournament.has(id));
-		if (missing.length > 0) {
-			updateTournament((t) => ({ ...t, players: [...t.players, ...missing] }));
-		}
-	}
 
 	// fetch anyone JTOO has no player for
 	const known = new Set(items.current.players.map((p) => p.steamID3));
@@ -97,12 +72,6 @@ async function fetchPlayers(steamId3s: SteamID3[]) {
 function syncMap(race: RaceSnapshot, requested: Set<MapFileName>) {
 	const map = race.context.map;
 	if (!map) return;
-
-	// add it to the selected tournament
-	const tournament = items.current.tournaments[tournamentIndex()];
-	if (tournament && !tournament.maps.includes(map)) {
-		updateTournament((t) => ({ ...t, maps: [...t.maps, map] }));
-	}
 
 	// fetch it from Tempus if JTOO doesn't have it
 	if (requested.has(map) || items.current.maps.some((m) => m.fileName == map)) return;

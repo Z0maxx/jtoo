@@ -2,11 +2,11 @@ import { PersistentState } from '@friendofsvelte/state';
 import {
 	type Items,
 	type Overlay,
+	type Pool,
 	type Settings,
 	Player,
 	type SteamID3,
 	TFMap,
-	Tournament,
 	type TempusID
 } from './types.svelte';
 import { addPlayersFromSteamID3, getMap, getPlayer } from './util';
@@ -44,6 +44,7 @@ export const defaultSettings: Settings = {
 	ksnWebSocketToken: '',
 	consoleBaseUrl: 'https://console.jumpfortress.tf',
 	followConsoleStageMap: true,
+	tfClass: 'soldier',
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
@@ -57,14 +58,15 @@ export const defaultOverlay: Overlay = {
 	players: [undefined, undefined, undefined, undefined],
 	map: '',
 	stage: '',
-	tournament: ''
+	tournament: '',
+	bracket: ''
 };
 
 export const defaultItems: Items = {
 	players: [new Player()],
 	maps: [new TFMap()],
 	stages: defaultStages,
-	tournaments: [new Tournament()]
+	brackets: []
 };
 
 // overlay settings
@@ -75,6 +77,9 @@ export const overlay = new PersistentState('overlay', defaultOverlay);
 
 // overlay items
 export const items = new PersistentState('items', defaultItems);
+
+// the event's players and maps, imported from console pools
+export const pool = new PersistentState<Pool>('pool', { players: [], maps: [] });
 
 // ws messages
 export const wsMessages: PersistentState<any[]> = new PersistentState('wsMessages', []);

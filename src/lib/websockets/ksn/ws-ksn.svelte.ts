@@ -1,6 +1,7 @@
 import { KSN } from './ws-ksn-types.svelte';
 import { ProxyWebSocket } from '../../ProxyWebSocket';
 import { consoleBaseUrl } from '$lib/util';
+import { TFMap } from '$lib/types.svelte';
 import { settings, wsMessages } from '$lib/storage.svelte';
 
 type PickedMaps = Array<{ mapID: string; steamID3: string }>;
@@ -21,7 +22,8 @@ export class KSNWebSocket {
 		this._ws = undefined;
 		this._wsState = $state(WebSocket.CLOSED);
 		this._channel = new BroadcastChannel(broadcastChannel);
-		this._messages = KSN.defaultMessages();
+		// $state so the scenes update as picks and bans come in
+		this._messages = $state(KSN.defaultMessages());
 		this._pickedMaps = $state([]) as PickedMaps;
 
 		this._channel.postMessage({
@@ -109,20 +111,9 @@ export class KSNWebSocket {
 	}
 
 	// map picks
+	// rebuilt from the session's history on every update, so no step is ever skipped
 	processMapPick() {
 		if (!this._messages.mapPicks.session) {
-			return;
-		}
-
-		// if this is the first session, set up old session
-		if (!this._messages.mapPicksPrevious) {
-			this._messages.mapPicksPrevious = { ...this._messages.mapPicks };
-		} else if (
-			// if the new session matches the old session, ignore
-			this._messages.mapPicksPrevious.session &&
-			this._messages.mapPicks.session.currentTurn?.turnId ==
-				this._messages.mapPicksPrevious.session.currentTurn?.turnId
-		) {
 			return;
 		}
 
@@ -136,6 +127,15 @@ export class KSNWebSocket {
 
 		this._messages.mapPicksPrevious = { ...this._messages.mapPicks };
 	}
+	/**
+	 * The pick & ban id of a map file name, e.g. jump-ambition for jump_ambition_final. The
+	 * session lists its maps with both; the file name with its first _ as - is a fallback.
+	 */
+	mapIdFor(fileName: string): string {
+		const option = this._messages.mapPicks.session?.maps.find((m) => m.name == fileName);
+		return option?.id ?? TFMap.fileNameToTfId(fileName);
+	}
+
 	// getters
 	get pickedMaps(): PickedMaps {
 		return this._pickedMaps;

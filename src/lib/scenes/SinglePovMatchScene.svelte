@@ -82,15 +82,12 @@
 	{#if ksnWs.pickedMaps.length > 1}
 		{#each ksnWs.pickedMaps as pickedMap, i (i)}
 			{@const player = getPlayer(Steam.convertSteamId(pickedMap.steamID3, 'SteamID3') as number)}
-			{@const mapId = TFMap.fileNameToTfId(overlay.current.map)}
+			{@const mapId = ksnWs.mapIdFor(overlay.current.map)}
 			{@const isCurrent = pickedMap.mapID == mapId}
-			{@const map = () => {
-				for (const map of items.current.maps) {
-					if (mapId == pickedMap.mapID) {
-						return map;
-					}
-				}
-			}}
+			{@const map = () =>
+				items.current.maps.find(
+					(m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID
+				)}
 			{#if map()}
 				{@const MAP = map()!}
 				<div

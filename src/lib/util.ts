@@ -4,7 +4,6 @@ import { DEFAULT_CONSOLE_URL } from './websockets/console/console-live.svelte';
 import {
 	Player,
 	TFMap,
-	Tournament,
 	type Centiseconds,
 	type MapFileName,
 	type Seconds,
@@ -46,11 +45,6 @@ export async function addPlayersFromSteamID3(steamId3s: string[]) {
 		items.current.players.push(Steam.playerSummaryToPlayer(ps));
 	}
 	items.current.players = [...items.current.players];
-}
-
-export function getTournament(id: string | undefined): Tournament {
-	if (!id) return items.current.tournaments[0];
-	return { ...items.current.tournaments.filter((t) => t.id == id)[0] };
 }
 
 export function getMap(mapFileName: MapFileName): TFMap {

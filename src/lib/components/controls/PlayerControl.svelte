@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { overlay, items } from '$lib/storage.svelte';
 	import { Player, type SteamID3 } from '$lib/types.svelte';
-	import { getTournament, getPlayer, getPlayerIndex } from '$lib/util';
+	import { getPlayer, getPlayerIndex } from '$lib/util';
+	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext } from 'svelte';
 	import RadioInputs from './RadioInputs.svelte';
 	import type { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
@@ -22,7 +23,7 @@
 	}
 
 	let { player, playerNum }: Props = $props();
-	let tournament = $derived(getTournament(overlay.current.tournament));
+	let players = $derived(poolPlayers());
 	const playerObj: Player = $derived(getPlayer(player));
 	const maxScore: number = $derived((overlay.current.bestOf + 1) / 2);
 
@@ -41,7 +42,7 @@
 </script>
 
 <div class="flex w-full max-w-full flex-col items-start">
-	{#if tournament}
+	{#if players}
 		<span class="self-center text-center">player {getLabel(playerNum)}</span>
 
 		<!-- score -->
@@ -70,8 +71,8 @@
 				<span class="text-ctp-text/50">no players..</span>
 			{:else}
 				<RadioInputs
-					optlabels={tournament.players.map((sId3) => getPlayer(sId3).name)}
-					opts={tournament.players}
+					optlabels={players.map((sId3) => getPlayer(sId3).name || `[U:1:${sId3}]`)}
+					opts={players}
 					bind:value={overlay.current.players[playerNum]}
 					onchange={() => {
 						jfRelayWs.broadcastSelectedPlayers(overlay.current.players);

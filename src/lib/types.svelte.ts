@@ -74,72 +74,21 @@ export const nullPlayer: Player = Object.freeze(new Player());
 export const BracketOptions = ['whole', 'upper', 'lower'] as const;
 export type BracketOption = (typeof BracketOptions)[number];
 
-export interface PlayerPoints {
-	playerId: number; // tempus id
-	stage1: { pr: number; points: number };
-	stage2: { laps: number; pr: number; points: number };
-	stage3: { pr: number; points: number };
-}
+// a double elimination bracket, made on its own from JTOO's players
+export const BracketSizes = [4, 8] as const;
+export type BracketSize = (typeof BracketSizes)[number];
 
-export const TournamentFormats = [
-	'DoubleElim4Player',
-	'DoubleElim8Player',
-	'AllOutRoyale',
-	'MassRace'
-] as const;
-export type TournamentFormat = (typeof TournamentFormats)[number];
-
-interface Prize {
-	placement: string;
-	prize: string;
-}
-
-export class Tournament {
+export type SavedBracket = {
 	id: string;
-	format: TournamentFormat | '';
-	info: {
-		name: string;
-		imageUrl?: string;
-		prizePool?: Prize[];
-		class: TFClass;
-	};
-	players: SteamID3[];
-	// playerScores: {};
-	maps: MapFileName[];
-	// the console tournament the leaderboard scene shows; unset follows the race's tournament
-	consoleTournamentId?: string;
-	bracket?: Bracket4 | Bracket8; // used for elim formats
-	playerPoints?: PlayerPoints[]; // used for all out royale format
+	name: string;
+	size: BracketSize;
+	players: SteamID3[]; // seeding order
+	bracket?: Bracket4 | Bracket8;
+};
 
-	constructor() {
-		this.id = uuidv4();
-		this.format = '';
-		this.info = { name: '', imageUrl: '', prizePool: [], class: 'soldier' };
-		this.players = [];
-		this.maps = [];
-	}
+export function newBracket(): SavedBracket {
+	return { id: uuidv4(), name: '', size: 8, players: [] };
 }
-
-// add tournament PopOver
-// choose format => construct(format, class)
-
-// add info
-// - name
-// - prizes
-// - pick players
-// - search exsting players, add to list
-// - add player PopOver, same as main controls screen
-// - sort players by rank for selected class
-// - pick maps
-// - search exsting maps, add to list
-// - add map PopOver, same as main controls screen
-// - if elim format
-// initialize bracket
-// automatically seed based on sorted players
-// allow dragging players to other slots
-// select dragged item, match & player (A or B)
-// select dropped on item, match & player (A or B)
-// swap() players
 
 // MARK: Settings
 export const Fonts = [
@@ -176,11 +125,8 @@ export const OverlayScenes = [
 ] as const;
 // these weren't updated with the last big changes due to time constraints and relevance to the event format
 export const BrokenOverlayScenes = [
-	'MapScene',
 	'TournamentInfoScene',
-	'BracketScene',
-	'PlayerCardScene',
-	'PlayerListScene',
+	// 'PlayerCardScene', // currently unable to fetch tempus data via only steam id, so this scene looks broken
 	'ThanksScene'
 ];
 export type OverlayScene = (typeof OverlayScenes)[number];
@@ -203,6 +149,7 @@ export type Settings = {
 	ksnWebSocketToken: string;
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
+	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;
 	obsWsIp: string;
@@ -215,12 +162,21 @@ export type Overlay = {
 	players: Array<SteamID3 | undefined>;
 	map: MapFileName;
 	stage: string;
-	tournament: string;
+	tournament: string; // console tournament id the leaderboard shows; '' follows the race
+	bracket: string; // id of the bracket the bracket scene shows
+};
+
+// the event's players and maps, imported from a console player pool and map pool
+export type Pool = {
+	players: SteamID3[];
+	maps: MapFileName[];
+	playerPoolName?: string;
+	mapPoolName?: string;
 };
 
 export type Items = {
 	players: Player[];
 	maps: TFMap[];
 	stages: string[];
-	tournaments: Tournament[];
+	brackets: SavedBracket[];
 };
