@@ -8,6 +8,7 @@
 	import Milestones from './Milestones.svelte';
 	import Overview from './Overview.svelte';
 	import Donations from './Donations.svelte';
+	import Rtd from './Rtd.svelte';
 
 	const displayedDonationCount = 7;
 	let iteratingDonations = false;
@@ -67,7 +68,11 @@
 		<div class="w-2/4">
 			<Milestones />
 		</div>
-		<div class="w-1/4"></div>
+		<div class="w-1/4">
+			{#if (settings.current.enableFundraisingRtd)}
+        <Rtd />
+      {/if}
+		</div>
 		<div class="w-1/4">
 			<Donations donations={displayedDonations} />
 		</div>
@@ -76,9 +81,8 @@
 		<DonationNotification open={donationNotificationOpen} donation={currentDonation} />
 	</div>
 </div>
-
 <style>
-	:global(:root) {
-		--restore-animation-after: 2s;
-	}
+  :global(:root) {
+    --restore-animation-after: 2s
+  }
 </style>

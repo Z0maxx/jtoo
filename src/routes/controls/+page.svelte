@@ -308,6 +308,7 @@
 		<Checkbox desc="use avatars" setting="enableAvatars" />
 		<Checkbox desc="use tags" setting="enableTags" />
 		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
+		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
 		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
 		<label>
 			<input
