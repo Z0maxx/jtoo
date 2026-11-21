@@ -12,7 +12,16 @@ export const rtdEffects = [
 	'infinitejump',
 	'cursed',
 	'increasedspeed',
-	'drunkwalk'
+	'drunkwalk',
+  'frozen',
+  'ignition',
+  'blind',
+  'funnyfeeling',
+  'fasthands',
+  'smite',
+  'lag',
+  'inclineproblem',
+  'stronggravity',
 ];
 
 export class JfRtdWebSocket {
