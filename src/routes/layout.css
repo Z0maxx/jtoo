@@ -23,6 +23,7 @@
 	--color-obs-background: #1d1f26;
 	--color-obs-content: #272a33;
 	--color-obs-padding: #3c404d;
+	--color-bordeaux: #5c0012;
 }
 
 @layer base {
