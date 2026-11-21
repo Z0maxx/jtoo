@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { settings } from '$lib/storage.svelte';
+	import { overlay, settings } from '$lib/storage.svelte';
 
 	import DualPovMatchScene from '$lib/scenes/DualPovMatchScene.svelte';
 	import SinglePovMatchScene from '$lib/scenes/SinglePovMatchScene.svelte';
@@ -13,7 +13,8 @@
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
-	import { consoleBaseUrl } from '$lib/util';
+	import { syncWithRace } from '$lib/websockets/console/race-sync.svelte';
+	import { consoleBaseUrl, getTournament } from '$lib/util';
 	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
 
@@ -22,6 +23,15 @@
 	// race and tournament state comes from the console's live feeds
 	const live = new ConsoleLive({ tournament: true });
 	setContext('consoleLive', live);
+
+	// the leaderboard scene shows the selected tournament's linked console tournament, or the
+	// race's own tournament when none is linked
+	// add the race's players and map to JTOO when it doesn't know them
+	syncWithRace(live);
+
+	$effect(() => {
+		live.pinTournament(getTournament(overlay.current.tournament)?.consoleTournamentId);
+	});
 
 	onMount(() => {
 		ksnWs = new KSNWebSocket('ksnWs');

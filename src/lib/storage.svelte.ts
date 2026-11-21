@@ -56,8 +56,7 @@ export const defaultOverlay: Overlay = {
 	players: [undefined, undefined, undefined, undefined],
 	map: '',
 	stage: '',
-	tournament: '',
-	leaderboard: undefined
+	tournament: ''
 };
 
 export const defaultItems: Items = {

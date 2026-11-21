@@ -35,15 +35,33 @@
 	import ManageTournaments from '$lib/components/controls/ManageTournaments.svelte';
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { getTournament, getMap } from '$lib/util';
+	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
+	import { getTournament, getMap, consoleBaseUrl } from '$lib/util';
 	import { onMount, setContext } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+	// the controls open their own race feed, only to show whether the console is reachable
+	const live = new ConsoleLive();
+
+	function connectConsole() {
+		const token = settings.current.ksnWebSocketToken.trim();
+		ksnWs!.connect(token);
+		live.connect(token, consoleBaseUrl());
+	}
+
+	const feedStates: Record<FeedState, { state: string; color: string }> = {
+		connecting: { state: 'connecting...', color: 'text-yellow-200' },
+		open: { state: 'connected', color: 'text-green-300' },
+		closed: { state: 'not connected', color: 'text-red-300' }
+	};
 
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
+		if (settings.current.ksnWebSocketToken) {
+			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
+		}
 
 		jfRelayWs = new JFRelayWebSocket();
 
@@ -61,6 +79,8 @@
 			}
 		});
 		importBootcampTournaments();
+
+		return () => live.close();
 	});
 </script>
 
@@ -83,9 +103,6 @@
 {#if ksnWs}
 	<!-- presets -->
 	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
-		<button class="button-remove" onclick={() => ksnWs!.clearTimers()}
-			>clear timers and checkpoints</button
-		>
 		<button class="button-remove" onclick={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</button
 		>
@@ -119,15 +136,6 @@
 				overlay.current.tournament = value.id;
 			}}
 		/>
-		<!-- {#if getTournament(overlay.current.tournament).format == 'MassRace' || getTournament(overlay.current.tournament).format == 'AllOutRoyale'}
-			<RadioInputs
-				opts={getTournament(overlay.current.tournament).leaderboards}
-				labelkey={['id']}
-				onchange={(value: Leaderboard) => {
-					overlay.current.leaderboard = value.id;
-				}}
-			/>
-		{/if} -->
 	</Accordion>
 
 	<Accordion title="connections">
@@ -200,9 +208,14 @@
 				<div class="flex gap-2">
 					<button
 						class="button button-unselected hover:button-selected"
-						onclick={() => ksnWs!.connect(settings.current.ksnWebSocketToken.trim())}
-						>connect</button
+						onclick={connectConsole}>connect</button
 					>
+					<div class="flex gap-2">
+						<p>live feed:</p>
+						<span class={feedStates[live.raceState].color}>
+							{feedStates[live.raceState].state}
+						</span>
+					</div>
 
 					<!-- the websocket state keeps reverting to 'closed' even when the connection is still open -->
 					<!-- <div class="flex gap-2">
@@ -220,6 +233,20 @@
 						</span>
 					{/key}
 				</div> -->
+				</div>
+				<div class="flex gap-2">
+					<label for="input-console-url">console url: </label>
+					<input
+						type="text"
+						class="input w-60"
+						id="input-console-url"
+						placeholder="https://console.jumpfortress.tf"
+						value={settings.current.consoleBaseUrl}
+						onchange={(e) => {
+							let target = e.target as HTMLInputElement;
+							settings.current.consoleBaseUrl = target.value.trim();
+						}}
+					/>
 				</div>
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>

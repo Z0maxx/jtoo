@@ -201,23 +201,6 @@
 </script>
 
 <PopOver title="{mode} tournament" bind:state={popoverState} clearfn={clear}>
-	{#if tournament.leaderboards.length > 0}
-		<div class="text-2xl">tournament rounds</div>
-		{#each tournament.leaderboards as leaderboard, i (i)}
-			<div class="flex gap-2">
-				<div>{leaderboard.map}</div>
-				<div>{leaderboard.id}</div>
-				<button
-					class="button-remove"
-					onclick={() => {
-						tournament.leaderboards = tournament.leaderboards.filter(
-							(t) => t.id !== leaderboard.id
-						);
-					}}>delete</button
-				>
-			</div>
-		{/each}
-	{/if}
 	<section class="grid grid-cols-12 gap-2">
 		<!-- MARK: Format -->
 		<div class="col-span-full flex flex-col">
@@ -296,6 +279,19 @@
 				onkeyup={(e) => {
 					const value = (e.target as HTMLInputElement).value;
 					tournament.info.imageUrl = value;
+				}}
+			/>
+
+			<label for="consoleTournamentId" class="col-span-6">console tournament id</label>
+			<input
+				class="input col-span-4"
+				type="text"
+				id="consoleTournamentId"
+				placeholder="follow the active tournament"
+				value={tournament.consoleTournamentId ?? ''}
+				onkeyup={(e) => {
+					const value = (e.target as HTMLInputElement).value.trim();
+					tournament.consoleTournamentId = value || undefined;
 				}}
 			/>
 

@@ -1,33 +1,65 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { items, overlay, settings } from '$lib/storage.svelte';
-	import { LeaderboardEntry, Player, type SteamID3 } from '$lib/types.svelte';
+	import { settings } from '$lib/storage.svelte';
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/state';
+	import { getContext } from 'svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
-	import { csToFormattedTime, csToSeconds, getTournament, getPlayer } from '$lib/util';
-	import { calculatePlacements, type LeaderboardAvgEntry } from '$lib/tournament-scoring.svelte';
+	import { getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import type {
+		PlayerStatus,
+		RoundResultEntry,
+		TournamentRound,
+		TournamentStanding
+	} from '$lib/websockets/console/live-types';
 
-	let tournament = $derived(getTournament(overlay.current.tournament));
+	let live: ConsoleLive = getContext('consoleLive');
 
-	let selectedLeaderboard = $state(0);
-	let leaderboard = $derived(getLeaderboard(selectedLeaderboard));
-	let _leader = $derived(leaderboard.leaderboard[0]);
+	let tournament = $derived(live.tournament);
+	let rounds = $derived(tournament?.rounds ?? []);
+
+	// -1 is the cumulative standings, otherwise an index into rounds
+	let selected = $state(0);
+	let selectedRound = $derived(
+		selected < 0 ? undefined : (rounds[selected] ?? rounds[rounds.length - 1])
+	);
+	let results = $derived(selectedRound ? roundResults(selectedRound) : []);
+	let leaderPrMs = $derived(results.find((r) => r.prMs !== null)?.prMs ?? null);
 
 	const maxPlayers = 8;
-	const maxNameLength = 12;
 
 	const drawBG: boolean = !page.url.searchParams.has('nobg');
 
-	function getLeaderboard(index: number) {
-		if (index == -1) return calculatePlacements(tournament.leaderboards);
+	// A round only has results once it's finalized. Until then, show the live race if it's
+	// this round's race.
+	function roundResults(round: TournamentRound): RoundResultEntry[] {
+		if (round.finalized) return round.results;
 
-		if (index >= 0 && index < tournament.leaderboards.length) {
-			return tournament.leaderboards[selectedLeaderboard];
-		}
+		const race = live.currentRace;
+		if (!race || race.sessionId !== round.sessionId) return [];
 
-		return tournament.leaderboards[tournament.leaderboards.length - 1];
+		return race.leaderboard.map((e) => ({
+			placement: e.position,
+			steamId3: e.steamId3,
+			status: e.status,
+			prMs: e.prMs,
+			bestProgress: e.bestProgress
+		}));
 	}
+
+	function isOut(status: PlayerStatus) {
+		return status === 'disqualified' || status === 'withdrawn';
+	}
+
+	function formatScore(score: number): string {
+		if (tournament?.scoring === 'average-placement') return score.toFixed(2);
+		return Number.isInteger(score) ? `${score}` : score.toFixed(2);
+	}
+
+	let scoreHeader = $derived(
+		tournament?.scoring === 'rjr-points' ? 'Points' : 'Average Placement'
+	);
 </script>
 
 <!-- isolated border filter -->
@@ -52,81 +84,90 @@
 			<div class="absolute top-0 left-0 size-full bg-black/35"></div>
 		{/if}
 	{/if}
-	<ul class="flex justify-center gap-10 text-xl">
-		{#each { length: tournament.leaderboards.length }, i (i)}
-			<button onclick={() => (selectedLeaderboard = i)}>
-				<li
-					class="{selectedLeaderboard == i
-						? 'bg-ctp-lavender-950/40'
-						: ''} rounded-xl p-2 pr-4 pl-4"
-				>
-					<div>
-						round {i + 1}
-					</div>
-					<div class="italic opacity-80">
-						{tournament.leaderboards[i].map}
-					</div>
+	{#if !tournament}
+		<div class="text-center text-3xl italic opacity-60">
+			{live.tournamentId ? 'loading tournament...' : 'no tournament'}
+		</div>
+	{:else}
+		<ul class="flex justify-center gap-10 text-xl">
+			{#each rounds as round, i (round.roundIndex)}
+				<button onclick={() => (selected = i)}>
+					<li
+						class="{selectedRound === round
+							? 'bg-ctp-lavender-950/40'
+							: ''} rounded-xl p-2 pr-4 pl-4 {round.voided ? 'opacity-50' : ''}"
+					>
+						<div class={round.voided ? 'line-through' : ''}>
+							{round.stage || `round ${i + 1}`}
+						</div>
+						<div class="italic opacity-80">
+							{round.voided ? 'voided' : round.map}
+						</div>
+					</li>
+				</button>
+			{/each}
+			<button onclick={() => (selected = -1)}>
+				<li class="{selected == -1 ? 'bg-ctp-lavender-950/40' : ''} rounded-xl p-2 pr-4 pl-4">
+					total
 				</li>
 			</button>
-		{/each}
-		<button onclick={() => (selectedLeaderboard = -1)}>
-			<li
-				class="{selectedLeaderboard == -1 ? 'bg-ctp-lavender-950/40' : ''} rounded-xl p-2 pr-4 pl-4"
+		</ul>
+		{#if selectedRound}
+			<ul
+				class="grid {settings.current.enableFlags
+					? 'grid-cols-[repeat(6,max-content)]'
+					: 'grid-cols-[repeat(5,max-content)]'} items-center justify-center gap-x-6 gap-y-2 text-3xl"
 			>
-				total
-			</li>
-		</button>
-	</ul>
-	{#if selectedLeaderboard >= 0}
-		<ul
-			class="grid grid-cols-[repeat(6,max-content)] items-center justify-center gap-x-6 gap-y-2 text-3xl"
-		>
-			<!--position-->
-			<li></li>
-			<!--avatar-->
-			<li></li>
-			{#if settings.current.enableFlags}
-				<!--flag-->
+				<!--position-->
 				<li></li>
-			{/if}
-			{@render Header('Player')}
-			{@render Header(`Gap`)}
-			{@render Header('PR')}
-
-			<hr class="hr" />
-			{#each leaderboard.leaderboard as entry, i (i)}
-				{#if entry && i < maxPlayers}
-					{@render Row(entry as LeaderboardEntry, i)}
-					<hr class="hr" />
-				{/if}
-			{/each}
-		</ul>
-	{:else if selectedLeaderboard == -1}
-		<ul
-			class="grid {settings.current.enableFlags
-				? 'grid-cols-[repeat(6,max-content)]'
-				: 'grid-cols-[repeat(5,max-content)]'}
-                                items-center justify-center gap-x-6 gap-y-2 text-3xl"
-		>
-			<!--position-->
-			<li></li>
-			<!--avatar-->
-			<li></li>
-			{#if settings.current.enableFlags}
-				<!--flag-->
+				<!--avatar-->
 				<li></li>
-			{/if}
-			{@render Header('Player')}
-			{@render Header(`Average Placement`)}
-
-			<hr class="hr" />
-			{#each leaderboard.leaderboard as entry, i (i)}
-				{#if entry && i < maxPlayers}
-					{@render TotalRow(entry as LeaderboardAvgEntry, i)}
-					<hr class="hr" />
+				{#if settings.current.enableFlags}
+					<!--flag-->
+					<li></li>
 				{/if}
-			{/each}
-		</ul>
+				{@render Header('Player')}
+				{@render Header(`Gap`)}
+				{@render Header('PR')}
+
+				<hr class="hr" />
+				{#each results.slice(0, maxPlayers) as entry, i (entry.steamId3)}
+					{@render Row(entry, i)}
+					<hr class="hr" />
+				{/each}
+			</ul>
+		{:else if selected == -1}
+			<ul
+				class="grid items-center justify-center gap-x-6 gap-y-2 text-3xl"
+				style:grid-template-columns="repeat({(settings.current.enableFlags ? 5 : 4) +
+					rounds.length}, max-content)"
+			>
+				<!--position-->
+				<li></li>
+				<!--avatar-->
+				<li></li>
+				{#if settings.current.enableFlags}
+					<!--flag-->
+					<li></li>
+				{/if}
+				{@render Header('Player')}
+				{#each rounds as round, i (round.roundIndex)}
+					<li
+						class="text-center text-xl italic opacity-60 {round.voided ? 'line-through' : ''}"
+						style:filter={getFiltersStyle()}
+					>
+						R{i + 1}
+					</li>
+				{/each}
+				{@render Header(scoreHeader)}
+
+				<hr class="hr" />
+				{#each tournament.standings.slice(0, maxPlayers) as standing (standing.steamId3)}
+					{@render TotalRow(standing)}
+					<hr class="hr" />
+				{/each}
+			</ul>
+		{/if}
 	{/if}
 </section>
 
@@ -134,73 +175,73 @@
 	<li class="pr-20 italic opacity-60" style:filter={getFiltersStyle()}>{title}</li>
 {/snippet}
 
-{#snippet Row(entry: LeaderboardEntry, i: number)}
-	{@const player = getPlayer(entry.steamId3)}
-	{@const leader = _leader as LeaderboardEntry}
-	<!-- position -->
-	<li class={settings.current.monoFont}>{i + 1}</li>
+{#snippet PlayerCells(steamId3: number)}
+	{@const player = getPlayer(steamId3)}
 	<!-- avatar -->
 	<li>
-		<img
-			in:fade
-			src={player.avatarURL}
-			alt=""
-			class="size-16 rounded-xl object-cover object-center"
-			draggable="false"
-		/>
+		{#if player.avatarURL}
+			<img
+				in:fade
+				src={player.avatarURL}
+				alt=""
+				class="size-16 rounded-xl object-cover object-center"
+				draggable="false"
+			/>
+		{/if}
 	</li>
 	{#if settings.current.enableFlags}
 		<!-- flag -->
 		<li>
-			<Flag code={player.flag} class="rounded-xl text-[6rem]" />
+			{#if player.flag}
+				<Flag code={player.flag} class="rounded-xl text-[6rem]" />
+			{/if}
 		</li>
 	{/if}
 	<!-- name -->
 	<li>
-		{player.name}
+		{playerLabel(steamId3)}
 	</li>
+{/snippet}
+
+{#snippet Row(entry: RoundResultEntry, i: number)}
+	{@const out = isOut(entry.status)}
+	<!-- position -->
+	<li class={settings.current.monoFont}>{out ? '-' : entry.placement}</li>
+	{@render PlayerCells(entry.steamId3)}
 	<!-- gap -->
 	<li class={settings.current.monoFont}>
-		{#if i > 0 && entry.prCs && leader.prCs}
-			{entry.prCs == leader.prCs ? '' : '+'}{csToSeconds(entry.prCs - leader.prCs).toFixed(2)}
+		{#if out}
+			{entry.status === 'disqualified' ? 'DQ' : 'WD'}
+		{:else if i > 0 && entry.prMs !== null && leaderPrMs !== null}
+			{msToGap(entry.prMs - leaderPrMs)}
 		{:else}
 			--
 		{/if}
 	</li>
 	<!-- pr -->
 	<li class={settings.current.monoFont}>
-		{#if entry.prCs}
-			{csToFormattedTime(entry.prCs)}
+		{#if entry.prMs !== null}
+			{msToFormattedTime(entry.prMs)}
 		{/if}
 	</li>
 {/snippet}
 
-{#snippet TotalRow(entry: LeaderboardAvgEntry, i: number)}
-	{@const player = getPlayer(entry.steamId3)}
+{#snippet TotalRow(standing: TournamentStanding)}
 	<!-- position -->
-	<li class={settings.current.monoFont}>{i + 1}</li>
-	<!-- avatar -->
-	<li>
-		<img
-			in:fade
-			src={player.avatarURL}
-			alt=""
-			class="size-16 rounded-xl object-cover object-center"
-			draggable="false"
-		/>
-	</li>
-	{#if settings.current.enableFlags}
-		<!-- flag -->
-		<li>
-			<Flag code={player.flag} class="rounded-xl text-[6rem]" />
+	<li class={settings.current.monoFont}>{standing.position}</li>
+	{@render PlayerCells(standing.steamId3)}
+	<!-- placement per round -->
+	{#each rounds as round, i (round.roundIndex)}
+		<li
+			class="text-center text-xl {settings.current.monoFont} {round.voided
+				? 'line-through opacity-40'
+				: 'opacity-80'}"
+		>
+			{standing.placements[i] ?? '-'}
 		</li>
-	{/if}
-	<!-- name -->
-	<li>
-		{player.name}
-	</li>
-	<!-- gap -->
+	{/each}
+	<!-- score -->
 	<li class={settings.current.monoFont}>
-		{entry.avgPlacement.toFixed(2)}
+		{formatScore(standing.score)}
 	</li>
 {/snippet}
