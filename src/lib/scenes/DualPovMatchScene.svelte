@@ -12,6 +12,7 @@
 	import { Steam } from '$lib/api/steam/api-steam';
 	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
+	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 </script>
@@ -54,7 +55,7 @@
 	style:filter={getFiltersStyle()}
 >
 	<div
-		class="aspect-video w-full
+		class="aspect-video w-1/2
   {settings.current.enablePOVGuide
 			? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 			: ''}"
@@ -68,7 +69,7 @@
 		{/if}
 	</div>
 	<div
-		class="aspect-video w-full
+		class="aspect-video w-1/2
   {settings.current.enablePOVGuide
 			? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 			: ''}"
@@ -88,6 +89,12 @@
 			>
 		{/key}
 	</div>
+
+	{#if settings.current.enableFundraisingSection}
+		<div class="absolute flex w-full items-start justify-center pt-2">
+			<DonationMessages />
+		</div>
+	{/if}
 
 	<!-- {#if settings.current.ksnWebSocketToken !== '' && overlay.current.players[0] && overlay.current.players[1]}
 		<WebSocketCheckpoints numPlayers={2} />
