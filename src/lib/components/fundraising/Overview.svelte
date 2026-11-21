@@ -4,6 +4,7 @@
 	import { onDestroy } from 'svelte';
 	import rocketSparks from '$lib/assets/rocket-sparks.gif';
 	import rocketProjectile from '$lib/assets/rocket-projectile.png';
+  import airstrikeProjectile from '$lib/assets/airstrike-projectile-2.png';
 	import smoke from '$lib/assets/smoke.png';
 	import explosion from '$lib/assets/explosion.gif';
 	import { sleep } from '$lib/util';
@@ -35,13 +36,15 @@
 		Dwb.unsubscribeFromDonationsOverview(overviewSubId);
 	});
 
-	let goalPercentage = $derived(() => {
+	const goalPercentage = $derived(() => {
 		return (fundraisingState.current.progressBar.raised / currentGoal()) * 100;
 	});
 
-	let currentGoal = $derived(() => {
+	const currentGoal = $derived(() => {
 		return fundraisingState.current.stage === 0 ? overview.goal : 1000;
 	});
+
+  const isStageEven = $derived(() => fundraisingState.current.stage % 2 === 0)
 
 	async function advanceProgressBar() {
 		if (advancingProgressBar) return;
@@ -93,20 +96,20 @@
 	<div class="relative h-6 w-full">
 		<div
 			class="h-full w-full overflow-hidden rounded-md bg-gray-400
-        {fundraisingState.current.stage % 2 === 1 ? 'rotate-y-180' : ''}"
+        {isStageEven() ? '' : 'rotate-y-180'}"
 		>
 			<div
 				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"
 				class="bg-size-cover relative h-full overflow-hidden bg-size-[auto_100%] bg-repeat-x"
 			>
-				<div class="absolute right-0 aspect-[16/9] h-full bg-gray-400">
+				<div class="absolute right-0 h-full bg-gray-400 aspect-[16/9]">
 					<div class="relative h-full w-full">
 						<img
-							src={rocketProjectile}
+							src={isStageEven() ? rocketProjectile : airstrikeProjectile}
 							alt="rocket-projectile"
-							class="absolute top-[50%] right-0 h-1/2 translate-y-[-50%]"
+							class="absolute top-[50%] right-0 translate-y-[-50%] { isStageEven() ? 'h-1/2' : 'h-full' }"
 						/>
-						<img src={rocketSparks} alt="rocket-trail" class="absolute -left-[20%] h-full" />
+						<img src={rocketSparks} alt="rocket-trail" class="absolute h-full -left-[20%]" />
 					</div>
 				</div>
 			</div>
