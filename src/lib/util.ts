@@ -99,5 +99,5 @@ export function sleep(ms: number) {
 }
 
 export function deepCopy<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value))
+	return JSON.parse(JSON.stringify(value));
 }

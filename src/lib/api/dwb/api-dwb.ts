@@ -17,17 +17,17 @@ export namespace Dwb {
 	let donations: Donation[] = fundraisingState.current.donations;
 	let milestones: DonationMilestone[] = [];
 
-  function overviewCopy() {
-    return deepCopy(overview)
-  }
+	function overviewCopy() {
+		return deepCopy(overview);
+	}
 
-  function donationsCopy() {
-    return deepCopy(donations)
-  }
+	function donationsCopy() {
+		return deepCopy(donations);
+	}
 
-  function milestonesCopy() {
-    return deepCopy(milestones)
-  }
+	function milestonesCopy() {
+		return deepCopy(milestones);
+	}
 
 	const fetchDwb = createRateLimitedApi({
 		baseUrl: '/api/dwb',
