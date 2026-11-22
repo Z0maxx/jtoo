@@ -35,9 +35,17 @@
 			<div class="absolute top-0 left-0 size-full bg-black/35"></div>
 		{/if}
 	{/if}
-	<ul class="grid grid-cols-[repeat(6,auto)] gap-x-6 gap-y-4 text-4xl">
+	<ul
+		class="grid {settings.current.enableFlags
+			? 'grid-cols-[repeat(6,auto)]'
+			: 'grid-cols-[repeat(5,auto)]'} gap-x-6 gap-y-4 text-4xl"
+	>
+		<!-- avatar -->
 		<li></li>
-		<li></li>
+		{#if settings.current.enableFlags}
+			<!-- flag -->
+			<li></li>
+		{/if}
 		{@render Header('name')}
 		{@render Header(`${tfClass} rank`)}
 		{@render Header('world records')}
@@ -67,9 +75,13 @@
 			draggable="false"
 		/>
 	</li>
-	<li class="-mt-2 -mb-2">
-		<Flag code={player.flag} class="rounded-xl text-[6rem]" />
-	</li>
+	{#if settings.current.enableFlags}
+		<li class="-mt-2 -mb-2">
+			{#if player.flag}
+				<Flag code={player.flag} class="rounded-xl text-[6rem]" />
+			{/if}
+		</li>
+	{/if}
 	{@render BodyCell(player.name)}
 	<!-- ranks, WRs and TTs come from Tempus Plaza, and aren't there for every player -->
 	{@render BodyCell(`${player.rank?.[tfClass]?.rank ?? '-'}`)}
