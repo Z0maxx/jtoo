@@ -220,6 +220,7 @@ export type FundraisingState = {
 	donations: Donation[];
 	displayedDonations: Donation[];
 	stage: number;
+  animationStage: number;
 	sumGoal: number;
 	progressBar: {
 		raised: number;

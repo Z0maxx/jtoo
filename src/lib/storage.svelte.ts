@@ -81,6 +81,7 @@ export const defaultFundraisingState: FundraisingState = {
 	donations: [],
 	displayedDonations: [],
 	stage: 0,
+  animationStage: 0,
 	sumGoal: 0,
 	progressBar: {
 		raised: 0,

@@ -11,6 +11,7 @@
 
 	/*fundraisingState.current.lastDisplayedDonationId = '';
 	fundraisingState.current.displayedDonations = [];*/
+  fundraisingState.current.animationStage = 0
 	const displayedDonationCount = 7;
 	let iteratingDonations = false;
 	const iterateDonations = () => settings.current.enableFundraisingDonations;

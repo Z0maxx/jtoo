@@ -4,7 +4,7 @@
 
 <div
 	class="flex origin-top-left flex-col gap-2
-    {fundraisingState.current.stage === 3 ? 'donations-animation' : ''}"
+    {fundraisingState.current.animationStage === 3 ? 'donations-animation' : ''}"
 >
 	{#each fundraisingState.current.displayedDonations as donation}
 		<div class="flex flex-col items-center rounded-md border-2 bg-bordeaux">

@@ -83,7 +83,7 @@
 
 <div
 	class="origin-top-right rounded-md border-2 bg-bordeaux px-1
-    {fundraisingState.current.stage === 4 ? 'milestones-animation' : ''}"
+    {fundraisingState.current.animationStage === 4 ? 'milestones-animation' : ''}"
 >
 	<h2 class="text-xl">Milestones</h2>
 	{#each milestones as milestone}

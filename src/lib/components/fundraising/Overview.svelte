@@ -49,7 +49,7 @@
 
 		advancingProgressBar = true;
 		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
-			//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
+		//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
 			fundraisingState.current.progressBar.sumRaised++;
 			fundraisingState.current.progressBar.raised++;
 			/*fundraisingState.current.progressBar.sumRaised += 4;
@@ -66,6 +66,7 @@
 				}
 
 				fundraisingState.current.stage++;
+        fundraisingState.current.animationStage = fundraisingState.current.stage
 				fundraisingState.current.sumGoal += currentGoal();
 				fundraisingState.current.progressBar.raised = 0;
 			}
@@ -80,17 +81,17 @@
 
 <div
 	class="relative z-10 origin-bottom-left
-    {fundraisingState.current.stage === 1 ? 'progress-bar-animation-1' : ''}
-    {fundraisingState.current.stage === 6 ? 'progress-bar-animation-2' : ''}"
+    {fundraisingState.current.animationStage === 1 ? 'progress-bar-animation-1' : ''}
+    {fundraisingState.current.animationStage === 6 ? 'progress-bar-animation-2' : ''}"
 >
 	<div class="flex justify-between text-3xl">
 		<span
 			class="origin-bottom-right
-        {fundraisingState.current.stage === 2 ? 'raised-animation' : ''}"
+        {fundraisingState.current.animationStage === 2 ? 'raised-animation' : ''}"
 			>${overview.raised} Raised</span
 		>
 		<span>{overview.donationCount} Donations</span>
-		<span class={fundraisingState.current.stage === 5 ? 'goal-animation' : ''}
+		<span class={fundraisingState.current.animationStage === 5 ? 'goal-animation' : ''}
 			>${fundraisingState.current.sumGoal} Goal</span
 		>
 	</div>
