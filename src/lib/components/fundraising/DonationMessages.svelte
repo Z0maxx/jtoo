@@ -40,7 +40,7 @@
 		const idx = donationsWithMessages.findIndex(
 			(d) => d.id === fundraisingState.current.lastDisplayedDonationWithMessageId
 		);
-		let i = idx > -1 ? idx + 1 : 0;
+		let i = idx + 1;
 		while (i < donationsWithMessages.length) {
 			const d = donationsWithMessages[i];
 			const lastEmpty = untrackedDonations.findIndex((d) => d.id === '');

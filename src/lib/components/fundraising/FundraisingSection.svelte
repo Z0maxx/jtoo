@@ -11,7 +11,7 @@
 
 	/*fundraisingState.current.lastDisplayedDonationId = '';
 	fundraisingState.current.displayedDonations = [];*/
-  fundraisingState.current.animationStage = 0
+	fundraisingState.current.animationStage = 0;
 	const displayedDonationCount = 7;
 	let iteratingDonations = false;
 	const iterateDonations = () => settings.current.enableFundraisingDonations;
@@ -33,7 +33,7 @@
 			(d) => d.id === fundraisingState.current.lastDisplayedDonationId
 		);
 
-		let i = idx > -1 ? idx + 1 : 0;
+		let i = idx + 1;
 		while (i < donations.length) {
 			if (!iterateDonations()) {
 				await sleep(2 * 1000);
