@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { overlay, settings } from '$lib/storage.svelte';
 
-	import DualPovMatchScene from '$lib/scenes/DualPovMatchScene.svelte';
-	import SinglePovMatchScene from '$lib/scenes/SinglePovMatchScene.svelte';
+	import MatchScene from '$lib/scenes/MatchScene.svelte';
 	import MapScene from '$lib/scenes/MapScene.svelte';
 	import BracketScene from '$lib/scenes/BracketScene.svelte';
 	import PlayerCardScene from '$lib/scenes/PlayerCardScene.svelte';
@@ -45,9 +44,12 @@
 	});
 	onDestroy(() => live.close());
 
-	let sceneComponents: Record<Exclude<OverlayScene, ''>, Component> = {
-		DualPovMatchScene,
-		SinglePovMatchScene,
+	// both match scenes are one component, so it stays mounted when switching between them
+	type MatchSceneName = 'DualPovMatchScene' | 'SinglePovMatchScene';
+	const isMatchScene = (scene: OverlayScene): scene is MatchSceneName =>
+		scene === 'DualPovMatchScene' || scene === 'SinglePovMatchScene';
+
+	let sceneComponents: Record<Exclude<OverlayScene, '' | MatchSceneName>, Component> = {
 		MapScene,
 		BracketScene,
 		PlayerCardScene,
@@ -61,8 +63,11 @@
 </script>
 
 {#if ksnWs}
+	{#if isMatchScene(page)}
+		<MatchScene single={page === 'SinglePovMatchScene'} />
+	{/if}
 	{#each OverlayScenes as scene, i (i)}
-		{#if scene && page == scene}
+		{#if scene && page == scene && !isMatchScene(scene)}
 			{@const SvelteComponent = sceneComponents[scene]}
 			<SvelteComponent />
 		{/if}

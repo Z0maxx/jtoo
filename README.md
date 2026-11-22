@@ -90,7 +90,7 @@ src/
 │   ├── mini-leaderboard/  # standalone mini leaderboard browser source
 │   └── api/               # server endpoints that proxy steam / tempus plaza (keeps the api key server-side)
 └── lib/
-    ├── scenes/            # full-screen overlay scenes (DualPovMatchScene, LeaderboardScene, ...)
+    ├── scenes/            # full-screen overlay scenes (MatchScene, LeaderboardScene, ...)
     ├── components/        # ui pieces: controls/, match/, maps/, util/
     ├── websockets/        # console live feeds, ksn pick & bans, jf relay, and obs websocket clients
     ├── api/               # client wrappers for steam, tempus2, tempus plaza
