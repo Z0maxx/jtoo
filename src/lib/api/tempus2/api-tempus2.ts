@@ -42,6 +42,53 @@ export namespace Tempus2 {
 		return player;
 	}
 
+	/**
+	 * Tempus has no lookup by Steam ID, so this searches Tempus by name and keeps the result
+	 * whose Steam ID matches. Tempus searches by the name a player last used on its servers,
+	 * so it tries `names` first (e.g. the names JTOO or the console know them by), then
+	 * their current Steam name. Searches return at most 20 players, so a very common name can
+	 * miss; a wrong player is never picked. Save the result's tempusID to skip this next time.
+	 */
+	export async function findTempusID(steamID3: number, names: string[] = []) {
+		const isMatch = (p: PlayerInfo) =>
+			Steam.convertSteamId(p.steamid, 'SteamID3') === steamID3;
+
+		const tried = new Set<string>();
+		const search = async (name: string | undefined) => {
+			name = name?.trim();
+			if (!name || tried.has(name.toLowerCase())) return undefined;
+			tried.add(name.toLowerCase());
+			try {
+				return (await searchPlayers(encodeURIComponent(name))).find(isMatch)?.id;
+			} catch (e) {
+				console.error(`tempus: search for ${name} failed`, e);
+				return undefined;
+			}
+		};
+
+		for (const name of names) {
+			const id = await search(name);
+			if (id) return id;
+		}
+
+		// the Steam name costs a Steam API call, so it's the last resort
+		try {
+			const steamID64 = (76561197960265728n + BigInt(steamID3)).toString();
+			const summary = await Steam.fetchPlayerSummary(steamID64);
+			return (await search(summary?.personaname)) ?? null;
+		} catch (e) {
+			// the Steam route errors for unknown players and without an API key
+			console.error(`tempus: no steam name for ${steamID3}`, e);
+			return null;
+		}
+	}
+
+	/** A player's Tempus stats from their Steam ID; see findTempusID for how they're found. */
+	export async function fetchPlayerBySteamID3(steamID3: number, names: string[] = []) {
+		const tempusID = await findTempusID(steamID3, names);
+		return tempusID ? fetchPlayerByTempusID(tempusID) : null;
+	}
+
 	export async function fetchMapByName(name: string) {
 		let map = new TFMap();
 

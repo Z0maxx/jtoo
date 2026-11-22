@@ -1,14 +1,27 @@
 <script lang="ts">
 	import { overlay, settings } from '$lib/storage.svelte';
-	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { type SteamID3 } from '$lib/types.svelte';
-	import { csToFormattedTime } from '$lib/util';
+	import { countdownMs, msToFormattedTime, runDisplayMs } from '$lib/util';
 	import { getContext } from 'svelte';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 
-	let ksnWs: KSNWebSocket = getContext('ksnWs');
+	let live: ConsoleLive = getContext('consoleLive');
 
 	type Props = { numPlayers: number; class?: string };
 	let { numPlayers, class: styleClass }: Props = $props();
+
+	// 'clear timers' in the controls hides runs and race windows that started before it, so
+	// the board reads 0 between rounds until the next race starts
+	let clearedAt = $derived(overlay.current.timersClearedAt ?? 0);
+	let raceWindow = $derived.by(() => {
+		const window = live.currentRace?.window;
+		if (!window || (window.startsAt ?? 0) < clearedAt) return undefined;
+		return window;
+	});
+	let timeLeftMs = $derived(
+		raceWindow?.state === 'racing' ? countdownMs(raceWindow, live.serverNow()) : null
+	);
+	let overtime = $derived(raceWindow?.state === 'overtime');
 </script>
 
 {#if numPlayers == 2}
@@ -31,40 +44,38 @@
 {/if}
 
 {#snippet PlayerStopwatch(player: SteamID3 | undefined)}
-	{#key ksnWs.timer.players.size}
-		{@const playerTimer = player ? ksnWs.timer.getPlayerTimer(player) : undefined}
-		{console.log(playerTimer)}
-		<div class="text-palewhite flex h-fit flex-col justify-start text-center">
-			{#if player}
-				<div class="text-xl opacity-80 {settings.current.font}">run timer</div>
-				<div
-					class="{settings.current.monoFont} text-4xl transition-colors duration-1000
-                                        {!playerTimer || !playerTimer.isRunning
-						? 'opacity-40'
-						: ''}"
-				>
-					{#if playerTimer}
-						{playerTimer.timeFormatted}
-					{:else}
-						{csToFormattedTime(0)}
-					{/if}
-				</div>
-			{/if}
-		</div>
-	{/key}
+	{@const found = live.entryFor(player)}
+	{@const entry =
+		found && found.runStartedAt !== null && found.runStartedAt >= clearedAt ? found : undefined}
+	<div class="text-palewhite flex h-fit flex-col justify-start text-center">
+		{#if player}
+			<div class="text-xl opacity-80 {settings.current.font}">run timer</div>
+			<div
+				class="{settings.current.monoFont} text-4xl transition-colors duration-1000
+                                {entry?.status !== 'running' ? 'opacity-40' : ''}"
+			>
+				{msToFormattedTime(
+					entry?.status === 'running'
+						? runDisplayMs(entry, live.serverNow())
+						: runDisplayMs(entry, 0)
+				)}
+			</div>
+		{/if}
+	</div>
 {/snippet}
 
 {#snippet CompetitionTimer()}
 	<div class="text-palewhite/40 flex h-full flex-col justify-start text-center">
-		{#if ksnWs.timer.competition.timeLeftSeconds > 0 || ksnWs.timer.competition.overtimeStatus}
+		{#if (timeLeftMs !== null && timeLeftMs > 0) || overtime}
 			<div class="text-xl opacity-80 {settings.current.font}">match timer</div>
 
-			{#if ksnWs.timer.competition.timeLeftSeconds > 0}
+			{#if timeLeftMs !== null && timeLeftMs > 0}
 				<div class="text-5xl">
-					{ksnWs.timer.competition.getTimeLeftFormatted('seconds')}
+					<!-- round up, so the countdown shows 00:01 until it reaches 0 -->
+					{msToFormattedTime(Math.ceil(timeLeftMs / 1000) * 1000, 'seconds')}
 				</div>
 			{/if}
-			{#if ksnWs.timer.competition.overtimeStatus}
+			{#if overtime}
 				<div class="text-4xl">OVERTIME</div>
 			{/if}
 		{/if}

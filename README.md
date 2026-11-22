@@ -90,16 +90,18 @@ src/
 │   ├── mini-leaderboard/  # standalone mini leaderboard browser source
 │   └── api/               # server endpoints that proxy steam / tempus plaza (keeps the api key server-side)
 └── lib/
-    ├── scenes/            # full-screen overlay scenes (DualPovMatchScene, LeaderboardScene, ...)
+    ├── scenes/            # full-screen overlay scenes (MatchScene, LeaderboardScene, ...)
     ├── components/        # ui pieces: controls/, match/, maps/, util/
-    ├── websockets/        # ksn timer, jf relay, and obs websocket clients
+    ├── websockets/        # console live feeds, ksn pick & bans, jf relay, and obs websocket clients
     ├── api/               # client wrappers for steam, tempus2, tempus plaza
-    ├── storage.svelte.ts  # persisted app state: settings, overlay, items
-    ├── types.svelte.ts    # shared types, including the list of overlay scenes
-    └── tournament-scoring.svelte.ts
+    ├── console-pools.svelte.ts  # imports the event's players and maps from console pools
+    ├── storage.svelte.ts  # persisted app state: settings, overlay, items, pool
+    └── types.svelte.ts    # shared types, including the list of overlay scenes
 ```
 
 **how state flows:** `storage.svelte.ts` exports `settings`, `overlay`, and `items` as `PersistentState` objects backed by `localStorage`. the controls page writes to them and the overlay reads from them. in obs, every browser source/dock on the same domain shares that storage, which is how the dock drives the overlay without a backend.
+
+**where race and tournament data comes from:** the console. each page opens its own server-sent event streams (`/live/race`, `/live/tournament/:id`) with the obs token, so timers, leaderboards, rounds and standings are whatever the console publishes. the event's players and maps are imported on startup from a console player pool and map pool (set under items in the controls). brackets are made on their own in the controls, from those players.
 
 **adding a new scene:**
 

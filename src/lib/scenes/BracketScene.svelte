@@ -2,16 +2,21 @@
 	import { clearMatchWinner, setMatchWinner, type Match } from '$lib/Bracket.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { items, settings, overlay } from '$lib/storage.svelte';
-	import { getTournament } from '$lib/util';
+	import { getPlayer, playerLabel } from '$lib/util';
 	import { fade, slide } from 'svelte/transition';
 
 	type Coordinate = { x: number; y: number };
 
-	let tournament = $derived(getTournament(overlay.current.tournament));
+	const maxNameLength = 15;
+
+	// the bracket picked in the controls
+	let saved = $derived(
+		items.current.brackets?.find((b) => b.id == overlay.current.bracket) ?? { bracket: undefined }
+	);
 </script>
 
-{#if tournament.bracket}
-	{#if tournament.bracket.type == 8}
+{#if saved.bracket}
+	{#if saved.bracket.type == 8}
 		<!-- MARK: 8 Player Bracket -->
 		<section class="z-1 m-auto">
 			<div class=" flex flex-col gap-20">
@@ -26,7 +31,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Quarter Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.QuarterFinals as match, i (i)}
+								{#each saved.bracket.Upper.QuarterFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -37,7 +42,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.SemiFinals as match, i (i)}
+								{#each saved.bracket.Upper.SemiFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -48,7 +53,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.Final as match, i (i)}
+								{#each saved.bracket.Upper.Final as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -59,14 +64,14 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Grand Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.GrandFinal as match, i (i)}
+								{#each saved.bracket.Upper.GrandFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
 							<div class="background" style:filter={getFiltersStyle()}></div>
 						</div>
 					</div>
-					{#key tournament.bracket}
+					{#key saved.bracket}
 						{@const col1r = 240}
 						{@const col2l = 400}
 						{@const col2r = 640}
@@ -112,7 +117,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Round 1</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.Round1 as match, i (i)}
+								{#each saved.bracket.Lower.Round1 as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -123,7 +128,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Quarter Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.QuarterFinals as match, i (i)}
+								{#each saved.bracket.Lower.QuarterFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -134,7 +139,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.SemiFinal as match, i (i)}
+								{#each saved.bracket.Lower.SemiFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -145,14 +150,14 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.Final as match, i (i)}
+								{#each saved.bracket.Lower.Final as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
 							<div class="background" style:filter={getFiltersStyle()}></div>
 						</div>
 					</div>
-					{#key tournament.bracket}
+					{#key saved.bracket}
 						{@const col1r = 240}
 						{@const col2l = 400}
 						{@const col2r = 640}
@@ -183,7 +188,7 @@
 				</div>
 			</div>
 		</section>
-	{:else if tournament.bracket.type == 4}
+	{:else if saved.bracket.type == 4}
 		<!-- MARK: 4 Player Bracket -->
 		<section class="m-auto">
 			<div class=" flex flex-col gap-20">
@@ -198,7 +203,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Quarter Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.QuarterFinals as match, i (i)}
+								{#each saved.bracket.Upper.QuarterFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -209,7 +214,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.SemiFinal as match, i (i)}
+								{#each saved.bracket.Upper.SemiFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -220,14 +225,14 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Grand Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Upper.GrandFinal as match, i (i)}
+								{#each saved.bracket.Upper.GrandFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
 							<div class="background" style:filter={getFiltersStyle()}></div>
 						</div>
 					</div>
-					{#key tournament.bracket}
+					{#key saved.bracket}
 						{@const col1r = 240}
 						{@const col2l = 400}
 						{@const col2r = 640}
@@ -261,7 +266,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.SemiFinal as match, i (i)}
+								{#each saved.bracket.Lower.SemiFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -272,14 +277,14 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each tournament.bracket.Lower.Final as match, i (i)}
+								{#each saved.bracket.Lower.Final as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
 							<div class="background" style:filter={getFiltersStyle()}></div>
 						</div>
 					</div>
-					{#key tournament.bracket}
+					{#key saved.bracket}
 						{@const col1r = 240}
 						{@const col2l = 400}
 
@@ -341,7 +346,7 @@
 		</div>
 		<div
 			class="col-[1/1] row-[1/1] min-h-32 min-w-60 rounded-xl bg-linear-to-tr
-                        {match.A.name && match.B.name && !match.winner
+                        {match.A && match.B && !match.winner
 				? 'from-ctp-lavender-950 via-ctp-lavender-800 to-ctp-lavender-400'
 				: 'from-[#121925] via-[bg-gray-800] to-[#202833]'} bg-gray-800"
 			style:filter={getFiltersStyle()}
@@ -350,26 +355,28 @@
 {/snippet}
 
 {#snippet MatchPlayer(match: Match, player: 'A' | 'B')}
+	{@const steamID3 = match[player]}
+	{@const avatarURL = steamID3 ? getPlayer(steamID3).avatarURL : ''}
 	{#key match.winner}
 		<button
 			in:slide={{ axis: 'x', duration: 800 }}
 			class="z-1 grow"
 			onclick={() => {
 				console.log(match);
-				setMatchWinner(tournament.bracket!, match, player);
+				setMatchWinner(saved.bracket!, match, player);
 				console.log(match);
 			}}
 			oncontextmenu={() => {
-				clearMatchWinner(tournament.bracket!, match);
+				clearMatchWinner(saved.bracket!, match);
 			}}
 		>
 			<div class="grid">
 				<div class="col-[1/1] row-[1/1] flex h-full w-full items-center gap-4 p-2">
-					{#if settings.current.enableAvatars && match[player].avatarURL}
-						{#key match[player].avatarURL}
+					{#if settings.current.enableAvatars && avatarURL}
+						{#key avatarURL}
 							<img
 								in:fade
-								src={match[player].avatarURL}
+								src={avatarURL}
 								alt=""
 								class="size-12 rounded-xl object-cover object-center"
 								draggable="false"
@@ -377,7 +384,7 @@
 						{/key}
 					{/if}
 					<span style:filter={getFiltersStyle()}>
-						{match[player].name}
+						{steamID3 ? playerLabel(steamID3, maxNameLength) : ''}
 					</span>
 				</div>
 				{console.log(match.winner)}

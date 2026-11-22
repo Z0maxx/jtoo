@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { overlay, settings } from '$lib/storage.svelte';
 
-	import DualPovMatchScene from '$lib/scenes/DualPovMatchScene.svelte';
-	import SinglePovMatchScene from '$lib/scenes/SinglePovMatchScene.svelte';
+	import MatchScene from '$lib/scenes/MatchScene.svelte';
 	import MapScene from '$lib/scenes/MapScene.svelte';
 	import BracketScene from '$lib/scenes/BracketScene.svelte';
 	import PlayerCardScene from '$lib/scenes/PlayerCardScene.svelte';
@@ -12,26 +11,45 @@
 	import { OverlayScenes, type OverlayScene } from '$lib/types.svelte';
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { onMount, setContext, type Component } from 'svelte';
+	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import { syncWithRace } from '$lib/websockets/console/race-sync.svelte';
+	import { consoleBaseUrl } from '$lib/util';
+	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
+
+	// race and tournament state comes from the console's live feeds
+	const live = new ConsoleLive({ tournament: true });
+	setContext('consoleLive', live);
+
+	// add the race's players and map to JTOO when it doesn't know them
+	syncWithRace(live);
+
+	// the leaderboard scene shows the tournament picked in the controls, or the race's own
+	$effect(() => {
+		live.pinTournament(overlay.current.tournament || null);
+	});
 
 	onMount(() => {
 		ksnWs = new KSNWebSocket('ksnWs');
 		setContext('ksnWs', ksnWs);
 
+		// the controls' connect button reconnects both the raw websocket and the feeds
+		ksnWs.onconnect = (token) => live.connect(token, consoleBaseUrl());
+
 		if (settings.current.ksnWebSocketToken) {
 			ksnWs.connect(settings.current.ksnWebSocketToken);
 		}
-		for (const p of overlay.current.players) {
-			if (p) ksnWs.timer.verifyPlayerAdded(p);
-		}
 	});
+	onDestroy(() => live.close());
 
-	let sceneComponents: Record<Exclude<OverlayScene, ''>, Component> = {
-		DualPovMatchScene,
-		SinglePovMatchScene,
+	// both match scenes are one component, so it stays mounted when switching between them
+	type MatchSceneName = 'DualPovMatchScene' | 'SinglePovMatchScene';
+	const isMatchScene = (scene: OverlayScene): scene is MatchSceneName =>
+		scene === 'DualPovMatchScene' || scene === 'SinglePovMatchScene';
+
+	let sceneComponents: Record<Exclude<OverlayScene, '' | MatchSceneName>, Component> = {
 		MapScene,
 		BracketScene,
 		PlayerCardScene,
@@ -45,8 +63,11 @@
 </script>
 
 {#if ksnWs}
+	{#if isMatchScene(page)}
+		<MatchScene single={page === 'SinglePovMatchScene'} />
+	{/if}
 	{#each OverlayScenes as scene, i (i)}
-		{#if scene && page == scene}
+		{#if scene && page == scene && !isMatchScene(scene)}
 			{@const SvelteComponent = sceneComponents[scene]}
 			<SvelteComponent />
 		{/if}

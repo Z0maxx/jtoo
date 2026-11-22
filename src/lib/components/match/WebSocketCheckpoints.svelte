@@ -1,43 +1,45 @@
 <script lang="ts">
 	import { overlay, settings } from '$lib/storage.svelte';
-	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { csToSeconds, getPlayer } from '$lib/util';
+	import { getPlayer, msToFormattedTime } from '$lib/util';
 	import { fade } from 'svelte/transition';
 	import { getContext } from 'svelte';
-	import { SvelteMap } from 'svelte/reactivity';
-	import type { Centiseconds, SteamID3 } from '$lib/types.svelte';
+	import type { SteamID3 } from '$lib/types.svelte';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 
-	let ksnWs: KSNWebSocket = getContext('ksnWs');
+	let live: ConsoleLive = getContext('consoleLive');
 
 	type Props = { numPlayers: number };
 	let { numPlayers }: Props = $props();
 
-	let numCps = $derived(ksnWs.timer.checkpoints.length);
-
-	// setInterval(() => {
-	// 	console.log(ksnWs.timer.leader);
-	// 	console.log(ksnWs.timer.leaderCheckpoints);
-	// }, 1000);
+	let numCps = $derived(live.currentRace?.checkpoints.length ?? 0);
+	// the leader's PR splits, or their current splits if they haven't finished
+	let leaderSplits = $derived(
+		live.leader
+			? live.leader.prMs !== null
+				? live.leader.prSplitsMs
+				: live.leader.currentSplitsMs
+			: []
+	);
 </script>
 
 <div class="absolute right-0 left-0 m-auto mt-2 w-[25%] {settings.current.monoFont}">
-	{#if ksnWs.timer.leader}
+	{#if live.leader}
 		<!-- header -->
 		<div class="grid grid-cols-3 items-center justify-center gap-x-4 text-center text-3xl">
 			<div class="justify-self-end">
-				<img
-					in:fade
-					src={getPlayer(ksnWs.timer.leader).avatarURL}
-					alt=""
-					class="size-13 rounded-xl object-cover object-center"
-					draggable="false"
-				/>
+				{#if settings.current.enableAvatars && getPlayer(live.leader.steamId3).avatarURL}
+					<img
+						in:fade
+						src={getPlayer(live.leader.steamId3).avatarURL}
+						alt=""
+						class="size-13 rounded-xl object-cover object-center"
+						draggable="false"
+					/>
+				{/if}
 			</div>
 			<div class="col-span-2 mt-2 h-11">
 				<span>
-					{ksnWs.timer.getPlayerTimer(ksnWs.timer.leader)?.prCs
-						? ksnWs.timer.getPlayerTimer(ksnWs.timer.leader)!.prFormatted
-						: '---'}
+					{live.leader.prMs !== null ? msToFormattedTime(live.leader.prMs) : '---'}
 				</span>
 			</div>
 			<hr class="hr" />
@@ -48,66 +50,47 @@
 			class="grid h-83 grid-cols-3 justify-center gap-x-4
                         {numCps > 14 ? 'gap-y-1 text-2xl' : 'gap-y-3 text-3xl'}"
 		>
-			{@render Comparison(ksnWs.timer.leaderCheckpointsCs, overlay.current.players[0], 0)}
+			{@render Comparison(overlay.current.players[0], 0)}
 
-			<!-- best pr cps -->
+			<!-- leader cps -->
 			<div class="justify-self-center text-center">
-				{#each ksnWs.timer.leaderCheckpointsFormatted as [cpName, cpTime], i (i)}
-					<!-- {#if cp} -->
-					<div>
-						{cpTime}
-					</div>
-					<!-- {/if} -->
+				{#each leaderSplits as split, i (i)}
+					{#if split !== null}
+						<div>{msToFormattedTime(split)}</div>
+					{/if}
 				{/each}
 			</div>
 
-			<!-- right comparison -->
-			{@render Comparison(ksnWs.timer.leaderCheckpointsCs, overlay.current.players[1], 1)}
+			{@render Comparison(overlay.current.players[1], 1)}
 		</div>
 	{/if}
 </div>
 
-{#snippet Comparison(
-	leaderCps: SvelteMap<string, Centiseconds>,
-	steamID3: SteamID3 | undefined,
-	playerNum: number
-)}
-	{@const playerCps: SvelteMap<string, Centiseconds> = steamID3 ? ksnWs.timer.getPlayerTimer(steamID3)!.currentCheckpointsCs : new SvelteMap()}
+{#snippet Comparison(steamID3: SteamID3 | undefined, playerNum: number)}
+	{@const playerSplits = live.entryFor(steamID3)?.currentSplitsMs ?? []}
 	<div class={playerNum == 0 ? 'justify-self-end text-right' : 'justify-self-start text-left'}>
-		{#each leaderCps as [cpName, leaderCpTime], i (i)}
-			{@const playerCpTime = playerCps.get(cpName)}
-			<div>
-				{#if playerCpTime}
-					{@const diff = csToSeconds(playerCpTime - leaderCpTime)}
-					{@const speed: 'faster' | 'same' | 'slower' = diff < 0 ? 'faster' : diff > 0 ? 'slower' : 'same'}
-					{@const clr = {
-						faster: playerNum == 0 ? 'bg-ctp-blue-800/55' : 'bg-ctp-red-800/55',
-						slower: playerNum == 0 ? 'bg-ctp-blue-950/40' : 'bg-ctp-red-950/40',
-						same: 'bg-ctp-teal-950/55'
-					}}
+		{#each leaderSplits as leaderSplit, i (i)}
+			{#if leaderSplit !== null}
+				{@const playerSplit = playerSplits[i] ?? null}
+				<div>
+					{#if playerSplit !== null}
+						{@const diff = Math.trunc((playerSplit - leaderSplit) / 10) / 100}
+						{@const speed: 'faster' | 'same' | 'slower' = diff < 0 ? 'faster' : diff > 0 ? 'slower' : 'same'}
+						{@const clr = {
+							faster: playerNum == 0 ? 'bg-ctp-blue-800/55' : 'bg-ctp-red-800/55',
+							slower: playerNum == 0 ? 'bg-ctp-blue-950/40' : 'bg-ctp-red-950/40',
+							same: 'bg-ctp-teal-950/55'
+						}}
 
-					<span
-						transition:fade|global
-						class="rounded-lg px-2.5
-                                                {speed == 'slower'
-							? clr.slower
-							: speed == 'faster'
-								? clr.faster
-								: speed == 'same'
-									? clr.same
-									: ''}
-                                                        {numCps > 14 ? 'text-xl' : 'text-2xl'}"
-					>
-						{speed == 'same'
-							? '-'
-							: speed == 'slower'
-								? `+${diff.toFixed(2)}`
-								: speed == 'faster'
-									? diff.toFixed(2)
-									: ''}
-					</span>
-				{/if}
-			</div>
+						<span
+							transition:fade|global
+							class="rounded-lg px-2.5 {clr[speed]} {numCps > 14 ? 'text-xl' : 'text-2xl'}"
+						>
+							{speed == 'same' ? '-' : speed == 'slower' ? `+${diff.toFixed(2)}` : diff.toFixed(2)}
+						</span>
+					{/if}
+				</div>
+			{/if}
 		{/each}
 	</div>
 {/snippet}

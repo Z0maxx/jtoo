@@ -4,6 +4,7 @@
 	import grain from '$lib/assets/grain.gif';
 	import grid from '$lib/assets/grid.png';
 	import { settings } from '$lib/storage.svelte';
+	import { fade } from 'svelte/transition';
 
 	let { children } = $props();
 </script>
@@ -15,6 +16,7 @@
 	{#if settings.current.enableMovingBG && settings.current.overlayScene != 'SinglePovMatchScene'}
 		<!-- grid mask -->
 		<div
+			transition:fade={{ duration: 500 }}
 			class="absolute size-full animate-[movingMaskBG_20s_linear_infinite] opacity-100"
 			style:mask-image="url({grid})"
 		>

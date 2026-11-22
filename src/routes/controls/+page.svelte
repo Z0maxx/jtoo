@@ -10,32 +10,28 @@
 	import ImportMap from '$lib/components/controls/ImportMap.svelte';
 	import ManagePlayers from '$lib/components/controls/ManagePlayers.svelte';
 	import ManageMaps from '$lib/components/controls/ManageMaps.svelte';
-	import AddTournament from '$lib/components/controls/AddTournament.svelte';
+	import EditBracket from '$lib/components/controls/EditBracket.svelte';
+	import ManageBrackets from '$lib/components/controls/ManageBrackets.svelte';
 
 	import PlayerControl from '$lib/components/controls/PlayerControl.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import {
-		settings,
-		overlay,
-		items,
-		defaultStages,
-		defaultSettings,
-		importBootcampTournaments
-	} from '$lib/storage.svelte';
+	import { settings, overlay, items, defaultStages, defaultSettings } from '$lib/storage.svelte';
 	import {
 		BrokenOverlayScenes,
 		Fonts,
 		MonoFonts,
 		OverlayScenes,
-		Tournament
+		TFClasses
 	} from '$lib/types.svelte';
 	// import * as _ from 'underscore';
 
-	import { obsConnect, setScene } from '$lib/websockets/obs/ws-obs';
-	import ManageTournaments from '$lib/components/controls/ManageTournaments.svelte';
+	import { obsConnect, obsStatus, setScene } from '$lib/websockets/obs/ws-obs.svelte';
+	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
+	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { getTournament, getMap } from '$lib/util';
+	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
+	import { getMap, consoleBaseUrl } from '$lib/util';
 	import { onMount, setContext } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
@@ -44,6 +40,44 @@
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+	// the controls open their own race feed, to show whether the console is reachable and to
+	// order the player lists by the race's leaderboard
+	const live = new ConsoleLive();
+	setContext('consoleLive', live);
+
+	// the event's players and maps come from console pools, imported on every startup
+	let poolImport: PoolImportResult | 'importing' | undefined = $state();
+	async function importPools() {
+		poolImport = 'importing';
+		poolImport = await importConsolePools();
+	}
+
+	// the console's tournaments, for picking the one the leaderboard scene shows
+	let tournaments: ConsoleTournamentList | undefined = $state();
+	let tournamentsError = $state('');
+	async function loadTournaments() {
+		const token = settings.current.ksnWebSocketToken.trim();
+		if (!token) return;
+		try {
+			tournaments = await fetchConsoleTournaments(token);
+			tournamentsError = '';
+		} catch (e) {
+			tournamentsError = e instanceof Error ? e.message : `${e}`;
+		}
+	}
+
+	function connectConsole() {
+		const token = settings.current.ksnWebSocketToken.trim();
+		ksnWs!.connect(token);
+		live.connect(token, consoleBaseUrl());
+		loadTournaments();
+	}
+
+	const feedStates: Record<FeedState, { state: string; color: string }> = {
+		connecting: { state: 'connecting...', color: 'text-yellow-200' },
+		open: { state: 'connected', color: 'text-green-300' },
+		closed: { state: 'not connected', color: 'text-red-300' }
+	};
 
 	let error = $state({
 		invalidJfRelayToken: {
@@ -54,6 +88,16 @@
 
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
+		// settings saved before this option existed don't have it; it defaults to on
+		if (settings.current.followConsoleStageMap === undefined) {
+			settings.current.followConsoleStageMap = true;
+		}
+		if (settings.current.ksnWebSocketToken) {
+			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
+		}
+
+		importPools();
+		loadTournaments();
 
 		jfRelayWs = new JFRelayWebSocket();
 
@@ -70,7 +114,8 @@
 				setScene(settings.current.overlayScene);
 			}
 		});
-		importBootcampTournaments();
+
+		return () => live.close();
 	});
 
 	async function connectToJfRelay() {
@@ -101,8 +146,12 @@
 {#if ksnWs}
 	<!-- presets -->
 	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
-		<button class="button-remove" onclick={() => ksnWs!.clearTimers()}
-			>clear timers and checkpoints</button
+		<button
+			class="button-remove"
+			onclick={() => {
+				// in console time, so it compares with the race's own timestamps
+				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
+			}}>clear timers</button
 		>
 		<button class="button-remove" onclick={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</button
@@ -116,9 +165,9 @@
 			<ManagePlayers />
 			<ImportMap />
 			<ManageMaps />
-			<AddTournament />
-			<ManageTournaments />
 			<SetFundraisingEvent />
+			<EditBracket />
+			<ManageBrackets />
 		</div>
 
 		<ItemInput placeholder="add stage" item="stages" />
@@ -130,23 +179,37 @@
 			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
 			bind:value={settings.current.overlayScene}
 		/>
-		<span>tournament</span>
+
+		<div class="flex justify-between">
+			<span>leaderboard tournament</span>
+			<button class="button-remove" onclick={loadTournaments}>refresh</button>
+		</div>
+		{#if tournamentsError}
+			<span class="text-red-300">{tournamentsError}</span>
+		{/if}
 		<RadioInputs
-			opts={items.current.tournaments}
-			labelkey={['info', 'name']}
-			onchange={(value: Tournament) => {
-				overlay.current.tournament = value.id;
-			}}
+			opts={['', ...(tournaments?.tournaments.map((t) => t.id) ?? [])]}
+			optlabels={[
+				'follow active tournament',
+				...(tournaments?.tournaments.map(
+					(t) => t.name + (t.id === tournaments?.activeTournamentId ? ' (active)' : '')
+				) ?? [])
+			]}
+			bind:value={overlay.current.tournament}
 		/>
-		<!-- {#if getTournament(overlay.current.tournament).format == 'MassRace' || getTournament(overlay.current.tournament).format == 'AllOutRoyale'}
-			<RadioInputs
-				opts={getTournament(overlay.current.tournament).leaderboards}
-				labelkey={['id']}
-				onchange={(value: Leaderboard) => {
-					overlay.current.leaderboard = value.id;
-				}}
-			/>
-		{/if} -->
+
+		<span>bracket</span>
+		<RadioInputs
+			opts={(items.current.brackets ?? []).map((b) => b.id)}
+			optlabels={(items.current.brackets ?? []).map((b) => b.name)}
+			bind:value={overlay.current.bracket}
+		/>
+
+		<span>class</span>
+		<RadioInputs
+			opts={TFClasses.filter((c) => c !== 'overall')}
+			bind:value={settings.current.tfClass}
+		/>
 	</Accordion>
 
 	<Accordion title="connections">
@@ -200,6 +263,15 @@
 							}
 						}}>connect</button
 					>
+					<div class="flex gap-2">
+						<p>status:</p>
+						<span class={feedStates[obsStatus.state].color}>
+							{feedStates[obsStatus.state].state}
+						</span>
+					</div>
+					{#if obsStatus.error}
+						<span class="col-span-full text-red-300">{obsStatus.error}</span>
+					{/if}
 				</div>
 			</Accordion>
 			<Accordion title="ksn server websocket" defaultstate="closed">
@@ -217,29 +289,31 @@
 					/>
 				</div>
 				<div class="flex gap-2">
-					<button
-						class="button button-unselected hover:button-selected"
-						onclick={() => ksnWs!.connect(settings.current.ksnWebSocketToken.trim())}
+					<button class="button button-unselected hover:button-selected" onclick={connectConsole}
 						>connect</button
 					>
-
-					<!-- the websocket state keeps reverting to 'closed' even when the connection is still open -->
-					<!-- <div class="flex gap-2">
-					<p>status:</p>
-					{#key ksnWs.wsState}
-						{@const wsState: {state: string, color: string} =
-							// prettier-ignore
-							ksnWs.wsState == WebSocket.CONNECTING ? { state: 'connecting...', color: 'text-yellow-200'}
-							: ksnWs.wsState == WebSocket.OPEN ? { state: 'connected', color: 'text-green-300'}
-							: ksnWs.wsState == WebSocket.CLOSING ? { state: 'closing...', color: 'text-red-200'}
-							: ksnWs.wsState == WebSocket.CLOSED ? {state: 'closed', color:  'text-black'}
-							: {state: '', color: ''}}
-						<span class={wsState.color}>
-							{wsState.state}
+					<div class="flex gap-2">
+						<p>status:</p>
+						<span class={feedStates[live.raceState].color}>
+							{feedStates[live.raceState].state}
 						</span>
-					{/key}
-				</div> -->
+					</div>
 				</div>
+				<div class="flex gap-2">
+					<label for="input-console-url">console url: </label>
+					<input
+						type="text"
+						class="input w-60"
+						id="input-console-url"
+						placeholder="https://console.jumpfortress.tf"
+						value={settings.current.consoleBaseUrl}
+						onchange={(e) => {
+							let target = e.target as HTMLInputElement;
+							settings.current.consoleBaseUrl = target.value.trim();
+						}}
+					/>
+				</div>
+				<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>
 			<Accordion title="jf relay plugin websocket" defaultstate="closed">
@@ -341,9 +415,9 @@
 
 		<span>map</span>
 		<RadioInputs
-			opts={getTournament(overlay.current.tournament).maps}
+			opts={poolMaps()}
 			optlabels={settings.current.useShortMapNames
-				? getTournament(overlay.current.tournament).maps.map((m) => getMap(m).shortName)
+				? poolMaps().map((m) => getMap(m).shortName || m)
 				: undefined}
 			bind:value={overlay.current.map}
 		/>

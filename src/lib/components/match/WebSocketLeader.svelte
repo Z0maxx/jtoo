@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { settings } from '$lib/storage.svelte';
-	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { getPlayer } from '$lib/util';
+	import { getPlayer, msToFormattedTime, playerLabel } from '$lib/util';
 	import { fade } from 'svelte/transition';
 	import { getContext } from 'svelte';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 
-	let ksnWs: KSNWebSocket = getContext('ksnWs');
+	let live: ConsoleLive = getContext('consoleLive');
 
 	type Props = { class?: string };
 	let { class: styleClass }: Props = $props();
@@ -14,30 +14,28 @@
 </script>
 
 <div class="{styleClass} absolute right-0 left-0 m-auto mt-2 w-fit {settings.current.font}">
-	{#if ksnWs.timer.leader}
-		{@const leader = getPlayer(ksnWs.timer.leader)}
-		{#if leader.name}
-			{@const leaderTimer = ksnWs.timer.getPlayerTimer(ksnWs.timer.leader)}
-			<div class="text-center text-xl opacity-70">leader</div>
-			<div class="flex items-center gap-4 text-3xl">
+	{#if live.leader}
+		{@const leader = live.leader}
+		{@const player = getPlayer(leader.steamId3)}
+		<div class="text-center text-xl opacity-70">leader</div>
+		<div class="flex items-center gap-4 text-3xl">
+			{#if settings.current.enableAvatars && player.avatarURL}
 				<div>
 					<img
 						in:fade
-						src={leader.avatarURL}
+						src={player.avatarURL}
 						alt=""
 						class="size-13 rounded-xl object-cover object-center"
 						draggable="false"
 					/>
 				</div>
-				<div>
-					{leader.name.length > maxNameLength
-						? leader.name.substring(0, maxNameLength) + '...'
-						: leader.name.substring(0, maxNameLength)}
-				</div>
-				<div class={settings.current.monoFont}>
-					{leaderTimer?.prCs ? leaderTimer.prFormatted : ''}
-				</div>
+			{/if}
+			<div>
+				{playerLabel(leader.steamId3, maxNameLength)}
 			</div>
-		{/if}
+			<div class={settings.current.monoFont}>
+				{leader.prMs !== null ? msToFormattedTime(leader.prMs) : ''}
+			</div>
+		</div>
 	{/if}
 </div>

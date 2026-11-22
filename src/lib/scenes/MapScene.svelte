@@ -8,7 +8,8 @@
 	import { getContext } from 'svelte';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { KSN } from '$lib/websockets/ksn/ws-ksn-types.svelte';
-	import { getMap, getTournament } from '$lib/util';
+	import { getMap } from '$lib/util';
+	import { poolMaps } from '$lib/console-pools.svelte';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 </script>
@@ -34,20 +35,20 @@
 		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
 	{/if}
 	<section class="flex flex-wrap justify-around gap-5 p-10">
-		{#each getTournament(overlay.current.tournament).maps as mapFilename, i (i)}
+		{#each poolMaps() as mapFilename, i (i)}
 			{@const map = getMap(mapFilename)}
-			{#if !map.fileName}
+			{#if map.fileName}
 				{@const m: KSN.PickBansSessionStateEvent | null = ksnWs.messages.mapPicks ? ksnWs.messages.mapPicks : null}
 				<div class="@container relative mb-2 h-65 w-130 text-4xl">
 					{#if m && 'session' in m && m.session}
 						{@const pickNum = ksnWs.pickedMaps.findIndex(
-							(p) => p.mapID == TFMap.fileNameToTfId(map.fileName)
+							(p) => p.mapID == ksnWs.mapIdFor(map.fileName)
 						)}
 						{#if pickNum >= 0}
 							<div class="absolute right-6 bottom-4 text-5xl">{pickNum + 1}</div>
 						{/if}
 						{#each m.session.history as step, i (i)}
-							{#if step.mapId == TFMap.fileNameToTfId(map.fileName)}
+							{#if step.mapId == ksnWs.mapIdFor(map.fileName)}
 								<div
 									transition:fade|global
 									class="absolute top-0 right-0 -z-1 h-full w-full rounded-xl bg-linear-to-tr

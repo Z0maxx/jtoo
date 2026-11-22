@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { overlay, items } from '$lib/storage.svelte';
 	import { Player, type SteamID3 } from '$lib/types.svelte';
-	import { getTournament, getPlayer, getPlayerIndex } from '$lib/util';
-	import { getContext } from 'svelte';
+	import { getPlayer, getPlayerIndex } from '$lib/util';
+	import { poolPlayers } from '$lib/console-pools.svelte';
+	import { getContext, untrack } from 'svelte';
 	import RadioInputs from './RadioInputs.svelte';
 	import type { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 
 	let jfRelayWs: JFRelayWebSocket = getContext('jfRelayWs');
+	let live: ConsoleLive = getContext('consoleLive');
 
 	type Props = {
 		player: SteamID3 | undefined;
@@ -22,26 +25,66 @@
 	}
 
 	let { player, playerNum }: Props = $props();
-	let tournament = $derived(getTournament(overlay.current.tournament));
-	const playerObj: Player = $derived(getPlayer(player));
-	const maxScore: number = $derived((overlay.current.bestOf + 1) / 2);
 
-	function incrementScore(player: SteamID3) {
-		let newScore = playerObj.score;
-		newScore++;
-		if (newScore > maxScore) return;
-		items.current.players[getPlayerIndex(player)].score = newScore;
+	// MARK: player list
+	// the race's players in leaderboard order, or the pool's players when there's no race.
+	// the order only refreshes every 10 seconds, and not while the pointer is over the list,
+	// so buttons don't move out from under a click
+	const REFRESH_MS = 10_000;
+
+	function listOrder(): SteamID3[] {
+		const board = live.currentRace?.leaderboard;
+		const list = board?.length
+			? [...board].sort((a, b) => a.position - b.position).map((e) => e.steamId3)
+			: [...poolPlayers()];
+		// keep the selected player visible even when they're not in the race
+		const selected = overlay.current.players[playerNum];
+		if (selected && !list.includes(selected)) list.push(selected);
+		return list;
 	}
-	function decrementScore(player: SteamID3) {
-		let newScore = playerObj.score;
-		newScore--;
-		if (newScore < 0) return;
-		items.current.players[getPlayerIndex(player)].score = newScore;
+
+	let players: SteamID3[] = $state(untrack(listOrder));
+	let hovered = $state(false);
+	let refreshMissed = false; // a refresh came due while hovered
+
+	function refresh() {
+		if (hovered) {
+			refreshMissed = true;
+			return;
+		}
+		refreshMissed = false;
+		players = listOrder();
 	}
+
+	$effect(() => {
+		const timer = setInterval(refresh, REFRESH_MS);
+		return () => clearInterval(timer);
+	});
+
+	// a new race (or the feed connecting) swaps the players, so that refreshes right away
+	$effect(() => {
+		void live.currentRace?.sessionId;
+		untrack(refresh);
+	});
+	// const playerObj: Player = $derived(getPlayer(player));
+	// const maxScore: number = $derived((overlay.current.bestOf + 1) / 2);
+
+	// function incrementScore(player: SteamID3) {
+	// 	let newScore = playerObj.score;
+	// 	newScore++;
+	// 	if (newScore > maxScore) return;
+	// 	items.current.players[getPlayerIndex(player)].score = newScore;
+	// }
+	// function decrementScore(player: SteamID3) {
+	// 	let newScore = playerObj.score;
+	// 	newScore--;
+	// 	if (newScore < 0) return;
+	// 	items.current.players[getPlayerIndex(player)].score = newScore;
+	// }
 </script>
 
 <div class="flex w-full max-w-full flex-col items-start">
-	{#if tournament}
+	{#if players}
 		<span class="self-center text-center">player {getLabel(playerNum)}</span>
 
 		<!-- score -->
@@ -69,15 +112,24 @@
 			{#if items.current.players.length === 0}
 				<span class="text-ctp-text/50">no players..</span>
 			{:else}
-				<RadioInputs
-					optlabels={tournament.players.map((sId3) => getPlayer(sId3).name)}
-					opts={tournament.players}
-					bind:value={overlay.current.players[playerNum]}
-					onchange={() => {
-						jfRelayWs.broadcastSelectedPlayers(overlay.current.players);
+				<div
+					role="group"
+					onmouseenter={() => (hovered = true)}
+					onmouseleave={() => {
+						hovered = false;
+						if (refreshMissed) refresh();
 					}}
-					undefinedOption={true}
-				/>
+				>
+					<RadioInputs
+						optlabels={players.map((sId3) => getPlayer(sId3).name || `[U:1:${sId3}]`)}
+						opts={players}
+						bind:value={overlay.current.players[playerNum]}
+						onchange={() => {
+							jfRelayWs.broadcastSelectedPlayers(overlay.current.players);
+						}}
+						undefinedOption={true}
+					/>
+				</div>
 			{/if}
 		</div>
 	{/if}

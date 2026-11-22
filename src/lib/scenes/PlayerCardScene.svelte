@@ -5,10 +5,9 @@
 	import { fade } from 'svelte/transition';
 	import PRDisplay from '$lib/components/maps/PRDisplay.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
-	import { Player, Tournament } from '$lib/types.svelte';
-	import { getTournament } from '$lib/util';
+	import { getPlayer } from '$lib/util';
 
-	let tournament = $derived(getTournament(overlay.current.tournament));
+	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
 </script>
 
 <!-- isolated border filter -->
@@ -37,9 +36,10 @@
 </section>
 
 {#snippet PlayerCard(sideKey: 'leftPlayer' | 'rightPlayer')}
-	{@const player: Player = overlay.current[sideKey]}
+	<!-- player A and B as picked in the controls -->
+	{@const player = getPlayer(overlay.current.players[sideKey === 'leftPlayer' ? 0 : 1])}
 
-	{#if player.name !== '' && player != null}
+	{#if player?.name}
 		<section class="relative z-10 flex h-full w-2/5 flex-col flex-wrap gap-4">
 			<div class="flex justify-end gap-3 {sideKey === 'rightPlayer' ? 'flex-row-reverse' : ''}">
 				<div class={sideKey === 'rightPlayer' ? '' : 'text-right'}>
@@ -89,8 +89,8 @@
 					style:filter={getFiltersStyle()}
 				>
 					<ul class="flex h-150 w-full flex-col gap-6">
-						<li class="">{player.WRs[tournament.info.class]} world records</li>
-						<li class="">{player.TTs[tournament.info.class]} top times</li>
+						<li class="">{player.WRs?.[tfClass] ?? '-'} world records</li>
+						<li class="">{player.TTs?.[tfClass] ?? '-'} top times</li>
 						<li class="italic opacity-60">best run</li>
 						<li class="-mt-6">{player.bestRun}</li>
 						<li class="italic opacity-60">favourite map</li>
@@ -111,9 +111,9 @@
 
 				<!-- ranks -->
 				<div class="h-fit w-80 text-center" style:filter={getFiltersStyle()}>
-					<h1 class="text-3xl">{tournament.info.class} rank</h1>
+					<h1 class="text-3xl">{tfClass} rank</h1>
 					<div class="text-8xl font-bold">
-						#{player.rank![tournament.info.class].rank}
+						#{player.rank?.[tfClass]?.rank ?? '-'}
 					</div>
 				</div>
 			</div>

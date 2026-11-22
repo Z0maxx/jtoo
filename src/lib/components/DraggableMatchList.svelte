@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Bracket4, Bracket8 } from '$lib/Bracket.svelte';
-	import type { Player, SteamID3, TournamentFormat } from '$lib/types.svelte';
+	import type { BracketSize, Player, SteamID3 } from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
 
 	let itemAIndex = $state(-1);
@@ -8,25 +8,24 @@
 
 	type Props = {
 		bracket: Bracket4 | Bracket8;
-		tournamentFormat: TournamentFormat;
+		size: BracketSize;
 		onchange?: Function;
 		debug?: boolean;
 		class?: string;
 	};
 	let {
 		bracket = $bindable(),
-		tournamentFormat,
+		size,
 		onchange,
 		debug,
 		class: styleClass
 	}: Props = $props();
 
-	let players: SteamID3[] = $derived(getStartingMatches(bracket, tournamentFormat));
+	let players: SteamID3[] = $derived(getStartingMatches(bracket, size));
 
-	function getStartingMatches(bracket: Bracket4 | Bracket8, format: TournamentFormat): SteamID3[] {
+	function getStartingMatches(bracket: Bracket4 | Bracket8, maxPlayers: BracketSize): SteamID3[] {
 		let list: SteamID3[] = [];
 
-		let maxPlayers = format == 'DoubleElim4Player' ? 4 : format == 'DoubleElim8Player' ? 8 : 0;
 		for (let i = 0; i < maxPlayers / 2; i++) {
 			list.push(bracket.Upper.QuarterFinals[i].A!);
 			list.push(bracket.Upper.QuarterFinals[i].B!);
@@ -37,9 +36,8 @@
 	function syncBracket(
 		players: SteamID3[],
 		bracket: Bracket4 | Bracket8,
-		format: TournamentFormat
+		maxPlayers: BracketSize
 	) {
-		let maxPlayers = format == 'DoubleElim4Player' ? 4 : 8;
 		for (let i = 0; i < maxPlayers; i++) {
 			let actor: 'A' | 'B' = i % 2 == 0 ? 'A' : 'B';
 			let matchIndex: number = Math.floor(i / 2);
@@ -72,7 +70,7 @@
 		// place dragged item in location of dragover
 		players.splice(bIndex, 0, temp);
 
-		syncBracket(players, bracket, tournamentFormat);
+		syncBracket(players, bracket, size);
 
 		if (onchange) onchange();
 
