@@ -12,7 +12,6 @@
 	/*fundraisingState.current.progressBar.raised = 0;
 	fundraisingState.current.progressBar.sumRaised = 0;
 	fundraisingState.current.stage = 0;
-	fundraisingState.current.stage = 0;
 	fundraisingState.current.sumGoal = 0;*/
 	const emptyImage = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 	let advancingProgressBar = false;
