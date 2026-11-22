@@ -97,3 +97,7 @@ export function sleep(ms: number) {
 		setTimeout(resolve, ms);
 	});
 }
+
+export function deepCopy<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value))
+}
