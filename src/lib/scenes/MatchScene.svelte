@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { settings, overlay, items, fundraisingState } from '$lib/storage.svelte';
-	import { Player, TFMap } from '$lib/types.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import WebSocketTimer from '$lib/components/match/WebSocketTimer.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
