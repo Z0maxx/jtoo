@@ -4,7 +4,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 
 const jfRtdWs = new JfRtdWebSocket();
 const effectQueue: string[] = [];
-const secondsBetweenEffects = 30;
+const secondsBetweenEffects = 60;
 let processingQueue = false;
 
 export const GET: RequestHandler = async ({ params, url }) => {
