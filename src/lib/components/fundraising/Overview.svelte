@@ -49,10 +49,10 @@
 
 		advancingProgressBar = true;
 		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
-		//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
+			//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
 			fundraisingState.current.progressBar.sumRaised++;
 			fundraisingState.current.progressBar.raised++;
-      /*fundraisingState.current.progressBar.sumRaised += 4;
+			/*fundraisingState.current.progressBar.sumRaised += 4;
 			fundraisingState.current.progressBar.raised += 4;*/
 			if (goalPercentage() === 100) {
 				const explosionLeft = document.getElementById('explosion-left')! as HTMLImageElement;
@@ -71,7 +71,7 @@
 			}
 
 			await sleep(10);
-      //await sleep(2);
+			//await sleep(2);
 		}
 
 		advancingProgressBar = false;

@@ -5,7 +5,7 @@
 	import { onDestroy } from 'svelte';
 
 	let milestones: DonationMilestone[] = $state([
-    /*{
+		/*{
         "goal": 100,
         "description": "top 30 jumpers of all time stream with riot, matty and newjuls",
         "isComplete": true,
@@ -71,7 +71,7 @@
         "isComplete": false,
         "isActive": false
     }*/
-  ]);
+	]);
 	const milestonesSubId = Dwb.subscribeToMilestones((newMilestones) => {
 		milestones = newMilestones;
 	});

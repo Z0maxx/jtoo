@@ -75,7 +75,7 @@
 
 <style>
 	:global(:root) {
-    /*--restore-animation-after: 2s*/
+		/*--restore-animation-after: 2s*/
 		--restore-animation-after: 10s;
 	}
 </style>
