@@ -83,26 +83,25 @@
 
 <!-- MARK: POVs -->
 {#if !single}
-		<div
-			class="aspect-video w-1/2
+	<div
+		transition:slide={{ duration: 500 }}
+		class="flex w-full border-b-4 border-ctp-lavender/50"
+		style:filter={getFiltersStyle()}
+	>
+		{#if settings.current.enableFundraisingSection}
+			{#if fundraisingState.current.eventUrl}
+				<FundraisingSection />
+			{:else}
+				<div class="text-6xl">Fundraising event is not set</div>
+			{/if}
+		{/if}
+	</div>
+	<div
+		class="aspect-video w-1/2
   {settings.current.enablePOVGuide
-				? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
-				: ''}"
-		>
-      {#if settings.current.enableFundraisingSection}
-        {#if fundraisingState.current.eventUrl}
-          <FundraisingSection />
-        {:else}
-          <div class="text-6xl">Fundraising event is not set</div>
-        {/if}
-      {/if}
-    </div>
-		<div
-			class="aspect-video w-1/2
-  {settings.current.enablePOVGuide
-				? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
-				: ''}"
-		></div>
+			? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
+			: ''}"
+	></div>
 {/if}
 
 <!-- MARK: bottom bar -->
@@ -119,7 +118,7 @@
 		{/key}
 	</div>
 
-  {#if settings.current.enableFundraisingSection}
+	{#if settings.current.enableFundraisingSection}
 		<div class="absolute flex w-full items-start justify-center pt-2">
 			<DonationMessages />
 		</div>
@@ -152,9 +151,7 @@
 			{@const mapId = ksnWs.mapIdFor(overlay.current.map)}
 			{@const isCurrent = pickedMap.mapID == mapId}
 			{@const map = () =>
-				items.current.maps.find(
-					(m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID
-				)}
+				items.current.maps.find((m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID)}
 			{#if map()}
 				{@const MAP = map()!}
 				<div
