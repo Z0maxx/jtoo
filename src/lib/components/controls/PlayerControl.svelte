@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { overlay, items } from '$lib/storage.svelte';
+	import { overlay, items, settings } from '$lib/storage.svelte';
 	import { Player, type SteamID3 } from '$lib/types.svelte';
 	import { getPlayer, getPlayerIndex } from '$lib/util';
 	import { poolPlayers } from '$lib/console-pools.svelte';
@@ -27,13 +27,14 @@
 	let { player, playerNum }: Props = $props();
 
 	// MARK: player list
-	// the race's players in leaderboard order, or the pool's players when there's no race.
+	// the race's players in leaderboard order, or the pool's players when there's no race or
+	// 'only list the race's players' is off.
 	// the order only refreshes every 10 seconds, and not while the pointer is over the list,
 	// so buttons don't move out from under a click
 	const REFRESH_MS = 10_000;
 
 	function listOrder(): SteamID3[] {
-		const board = live.currentRace?.leaderboard;
+		const board = settings.current.followRacePlayers ? live.currentRace?.leaderboard : undefined;
 		const list = board?.length
 			? [...board].sort((a, b) => a.position - b.position).map((e) => e.steamId3)
 			: [...poolPlayers()];
@@ -61,9 +62,11 @@
 		return () => clearInterval(timer);
 	});
 
-	// a new race (or the feed connecting) swaps the players, so that refreshes right away
+	// a new race (or the feed connecting) swaps the players, and so does toggling the
+	// setting, so those refresh right away
 	$effect(() => {
 		void live.currentRace?.sessionId;
+		void settings.current.followRacePlayers;
 		untrack(refresh);
 	});
 	// const playerObj: Player = $derived(getPlayer(player));

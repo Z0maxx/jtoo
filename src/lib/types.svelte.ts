@@ -149,6 +149,7 @@ export type Settings = {
 	ksnWebSocketToken: string;
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
+	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;

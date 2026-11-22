@@ -82,6 +82,9 @@
 		if (settings.current.followConsoleStageMap === undefined) {
 			settings.current.followConsoleStageMap = true;
 		}
+		if (settings.current.followRacePlayers === undefined) {
+			settings.current.followRacePlayers = true;
+		}
 		if (settings.current.ksnWebSocketToken) {
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
 		}
@@ -369,6 +372,9 @@
 	</div> -->
 
 	<!-- players -->
+	<div class="max-w-lg self-center">
+		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
+	</div>
 	<div class="flex w-full max-w-lg justify-evenly gap-x-20 self-center">
 		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
 		<PlayerControl player={overlay.current.players[1]} playerNum={1} />

@@ -44,6 +44,7 @@ export const defaultSettings: Settings = {
 	ksnWebSocketToken: '',
 	consoleBaseUrl: 'https://console.jumpfortress.tf',
 	followConsoleStageMap: true,
+	followRacePlayers: true,
 	tfClass: 'soldier',
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
