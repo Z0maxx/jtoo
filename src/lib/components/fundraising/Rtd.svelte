@@ -4,30 +4,25 @@
 	import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 	import { onDestroy } from 'svelte';
 
-	const specificRtdAmount = 30;
-	const randomRtdAmount = 20;
+	const rtdAmount = 20;
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
 		donations.forEach((d) => {
-			let effect: string | undefined;
-			if (
-				d.amount >= specificRtdAmount &&
-				d.message &&
-				rtdEffects.some((e) => d.message?.toLowerCase().endsWith('rtd ' + e))
-			) {
-				effect = d.message.split(' ').at(-1);
-			} else if (d.amount >= randomRtdAmount) {
-				effect = rtdEffects[Math.floor(Math.random() * rtdEffects.length)];
-			}
+			if (d.amount < rtdAmount) return;
 
-			if (effect) {
-				fetch(`/api/rtd/${effect}?token=${settings.current.jfRelayWebSocketToken}`).then(
-					async (resp) => {
-						if (resp.status !== 204) {
-							console.error(await resp.text());
-						}
+			const message = d.message?.toLowerCase();
+			const effect = rtdEffects.find(
+				(e) => message?.includes('rtd ' + e) || message?.includes('rtd: ' + e)
+			);
+      
+			if (!effect) return;
+
+			fetch(`/api/rtd/${effect}?token=${settings.current.jfRelayWebSocketToken}`).then(
+				async (resp) => {
+					if (resp.status !== 204) {
+						console.error(await resp.text());
 					}
-				);
-			}
+				}
+			);
 		});
 	});
 
