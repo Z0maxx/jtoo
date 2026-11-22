@@ -1,6 +1,6 @@
 import { fundraisingState } from '$lib/storage.svelte';
 import type { DonationsOverview, Donation, DonationMilestone, Subscriber } from '$lib/types.svelte';
-import { sleep } from '$lib/util';
+import { deepCopy, sleep } from '$lib/util';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
@@ -13,9 +13,21 @@ export namespace Dwb {
 	const donationsSubscribers: Array<Subscriber<Donation[]>> = [];
 	const milestonesSubscribers: Array<Subscriber<DonationMilestone[]>> = [];
 
-	let overview: DonationsOverview | undefined;
+	let overview: DonationsOverview = { goal: 0, raised: 0, donationCount: 0 };
 	let donations: Donation[] = fundraisingState.current.donations;
 	let milestones: DonationMilestone[] = [];
+
+  function overviewCopy() {
+    return deepCopy(overview)
+  }
+
+  function donationsCopy() {
+    return deepCopy(donations)
+  }
+
+  function milestonesCopy() {
+    return deepCopy(milestones)
+  }
 
 	const fetchDwb = createRateLimitedApi({
 		baseUrl: '/api/dwb',
@@ -31,7 +43,7 @@ export namespace Dwb {
 		});
 
 		if (overview) {
-			callback(overview);
+			callback(overviewCopy());
 		}
 
 		fetchAndSetOverview();
@@ -46,7 +58,7 @@ export namespace Dwb {
 		});
 
 		if (donations.length > 0) {
-			callback(donations);
+			callback(donationsCopy());
 		}
 
 		fetchAndSetDonations();
@@ -61,7 +73,7 @@ export namespace Dwb {
 		});
 
 		if (milestones.length > 0) {
-			callback(milestones);
+			callback(milestonesCopy());
 		}
 
 		fetchAndSetMilestones();
@@ -99,7 +111,7 @@ export namespace Dwb {
 					donationCount: dwbOverview.numDonations
 				};
 
-				overviewSubscribers.forEach((s) => s.handler(overview!));
+				overviewSubscribers.forEach((s) => s.handler(overviewCopy()));
 				lastETag = eTag;
 			}
 		});
@@ -124,14 +136,12 @@ export namespace Dwb {
 					avatarUrl: d.avatarImageUrl
 				}));
 
-				console.log(newDonations);
-
 				if (newDonations.length === 0) return;
 
 				const newDonationIds = newDonations.map((d) => d.id);
 				donations = donations.filter((d) => !newDonationIds.includes(d.id)).concat(newDonations);
 				fundraisingState.current.donations = donations;
-				donationsSubscribers.forEach((s) => s.handler(donations));
+				donationsSubscribers.forEach((s) => s.handler(donationsCopy()));
 				lastETag = eTag;
 			}
 		});
@@ -156,7 +166,7 @@ export namespace Dwb {
 
 				if (milestones.length === 0) return;
 
-				milestonesSubscribers.forEach((s) => s.handler(milestones));
+				milestonesSubscribers.forEach((s) => s.handler(milestonesCopy()));
 				lastETag = eTag;
 			}
 		});
