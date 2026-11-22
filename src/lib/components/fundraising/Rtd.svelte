@@ -4,13 +4,13 @@
 	import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 	import { onDestroy } from 'svelte';
 
-	const customRtdAmount = 30;
+	const specificRtdAmount = 30;
 	const randomRtdAmount = 20;
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
 		donations.forEach((d) => {
 			let effect: string | undefined;
 			if (
-				d.amount >= customRtdAmount &&
+				d.amount >= specificRtdAmount &&
 				d.message &&
 				rtdEffects.some((e) => d.message?.toLowerCase().endsWith('rtd ' + e))
 			) {
