@@ -88,20 +88,27 @@
 		class="flex w-full border-b-4 border-ctp-lavender/50"
 		style:filter={getFiltersStyle()}
 	>
-		{#if settings.current.enableFundraisingSection}
-			{#if fundraisingState.current.eventUrl}
-				<FundraisingSection />
-			{:else}
-				<div class="text-6xl">Fundraising event is not set</div>
-			{/if}
-		{/if}
-	</div>
-	<div
-		class="aspect-video w-1/2
+		<div
+			class="aspect-video w-1/2
   {settings.current.enablePOVGuide
-			? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
-			: ''}"
-	></div>
+				? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
+				: ''}"
+		>
+			{#if settings.current.enableFundraisingSection}
+				{#if fundraisingState.current.eventUrl}
+					<FundraisingSection />
+				{:else}
+					<div class="text-6xl">Fundraising event is not set</div>
+				{/if}
+			{/if}
+		</div>
+		<div
+			class="aspect-video w-1/2
+  {settings.current.enablePOVGuide
+				? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
+				: ''}"
+		></div>
+	</div>
 {/if}
 
 <!-- MARK: bottom bar -->
