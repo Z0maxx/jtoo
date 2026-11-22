@@ -25,7 +25,7 @@
 	} from '$lib/types.svelte';
 	// import * as _ from 'underscore';
 
-	import { obsConnect, setScene } from '$lib/websockets/obs/ws-obs';
+	import { obsConnect, obsStatus, setScene } from '$lib/websockets/obs/ws-obs.svelte';
 	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
 	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
@@ -242,6 +242,15 @@
 							}
 						}}>connect</button
 					>
+					<div class="flex gap-2">
+						<p>status:</p>
+						<span class={feedStates[obsStatus.state].color}>
+							{feedStates[obsStatus.state].state}
+						</span>
+					</div>
+					{#if obsStatus.error}
+						<span class="col-span-full text-red-300">{obsStatus.error}</span>
+					{/if}
 				</div>
 			</Accordion>
 			<Accordion title="ksn server websocket" defaultstate="closed">
@@ -263,28 +272,11 @@
 						>connect</button
 					>
 					<div class="flex gap-2">
-						<p>live feed:</p>
+						<p>status:</p>
 						<span class={feedStates[live.raceState].color}>
 							{feedStates[live.raceState].state}
 						</span>
 					</div>
-
-					<!-- the websocket state keeps reverting to 'closed' even when the connection is still open -->
-					<!-- <div class="flex gap-2">
-					<p>status:</p>
-					{#key ksnWs.wsState}
-						{@const wsState: {state: string, color: string} =
-							// prettier-ignore
-							ksnWs.wsState == WebSocket.CONNECTING ? { state: 'connecting...', color: 'text-yellow-200'}
-							: ksnWs.wsState == WebSocket.OPEN ? { state: 'connected', color: 'text-green-300'}
-							: ksnWs.wsState == WebSocket.CLOSING ? { state: 'closing...', color: 'text-red-200'}
-							: ksnWs.wsState == WebSocket.CLOSED ? {state: 'closed', color:  'text-black'}
-							: {state: '', color: ''}}
-						<span class={wsState.color}>
-							{wsState.state}
-						</span>
-					{/key}
-				</div> -->
 				</div>
 				<div class="flex gap-2">
 					<label for="input-console-url">console url: </label>
