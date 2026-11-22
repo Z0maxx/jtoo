@@ -19,7 +19,7 @@
 		{@const player = getPlayer(leader.steamId3)}
 		<div class="text-center text-xl opacity-70">leader</div>
 		<div class="flex items-center gap-4 text-3xl">
-			{#if player.avatarURL}
+			{#if settings.current.enableAvatars && player.avatarURL}
 				<div>
 					<img
 						in:fade

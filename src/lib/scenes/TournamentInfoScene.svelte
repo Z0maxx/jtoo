@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { pool } from '$lib/storage.svelte';
+	import { pool, settings } from '$lib/storage.svelte';
 	import { getMap, getPlayer } from '$lib/util';
 	import { poolMaps, poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext } from 'svelte';
@@ -25,7 +25,9 @@
 			{#each poolPlayers() as playerId, i (i)}
 				{@const player = getPlayer(playerId)}
 				<div>
-					<img src={player.avatarURL} alt="{player.name}'s avatar" />
+					{#if settings.current.enableAvatars && player.avatarURL}
+						<img src={player.avatarURL} alt="{player.name}'s avatar" />
+					{/if}
 					<div>{player.name}</div>
 				</div>
 			{/each}

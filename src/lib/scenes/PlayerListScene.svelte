@@ -36,12 +36,15 @@
 		{/if}
 	{/if}
 	<ul
-		class="grid {settings.current.enableFlags
-			? 'grid-cols-[repeat(6,auto)]'
-			: 'grid-cols-[repeat(5,auto)]'} gap-x-6 gap-y-4 text-4xl"
+		class="grid gap-x-6 gap-y-4 text-4xl"
+		style:grid-template-columns="repeat({(settings.current.enableAvatars ? 1 : 0) +
+			(settings.current.enableFlags ? 1 : 0) +
+			4}, auto)"
 	>
-		<!-- avatar -->
-		<li></li>
+		{#if settings.current.enableAvatars}
+			<!-- avatar -->
+			<li></li>
+		{/if}
 		{#if settings.current.enableFlags}
 			<!-- flag -->
 			<li></li>
@@ -66,15 +69,19 @@
 {/snippet}
 
 {#snippet PlayerSnippet(player: Player)}
-	<li class="-mt-2 -mb-2">
-		<img
-			in:fade
-			src={player.avatarURL}
-			alt=""
-			class="size-24 rounded-xl object-cover object-center"
-			draggable="false"
-		/>
-	</li>
+	{#if settings.current.enableAvatars}
+		<li class="-mt-2 -mb-2">
+			{#if player.avatarURL}
+				<img
+					in:fade
+					src={player.avatarURL}
+					alt=""
+					class="size-24 rounded-xl object-cover object-center"
+					draggable="false"
+				/>
+			{/if}
+		</li>
+	{/if}
 	{#if settings.current.enableFlags}
 		<li class="-mt-2 -mb-2">
 			{#if player.flag}

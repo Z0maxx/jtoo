@@ -18,6 +18,10 @@
 
 	let tournament = $derived(live.tournament);
 	let rounds = $derived(tournament?.rounds ?? []);
+	// avatar, flag and name, as PlayerCells renders them
+	let playerColumns = $derived(
+		(settings.current.enableAvatars ? 1 : 0) + (settings.current.enableFlags ? 1 : 0) + 1
+	);
 
 	// -1 is the cumulative standings, otherwise an index into rounds
 	let selected = $state(0);
@@ -117,15 +121,17 @@
 			</button>
 		</ul>
 		{#if selectedRound}
+			<!-- position, the player's columns, gap and pr -->
 			<ul
-				class="grid {settings.current.enableFlags
-					? 'grid-cols-[repeat(6,max-content)]'
-					: 'grid-cols-[repeat(5,max-content)]'} items-center justify-center gap-x-6 gap-y-2 text-3xl"
+				class="grid items-center justify-center gap-x-6 gap-y-2 text-3xl"
+				style:grid-template-columns="repeat({1 + playerColumns + 2}, max-content)"
 			>
 				<!--position-->
 				<li></li>
-				<!--avatar-->
-				<li></li>
+				{#if settings.current.enableAvatars}
+					<!--avatar-->
+					<li></li>
+				{/if}
 				{#if settings.current.enableFlags}
 					<!--flag-->
 					<li></li>
@@ -141,15 +147,17 @@
 				{/each}
 			</ul>
 		{:else if selected == -1}
+			<!-- position, the player's columns, a placement per round and the score -->
 			<ul
 				class="grid items-center justify-center gap-x-6 gap-y-2 text-3xl"
-				style:grid-template-columns="repeat({(settings.current.enableFlags ? 5 : 4) +
-					rounds.length}, max-content)"
+				style:grid-template-columns="repeat({1 + playerColumns + rounds.length + 1}, max-content)"
 			>
 				<!--position-->
 				<li></li>
-				<!--avatar-->
-				<li></li>
+				{#if settings.current.enableAvatars}
+					<!--avatar-->
+					<li></li>
+				{/if}
 				{#if settings.current.enableFlags}
 					<!--flag-->
 					<li></li>
@@ -180,18 +188,20 @@
 
 {#snippet PlayerCells(steamId3: number)}
 	{@const player = getPlayer(steamId3)}
-	<!-- avatar -->
-	<li>
-		{#if player.avatarURL}
-			<img
-				in:fade
-				src={player.avatarURL}
-				alt=""
-				class="size-16 rounded-xl object-cover object-center"
-				draggable="false"
-			/>
-		{/if}
-	</li>
+	{#if settings.current.enableAvatars}
+		<!-- avatar -->
+		<li>
+			{#if player.avatarURL}
+				<img
+					in:fade
+					src={player.avatarURL}
+					alt=""
+					class="size-16 rounded-xl object-cover object-center"
+					draggable="false"
+				/>
+			{/if}
+		</li>
+	{/if}
 	{#if settings.current.enableFlags}
 		<!-- flag -->
 		<li>

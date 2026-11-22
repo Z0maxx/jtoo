@@ -37,7 +37,11 @@
 
 {#if rows.length > 0}
 	<section class="{styleClass} absolute top-0 left-0 z-20 p-2" transition:fade>
-		<div class="grid grid-cols-[repeat(4,auto)] gap-x-2 gap-y-0 text-xl *:m-0 *:p-0">
+		<!-- position, avatar (when shown), name and gap -->
+		<div
+			class="grid gap-x-2 gap-y-0 text-xl *:m-0 *:p-0"
+			style:grid-template-columns="repeat({settings.current.enableAvatars ? 4 : 3}, auto)"
+		>
 			{#each rows as entry, i (entry.steamId3)}
 				{@render Row(entry, i)}
 			{/each}
@@ -55,18 +59,20 @@
 	{@const out = isOut(entry)}
 	<!-- position -->
 	<div class={out ? 'opacity-40' : ''}>{out ? '-' : i + 1}</div>
-	<!-- avatar -->
-	<div class={out ? 'opacity-40' : ''}>
-		{#if player.avatarURL}
-			<img
-				in:fade
-				src={player.avatarURL}
-				alt=""
-				class="size-7 rounded-md object-cover object-center"
-				draggable="false"
-			/>
-		{/if}
-	</div>
+	{#if settings.current.enableAvatars}
+		<!-- avatar -->
+		<div class={out ? 'opacity-40' : ''}>
+			{#if player.avatarURL}
+				<img
+					in:fade
+					src={player.avatarURL}
+					alt=""
+					class="size-7 rounded-md object-cover object-center"
+					draggable="false"
+				/>
+			{/if}
+		</div>
+	{/if}
 	<!-- name -->
 	<div class={out ? 'line-through opacity-40' : ''}>
 		{playerLabel(entry.steamId3, maxNameLength)}

@@ -27,13 +27,15 @@
 		<!-- header -->
 		<div class="grid grid-cols-3 items-center justify-center gap-x-4 text-center text-3xl">
 			<div class="justify-self-end">
-				<img
-					in:fade
-					src={getPlayer(live.leader.steamId3).avatarURL}
-					alt=""
-					class="size-13 rounded-xl object-cover object-center"
-					draggable="false"
-				/>
+				{#if settings.current.enableAvatars && getPlayer(live.leader.steamId3).avatarURL}
+					<img
+						in:fade
+						src={getPlayer(live.leader.steamId3).avatarURL}
+						alt=""
+						class="size-13 rounded-xl object-cover object-center"
+						draggable="false"
+					/>
+				{/if}
 			</div>
 			<div class="col-span-2 mt-2 h-11">
 				<span>
