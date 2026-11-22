@@ -9,8 +9,8 @@
 	import Donations from './Donations.svelte';
 	import Rtd from './Rtd.svelte';
 
-	fundraisingState.current.lastDisplayedDonationId = '';
-	fundraisingState.current.displayedDonations = [];
+	/*fundraisingState.current.lastDisplayedDonationId = '';
+	fundraisingState.current.displayedDonations = [];*/
 	const displayedDonationCount = 7;
 	let iteratingDonations = false;
 	const iterateDonations = () => settings.current.enableFundraisingDonations;
@@ -75,6 +75,7 @@
 
 <style>
 	:global(:root) {
-		--restore-animation-after: 2s;
+    /*--restore-animation-after: 2s*/
+		--restore-animation-after: 10s;
 	}
 </style>

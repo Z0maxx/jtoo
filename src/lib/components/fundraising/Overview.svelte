@@ -9,11 +9,11 @@
 	import { sleep } from '$lib/util';
 	import { fundraisingState } from '$lib/storage.svelte';
 
-	fundraisingState.current.progressBar.raised = 0;
+	/*fundraisingState.current.progressBar.raised = 0;
 	fundraisingState.current.progressBar.sumRaised = 0;
 	fundraisingState.current.stage = 0;
 	fundraisingState.current.stage = 0;
-	fundraisingState.current.sumGoal = 0;
+	fundraisingState.current.sumGoal = 0;*/
 	const emptyImage = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 	let advancingProgressBar = false;
 	let overview: DonationsOverview = $state({
@@ -51,14 +51,16 @@
 		advancingProgressBar = true;
 		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
 		//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
-			fundraisingState.current.progressBar.sumRaised += 4;
-			fundraisingState.current.progressBar.raised += 4;
+			fundraisingState.current.progressBar.sumRaised++;
+			fundraisingState.current.progressBar.raised++;
+      /*fundraisingState.current.progressBar.sumRaised += 4;
+			fundraisingState.current.progressBar.raised += 4;*/
 			if (goalPercentage() === 100) {
 				const explosionLeft = document.getElementById('explosion-left')! as HTMLImageElement;
 				const explosionRight = document.getElementById('explosion-right')! as HTMLImageElement;
 				explosionLeft.src = emptyImage;
 				explosionRight.src = emptyImage;
-				if (fundraisingState.current.stage % 2 === 0) {
+				if (isStageEven()) {
 					explosionRight.src = explosion;
 				} else {
 					explosionLeft.src = explosion;
@@ -70,6 +72,7 @@
 			}
 
 			await sleep(10);
+      //await sleep(2);
 		}
 
 		advancingProgressBar = false;
