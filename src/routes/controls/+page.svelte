@@ -153,8 +153,6 @@
 			<EditBracket />
 			<ManageBrackets />
 		</div>
-
-		<ItemInput placeholder="add stage" item="stages" />
 	</Accordion>
 
 	<Accordion title="scenes">
@@ -407,6 +405,7 @@
 				}}>reset to default</button
 			>
 		</div>
+		<ItemInput placeholder="add stage" item="stages" class="pb-2" />
 		<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
 	</div>
 {/if}
