@@ -10,7 +10,14 @@
 	type Props = { numPlayers: number; class?: string };
 	let { numPlayers, class: styleClass }: Props = $props();
 
-	let raceWindow = $derived(live.currentRace?.window);
+	// 'clear timers' in the controls hides runs and race windows that started before it, so
+	// the board reads 0 between rounds until the next race starts
+	let clearedAt = $derived(overlay.current.timersClearedAt ?? 0);
+	let raceWindow = $derived.by(() => {
+		const window = live.currentRace?.window;
+		if (!window || (window.startsAt ?? 0) < clearedAt) return undefined;
+		return window;
+	});
 	let timeLeftMs = $derived(
 		raceWindow?.state === 'racing' ? countdownMs(raceWindow, live.serverNow()) : null
 	);
@@ -37,7 +44,9 @@
 {/if}
 
 {#snippet PlayerStopwatch(player: SteamID3 | undefined)}
-	{@const entry = live.entryFor(player)}
+	{@const found = live.entryFor(player)}
+	{@const entry =
+		found && found.runStartedAt !== null && found.runStartedAt >= clearedAt ? found : undefined}
 	<div class="text-palewhite flex h-fit flex-col justify-start text-center">
 		{#if player}
 			<div class="text-xl opacity-80 {settings.current.font}">run timer</div>

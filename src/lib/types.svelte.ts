@@ -164,6 +164,8 @@ export type Overlay = {
 	stage: string;
 	tournament: string; // console tournament id the leaderboard shows; '' follows the race
 	bracket: string; // id of the bracket the bracket scene shows
+	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
+	timersClearedAt?: number;
 };
 
 // the event's players and maps, imported from a console player pool and map pool

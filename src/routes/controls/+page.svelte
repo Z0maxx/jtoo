@@ -126,6 +126,13 @@
 {#if ksnWs}
 	<!-- presets -->
 	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
+		<button
+			class="button-remove"
+			onclick={() => {
+				// in console time, so it compares with the race's own timestamps
+				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
+			}}>clear timers</button
+		>
 		<button class="button-remove" onclick={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</button
 		>
