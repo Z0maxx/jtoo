@@ -48,6 +48,15 @@
 	let hovered = $state(false);
 	let refreshMissed = false; // a refresh came due while hovered
 
+	// the name filter applies straight away, on top of the race filtering above
+	let nameFilter = $state('');
+	const playerLabel = (sId3: SteamID3) => getPlayer(sId3).name || `[U:1:${sId3}]`;
+	let shownPlayers = $derived.by(() => {
+		const query = nameFilter.trim().toLowerCase();
+		if (!query) return players;
+		return players.filter((sId3) => playerLabel(sId3).toLowerCase().includes(query));
+	});
+
 	function refresh() {
 		if (hovered) {
 			refreshMissed = true;
@@ -115,6 +124,16 @@
 			{#if items.current.players.length === 0}
 				<span class="text-ctp-text/50">no players..</span>
 			{:else}
+				<input
+					type="search"
+					class="input mb-2"
+					placeholder="filter by name"
+					aria-label="filter player {getLabel(playerNum)} by name"
+					bind:value={nameFilter}
+					onkeydown={(e) => {
+						if (e.key === 'Escape') nameFilter = '';
+					}}
+				/>
 				<div
 					role="group"
 					onmouseenter={() => (hovered = true)}
@@ -124,8 +143,8 @@
 					}}
 				>
 					<RadioInputs
-						optlabels={players.map((sId3) => getPlayer(sId3).name || `[U:1:${sId3}]`)}
-						opts={players}
+						optlabels={shownPlayers.map(playerLabel)}
+						opts={shownPlayers}
 						bind:value={overlay.current.players[playerNum]}
 						onchange={() => {
 							jfRelayWs.broadcastSelectedPlayers(overlay.current.players);
