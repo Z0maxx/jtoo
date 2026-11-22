@@ -98,7 +98,62 @@ async function importPlayerPool(poolId: string): Promise<number> {
 
 	const ids = poolPlayers.map((p) => Number(p.steamAccountId));
 	pool.current = { ...pool.current, players: ids, playerPoolName: group.name };
+
+	// in the background, so the import isn't held up by a Tempus lookup per player
+	fillTempusStats(poolPlayers);
 	return ids.length;
+}
+
+// bumped by each import, so a re-import stops the previous one's lookups instead of
+// running alongside them
+let tempusRun = 0;
+
+/**
+ * Refreshes the pool players' Tempus ranks, WRs and TTs on every import. Players JTOO has a
+ * Tempus ID for are fetched directly; the rest are found by Steam ID first. One player at a
+ * time, to go easy on Tempus.
+ */
+async function fillTempusStats(poolPlayers: ConsolePlayer[]) {
+	const run = ++tempusRun;
+	for (const cp of poolPlayers) {
+		if (run !== tempusRun) return;
+		const steamID3: SteamID3 = Number(cp.steamAccountId);
+		const existing = items.current.players.find((p) => p.steamID3 == steamID3);
+		if (!existing) continue;
+
+		let stats: Player | null = null;
+		try {
+			stats = existing.tempusID
+				? await Tempus2.fetchPlayerByTempusID(existing.tempusID)
+				: await Tempus2.fetchPlayerBySteamID3(steamID3, [
+						existing.name,
+						cp.displayName,
+						cp.personaName
+					]);
+		} catch (e) {
+			console.error(`console pools: tempus stats for ${existing.name} failed`, e);
+		}
+		if (!stats) {
+			console.warn(`console pools: ${existing.name} not found on Tempus`);
+			continue;
+		}
+
+		if (run !== tempusRun) return;
+
+		// only the Tempus details: the name, flag and avatar stay as the console has them.
+		// looked up again by steamID3, since the list may have changed during the fetch
+		const index = items.current.players.findIndex((p) => p.steamID3 == steamID3);
+		if (index < 0) continue;
+		const updated = [...items.current.players];
+		updated[index] = {
+			...updated[index],
+			tempusID: stats.tempusID,
+			rank: stats.rank,
+			WRs: stats.WRs,
+			TTs: stats.TTs
+		};
+		items.current.players = updated;
+	}
 }
 
 async function importMapPool(poolId: string): Promise<number> {
