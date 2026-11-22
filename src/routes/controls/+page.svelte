@@ -37,8 +37,10 @@
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
-	// the controls open their own race feed, only to show whether the console is reachable
+	// the controls open their own race feed, to show whether the console is reachable and to
+	// order the player lists by the race's leaderboard
 	const live = new ConsoleLive();
+	setContext('consoleLive', live);
 
 	// the event's players and maps come from console pools, imported on every startup
 	let poolImport: PoolImportResult | 'importing' | undefined = $state();
