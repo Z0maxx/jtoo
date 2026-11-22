@@ -66,6 +66,8 @@
 	function roundIsValid(round: TournamentRound) {
 		return !round.voided && round.finalized;
 	}
+	// the total table only draws valid rounds, so its columns count only those
+	let validRoundCount = $derived(rounds.filter(roundIsValid).length);
 </script>
 
 <!-- isolated border filter -->
@@ -150,7 +152,7 @@
 			<!-- position, the player's columns, a placement per round and the score -->
 			<ul
 				class="grid items-center justify-center gap-x-6 gap-y-2 text-3xl"
-				style:grid-template-columns="repeat({1 + playerColumns + rounds.length + 1}, max-content)"
+				style:grid-template-columns="repeat({1 + playerColumns + validRoundCount + 1}, max-content)"
 			>
 				<!--position-->
 				<li></li>
