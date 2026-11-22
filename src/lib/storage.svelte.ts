@@ -78,10 +78,11 @@ export const defaultFundraisingState: FundraisingState = {
 	eventUrl: '',
 	lastDisplayedDonationId: '',
 	lastDisplayedDonationWithMessageId: '',
+	lastDonationWithRtdEffectId: '',
 	donations: [],
 	displayedDonations: [],
 	stage: 0,
-  animationStage: 0,
+	animationStage: 0,
 	sumGoal: 0,
 	progressBar: {
 		raised: 0,

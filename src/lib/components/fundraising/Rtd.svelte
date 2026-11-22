@@ -1,28 +1,36 @@
 <script lang="ts">
 	import { Dwb } from '$lib/api/dwb/api-dwb';
-	import { settings } from '$lib/storage.svelte';
+	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 	import { onDestroy } from 'svelte';
 
+  fundraisingState.current.lastDonationWithRtdEffectId = ''
 	const rtdAmount = 20;
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
-		donations.forEach((d) => {
+    donations[0].message = 'rtd: snail'
+    donations[0].amount = 30
+		const idx = donations.findIndex(
+			(d) => d.id === fundraisingState.current.lastDonationWithRtdEffectId
+		);
+		donations.slice(idx + 1).forEach(async (d) => {
 			if (d.amount < rtdAmount) return;
 
 			const message = d.message?.toLowerCase();
 			const effect = rtdEffects.find(
 				(e) => message?.includes('rtd ' + e) || message?.includes('rtd: ' + e)
 			);
-      
+
 			if (!effect) return;
 
-			fetch(`/api/rtd/${effect}?token=${settings.current.jfRelayWebSocketToken}`).then(
+			await fetch(`/api/rtd/${effect}?token=${settings.current.jfRelayWebSocketToken}`).then(
 				async (resp) => {
 					if (resp.status !== 204) {
 						console.error(await resp.text());
 					}
 				}
 			);
+
+			fundraisingState.current.lastDonationWithRtdEffectId = d.id;
 		});
 	});
 

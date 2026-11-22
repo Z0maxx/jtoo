@@ -217,10 +217,11 @@ export type FundraisingState = {
 	eventUrl: string;
 	lastDisplayedDonationId: string;
 	lastDisplayedDonationWithMessageId: string;
+	lastDonationWithRtdEffectId: string;
 	donations: Donation[];
 	displayedDonations: Donation[];
 	stage: number;
-  animationStage: number;
+	animationStage: number;
 	sumGoal: number;
 	progressBar: {
 		raised: number;

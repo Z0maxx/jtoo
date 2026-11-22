@@ -25,4 +25,5 @@
 
 - Same steps as in Testing donations
 - In connections set the jf relay websocket plugin token
-- If you want to test specific RTD effects, set a donation's amount to at least 30 and the message to 'rtd snail' for example
+- Enable the commented out lines in Rtd component
+- Set a donation's amount to at least 20 and the message to 'rtd snail' for example
