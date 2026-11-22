@@ -1,24 +1,24 @@
 <script lang="ts">
-	import { fundraisingState, settings } from '$lib/storage.svelte';
+	import { fundraisingState } from '$lib/storage.svelte';
 	import type { Donation } from '$lib/types.svelte';
 	import { sleep } from '$lib/util';
 	import { untrack } from 'svelte';
 
 	let replaced: string | null = $state(null);
-	let donations: Donation[] = $state([
-		{ id: '', name: '', amount: 0 },
-		{ id: '', name: '', amount: 0 }
-	]);
+	let donations: Donation[] = $state(
+		Array.from({ length: 2 }).map(() => ({ id: '', name: '', amount: 0 }))
+	);
 
 	let switchIdx = 0;
 	let iteratingDonations = false;
 	let setDonationsOnce = false;
 
 	$effect(() => {
-		const donationsWithMessages =
-			fundraisingState.current.displayedDonations /*.filter(d => !!d.message)*/
-				.toReversed();
 		if (iteratingDonations) return;
+
+		const donationsWithMessages = fundraisingState.current.displayedDonations
+			.filter((d) => !!d.message)
+			.toReversed();
 
 		iteratingDonations = true;
 		iterateDonations(donationsWithMessages);
@@ -75,7 +75,7 @@
 >
 	{#each donations as donation}
 		<div
-			class="flex flex-col items-center rounded-md border-2 border-white bg-bordeaux px-2 py-1 transition-colors w-120 h-90
+			class="flex h-90 w-120 flex-col items-center rounded-md border-2 border-white bg-bordeaux px-2 py-1 transition-colors
         {donation.id === replaced ? 'text-transparent' : ''}"
 		>
 			{#if donation.id !== ''}
@@ -86,9 +86,9 @@
 					<span>{donation.name}</span>
 				</div>
 				<div>${donation.amount}</div>
-				<div class="overflow-hidden truncate max-w-full text-wrap">
-					{donation.message ??
-						'Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu'
+				<div class="max-w-full truncate overflow-hidden text-wrap">
+					{donation.message //??
+						/*'Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu'*/
             /*Array.from({ length: 500 }).map(() => 'W').join('')*/}
 				</div>
 			{/if}
