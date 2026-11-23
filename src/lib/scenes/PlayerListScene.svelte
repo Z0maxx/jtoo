@@ -11,6 +11,15 @@
 	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
 
 	const drawBG: boolean = !page.url.searchParams.has('nobg');
+
+	// compact rows so 16 fit on a 1080p canvas: 48px rows, 2px dividers and 4px gaps
+	const MAX_PLAYERS = 16;
+	let players = $derived(
+		poolPlayers()
+			.map((id) => getPlayer(id))
+			.filter((p) => p.name)
+			.slice(0, MAX_PLAYERS)
+	);
 </script>
 
 <!-- isolated border filter -->
@@ -36,7 +45,7 @@
 		{/if}
 	{/if}
 	<ul
-		class="grid gap-x-6 gap-y-4 text-4xl"
+		class="grid items-center gap-x-6 gap-y-1 text-3xl"
 		style:grid-template-columns="repeat({(settings.current.enableAvatars ? 1 : 0) +
 			(settings.current.enableFlags ? 1 : 0) +
 			4}, auto)"
@@ -54,12 +63,10 @@
 		{@render Header('world records')}
 		{@render Header('top times')}
 
-		<hr class="hr" />
-		{#each poolPlayers().map((id) => getPlayer(id)) as player, i (i)}
-			{#if player.name}
-				{@render PlayerSnippet(player)}
-				<hr class="hr" />
-			{/if}
+		<hr class="hr my-0" />
+		{#each players as player, i (i)}
+			{@render PlayerSnippet(player)}
+			<hr class="hr my-0" />
 		{/each}
 	</ul>
 </section>
@@ -70,22 +77,22 @@
 
 {#snippet PlayerSnippet(player: Player)}
 	{#if settings.current.enableAvatars}
-		<li class="-mt-2 -mb-2">
+		<li class="size-12">
 			{#if player.avatarURL}
 				<img
 					in:fade
 					src={player.avatarURL}
 					alt=""
-					class="size-24 rounded-xl object-cover object-center"
+					class="size-12 rounded-lg object-cover object-center"
 					draggable="false"
 				/>
 			{/if}
 		</li>
 	{/if}
 	{#if settings.current.enableFlags}
-		<li class="-mt-2 -mb-2">
+		<li class="flex h-12 items-center">
 			{#if player.flag}
-				<Flag code={player.flag} class="rounded-xl text-[6rem]" />
+				<Flag code={player.flag} class="rounded-md text-[2.25rem]" />
 			{/if}
 		</li>
 	{/if}
@@ -97,7 +104,7 @@
 {/snippet}
 
 {#snippet BodyCell(content: string, noFilter: boolean = false)}
-	<li class="-mt-2 -mb-2" style:filter={noFilter ? '' : getFiltersStyle()}>
+	<li class="flex h-12 items-center" style:filter={noFilter ? '' : getFiltersStyle()}>
 		{content}
 	</li>
 {/snippet}
