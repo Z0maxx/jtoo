@@ -4,6 +4,7 @@ import { deepCopy, sleep } from '$lib/util';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
+  fundraisingState.current.donations = []
 	const participantEndpoint = () =>
 		'/participants/' + fundraisingState.current.eventUrl.split('/').at(-1);
 	const fetching = new Set<DwbModelName>();
@@ -121,7 +122,7 @@ export namespace Dwb {
 		let lastETag = '';
 		fetchEndpointInLoop<DwbDonation[]>({
 			endpoint: () =>
-				`${participantEndpoint()}/donations?offset=${donations.length + 1}&orderBy=createdDateUTC%20ASC`,
+				`${participantEndpoint()}/donations?offset=${donations.length}&orderBy=createdDateUTC%20ASC`,
 			modelName: 'donations',
 			fetchUntil: () => donationsSubscribers.length > 0,
 			callback: (dwbDonations) => {
@@ -135,6 +136,8 @@ export namespace Dwb {
 					message: d.message,
 					avatarUrl: d.avatarImageUrl
 				}));
+
+        console.log(newDonations)
 
 				if (newDonations.length === 0) return;
 
