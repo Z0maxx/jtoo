@@ -4,11 +4,11 @@
 	import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 	import { onDestroy } from 'svelte';
 
-  fundraisingState.current.lastDonationWithRtdEffectId = ''
+	// fundraisingState.current.lastDonationWithRtdEffectId = '';
 	const rtdAmount = 20;
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
-    donations[0].message = 'rtd: snail'
-    donations[0].amount = 30
+		// donations[0].message = 'rtd: snail';
+		// donations[0].amount = 30;
 		const idx = donations.findIndex(
 			(d) => d.id === fundraisingState.current.lastDonationWithRtdEffectId
 		);
