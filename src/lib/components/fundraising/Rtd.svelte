@@ -4,15 +4,16 @@
 	import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 	import { onDestroy } from 'svelte';
 
-  fundraisingState.current.lastDonationWithRtdEffectId = ''
+  //fundraisingState.current.lastDonationProcessedByRtdId = ''
 	const rtdAmount = 20;
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
     donations[0].message = 'rtd: snail'
     donations[0].amount = 30
 		const idx = donations.findIndex(
-			(d) => d.id === fundraisingState.current.lastDonationWithRtdEffectId
+			(d) => d.id === fundraisingState.current.lastDonationProcessedByRtdId
 		);
 		donations.slice(idx + 1).forEach(async (d) => {
+      fundraisingState.current.lastDonationProcessedByRtdId = d.id;
 			if (d.amount < rtdAmount) return;
 
 			const message = d.message?.toLowerCase();
@@ -29,8 +30,6 @@
 					}
 				}
 			);
-
-			fundraisingState.current.lastDonationWithRtdEffectId = d.id;
 		});
 	});
 

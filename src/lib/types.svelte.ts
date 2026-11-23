@@ -217,7 +217,7 @@ export type FundraisingState = {
 	eventUrl: string;
 	lastDisplayedDonationId: string;
 	lastDisplayedDonationWithMessageId: string;
-	lastDonationWithRtdEffectId: string;
+	lastDonationProcessedByRtdId: string;
 	donations: Donation[];
 	displayedDonations: Donation[];
 	stage: number;

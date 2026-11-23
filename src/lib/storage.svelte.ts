@@ -78,7 +78,7 @@ export const defaultFundraisingState: FundraisingState = {
 	eventUrl: '',
 	lastDisplayedDonationId: '',
 	lastDisplayedDonationWithMessageId: '',
-	lastDonationWithRtdEffectId: '',
+	lastDonationProcessedByRtdId: '',
 	donations: [],
 	displayedDonations: [],
 	stage: 0,
