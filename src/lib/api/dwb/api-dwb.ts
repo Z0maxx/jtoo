@@ -4,7 +4,7 @@ import { deepCopy, sleep } from '$lib/util';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
-  fundraisingState.current.donations = []
+  //fundraisingState.current.donations = []
 	const participantEndpoint = () =>
 		'/participants/' + fundraisingState.current.eventUrl.split('/').at(-1);
 	const fetching = new Set<DwbModelName>();
@@ -136,8 +136,6 @@ export namespace Dwb {
 					message: d.message,
 					avatarUrl: d.avatarImageUrl
 				}));
-
-        console.log(newDonations)
 
 				if (newDonations.length === 0) return;
 
