@@ -30,15 +30,16 @@
 
 	function getStartingSlots(bracket: AnyBracket, maxPlayers: BracketSize): Slot[] {
 		if (bracket.type == 10) {
+			// top to bottom, as the bracket is drawn
 			return [
 				{ round: 'PlayIn', match: 0, actor: 'A' },
 				{ round: 'PlayIn', match: 0, actor: 'B', gap: true },
+				{ round: 'QuarterFinals', match: 0, actor: 'A', gap: true, note: 'vs play-in 1 winner' },
+				{ round: 'QuarterFinals', match: 1, actor: 'A' },
+				{ round: 'QuarterFinals', match: 1, actor: 'B', gap: true },
 				{ round: 'PlayIn', match: 1, actor: 'A' },
 				{ round: 'PlayIn', match: 1, actor: 'B', gap: true },
-				{ round: 'QuarterFinals', match: 0, actor: 'A', gap: true, note: 'vs play-in 1 winner' },
-				{ round: 'QuarterFinals', match: 1, actor: 'A', gap: true, note: 'vs play-in 2 winner' },
-				{ round: 'QuarterFinals', match: 2, actor: 'A' },
-				{ round: 'QuarterFinals', match: 2, actor: 'B', gap: true },
+				{ round: 'QuarterFinals', match: 2, actor: 'A', gap: true, note: 'vs play-in 2 winner' },
 				{ round: 'QuarterFinals', match: 3, actor: 'A' },
 				{ round: 'QuarterFinals', match: 3, actor: 'B', gap: true }
 			];

@@ -35,19 +35,18 @@
 		console.log(bracket);
 
 		if (size == 10) {
-			// seeds 1-6 seed the quarter-finals like an 8 player bracket, except seeds 1 and 2
-			// wait for the winners of the play-ins (8v9 and 7v10)
+			// top half: 1 v (8v9 winner), 4v5. bottom half: 2 v (7v10 winner), 3v6
 			const b = new Bracket10();
 			b.Upper.PlayIn[0].A = players[7];
 			b.Upper.PlayIn[0].B = players[8];
 			b.Upper.PlayIn[1].A = players[6];
 			b.Upper.PlayIn[1].B = players[9];
 			b.Upper.QuarterFinals[0].A = players[0];
-			b.Upper.QuarterFinals[1].A = players[1];
-			b.Upper.QuarterFinals[2].A = players[2];
-			b.Upper.QuarterFinals[2].B = players[5];
-			b.Upper.QuarterFinals[3].A = players[3];
-			b.Upper.QuarterFinals[3].B = players[4];
+			b.Upper.QuarterFinals[1].A = players[3];
+			b.Upper.QuarterFinals[1].B = players[4];
+			b.Upper.QuarterFinals[2].A = players[1];
+			b.Upper.QuarterFinals[3].A = players[2];
+			b.Upper.QuarterFinals[3].B = players[5];
 			bracket = b;
 		} else {
 			bracket = size == 4 ? new Bracket4() : new Bracket8();

@@ -170,7 +170,8 @@ export class Bracket10 extends Bracket {
 					A: undefined,
 					B: undefined,
 					winner: '',
-					winDest: ['Upper', 'QuarterFinals', 1, 'B'],
+					// the other half of the bracket, so seeds 1 and 2 can only meet in the final
+					winDest: ['Upper', 'QuarterFinals', 2, 'B'],
 					loseDest: null
 				}
 			],

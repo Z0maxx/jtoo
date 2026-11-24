@@ -182,13 +182,18 @@
 					>
 						Upper Bracket
 					</h2>
-					<!-- self-start keeps the play-ins level with the first two quarter-finals -->
-					<div class="flex flex-col self-start">
+					<!-- one row per quarter-final, so each play-in sits level with the match it feeds -->
+					<div class="flex flex-col">
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Play-In</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each saved.bracket.Upper.PlayIn as match, i (i)}
-									{@render Match(match, `Upper.PlayIn.${i}`)}
+								{#each saved.bracket.Upper.QuarterFinals as _, q (q)}
+									{@const i = saved.bracket.Upper.PlayIn.findIndex((m) => m.winDest?.[2] == q)}
+									{#if i == -1}
+										<div class="invisible min-h-32 min-w-60"></div>
+									{:else}
+										{@render Match(saved.bracket.Upper.PlayIn[i], `Upper.PlayIn.${i}`)}
+									{/if}
 								{/each}
 							</div>
 							<div class="background" style:filter={getFiltersStyle()}></div>
