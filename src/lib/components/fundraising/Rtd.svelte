@@ -41,7 +41,7 @@
 <div class="flex flex-col gap-2">
 	<h2 class="text-center text-3xl">RTD enabled!</h2>
 	<div class="flex flex-col gap-1 rounded-md border-2 bg-bordeaux px-2 py-1">
-		<div>Donation at least $20: activate a specific or random RTD effect '</div>
+		<div>Donation at least $20: activate a specific RTD effect</div>
 		<div>
 			Include <span class="font-light italic">'rtd &lt;effect&gt;'</span> at the end of your
 			message, for example
