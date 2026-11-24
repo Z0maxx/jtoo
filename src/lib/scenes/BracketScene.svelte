@@ -251,7 +251,7 @@
 		</section>
 	{:else if saved.bracket.type == 4}
 		<!-- MARK: 4 Player Bracket -->
-		<section class="relative isolate m-auto" {@attach watchSection}>
+		<section class="relative isolate z-1 m-auto" {@attach watchSection}>
 			<div class=" flex flex-col gap-20">
 				<div class="flex gap-40" in:fade>
 					<h2
