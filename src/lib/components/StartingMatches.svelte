@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { formats, type Source } from '$lib/Bracket.svelte';
+	import { formats, type MatchDef, type Source } from '$lib/Bracket.svelte';
 	import type { BracketSize, SteamID3 } from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
+	import { flip } from 'svelte/animate';
 
 	// The first match each seed plays, top to bottom as the bracket is drawn.
 	// Dragging a player onto another swaps their seeds.
@@ -13,11 +14,36 @@
 	};
 	let { size, players = $bindable(), onchange, class: styleClass }: Props = $props();
 
-	let matches = $derived(
-		formats[size].upper
-			.flatMap((round) => round.matches)
-			.filter((m) => 'seed' in m.A || 'seed' in m.B)
+	// the grid rows of each starting match (two rows each, one per spot),
+	// with a row for a divider between each round
+	let layout = $derived.by(() => {
+		const matches: { match: MatchDef; row: number }[] = [];
+		const dividers: number[] = [];
+		let row = 1;
+		for (const round of formats[size].upper) {
+			const starting = round.matches.filter((m) => 'seed' in m.A || 'seed' in m.B);
+			if (!starting.length) continue;
+			if (matches.length) dividers.push(row++);
+			for (const match of starting) {
+				matches.push({ match, row });
+				row += 2;
+			}
+		}
+		return { matches, dividers };
+	});
+
+	// each match's two spots, top to bottom
+	let spots = $derived(
+		layout.matches.flatMap(({ match, row }) => [
+			{ match, side: 'A' as const, source: match.A, row },
+			{ match, side: 'B' as const, source: match.B, row: row + 1 }
+		])
 	);
+
+	// a player spot is tied to its player, so it slides when they move
+	function spotKey(spot: (typeof spots)[number]) {
+		return 'seed' in spot.source ? players[spot.source.seed - 1] : `${spot.match.id}.${spot.side}`;
+	}
 
 	// seeds being dragged and dragged over
 	let dragged = $state(0);
@@ -32,14 +58,24 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2 bg-obs-background {styleClass}">
-	{#each matches as match (match.id)}
-		<div class="grid grid-cols-12 items-center gap-2">
-			<div class="col-span-2 opacity-60">{match.id}</div>
-			<div class="col-span-10 flex flex-col">
-				{@render Entry(match.A)}
-				{@render Entry(match.B)}
-			</div>
+<!-- every spot is in one keyed list, placed on the grid by row, so a player's spot can slide
+     to its new place when seeds are swapped, even into another match -->
+<div class="grid grid-cols-12 gap-x-2 bg-obs-background {styleClass}">
+	{#each layout.matches as { match, row } (match.id)}
+		<div class="col-span-2 self-center opacity-60" style:grid-row="{row} / span 2">
+			{match.id}
+		</div>
+	{/each}
+	{#each layout.dividers as row (row)}
+		<div class="col-span-full mb-2 h-0.5 bg-obs-padding" style:grid-row={row}></div>
+	{/each}
+	{#each spots as spot, i (spotKey(spot))}
+		<div
+			class="col-span-10 col-start-3 {spot.side == 'B' && i < spots.length - 1 ? 'mb-2' : ''}"
+			style:grid-row={spot.row}
+			animate:flip={{ duration: 150 }}
+		>
+			{@render Entry(spot.source)}
 		</div>
 	{/each}
 </div>
