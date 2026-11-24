@@ -134,7 +134,8 @@ export namespace Dwb {
 					name: d.displayName,
 					amount: d.amount,
 					message: d.message,
-					avatarUrl: d.avatarImageUrl
+					avatarUrl: d.avatarImageUrl,
+					createdAt: d.createdDateUTC
 				}));
 
 				if (newDonations.length === 0) return;
@@ -235,6 +236,7 @@ export namespace Dwb {
 		displayName: string;
 		message: string;
 		avatarImageUrl: string;
+		createdDateUTC: string;
 		amount: number;
 	};
 

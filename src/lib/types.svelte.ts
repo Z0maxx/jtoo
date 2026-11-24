@@ -204,6 +204,7 @@ export type Donation = {
 	amount: number;
 	message?: string;
 	avatarUrl?: string;
+	createdAt?: string; // ISO date from DWB; missing on donations saved before it was added
 };
 
 export type DonationMilestone = {

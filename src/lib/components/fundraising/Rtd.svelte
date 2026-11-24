@@ -6,12 +6,21 @@
 
 	//fundraisingState.current.lastDonationProcessedByRtdId = ''
 	const rtdAmount = 20;
+	const mountedAt = Date.now();
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
 		// donations[0].message = 'rtd: snail';
 		// donations[0].amount = 30;
-		const idx = donations.findIndex(
+		let idx = donations.findIndex(
 			(d) => d.id === fundraisingState.current.lastDonationProcessedByRtdId
 		);
+		if (idx === -1) {
+			// no record of what was processed (rtd just enabled, a new event or cleared storage):
+			// treat donations from before this mounted as processed, so old ones don't fire again.
+			// the list is oldest first; a donation without a valid date counts as old
+			idx = donations.findLastIndex((d) => !(Date.parse(d.createdAt ?? '') >= mountedAt));
+			// saved straight away, so later updates match by id instead of by date
+			if (idx > -1) fundraisingState.current.lastDonationProcessedByRtdId = donations[idx].id;
+		}
 		donations.slice(idx + 1).forEach(async (d) => {
 			fundraisingState.current.lastDonationProcessedByRtdId = d.id;
 			if (d.amount < rtdAmount) return;
