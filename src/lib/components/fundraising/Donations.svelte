@@ -12,7 +12,7 @@
 				{#if donation.avatarUrl}
 					<img src={donation.avatarUrl} alt="avatar" class="size-6 rounded-full" />
 				{/if}
-				<span>{donation.name}</span>
+				<span>{donation.name ?? 'anonymous'}</span>
 			</div>
 			<div>${donation.amount}</div>
 		</div>
