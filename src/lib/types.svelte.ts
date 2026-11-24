@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { type Bracket4, type Bracket8 } from './Bracket.svelte';
+import { type AnyBracket } from './Bracket.svelte';
 import type { Tempus2 } from './api/tempus2/api-tempus2';
 
 // MARK: Types
@@ -75,7 +75,7 @@ export const BracketOptions = ['whole', 'upper', 'lower'] as const;
 export type BracketOption = (typeof BracketOptions)[number];
 
 // a double elimination bracket, made on its own from JTOO's players
-export const BracketSizes = [4, 8] as const;
+export const BracketSizes = [4, 8, 10] as const;
 export type BracketSize = (typeof BracketSizes)[number];
 
 export type SavedBracket = {
@@ -83,7 +83,7 @@ export type SavedBracket = {
 	name: string;
 	size: BracketSize;
 	players: SteamID3[]; // seeding order
-	bracket?: Bracket4 | Bracket8;
+	bracket?: AnyBracket;
 };
 
 export function newBracket(): SavedBracket {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { clearMatchWinner, setMatchWinner, type Match } from '$lib/Bracket.svelte';
+	import { clearMatchWinner, setMatchWinner, type Bracket8, type Match } from '$lib/Bracket.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { items, settings, overlay } from '$lib/storage.svelte';
 	import { getPlayer, playerLabel } from '$lib/util';
@@ -106,18 +106,27 @@
 						</svg>
 					{/key}
 				</div>
+				{@render Lower8(saved.bracket.Lower)}
+			</div>
+		</section>
+	{:else if saved.bracket.type == 10}
+		<!-- MARK: 10 Player Bracket -->
+		<!-- the 8 player bracket, with a play-in column in front of the upper quarter-finals -->
+		<section class="z-1 m-auto">
+			<div class=" flex flex-col gap-20">
 				<div class="flex gap-40" in:fade>
 					<h2
 						class="-ml-40 max-w-0 translate-x-30 translate-y-10 rotate-180 text-3xl [writing-mode:vertical-lr]"
 						style:filter={getFiltersStyle()}
 					>
-						Lower Bracket
+						Upper Bracket
 					</h2>
-					<div class="flex flex-col">
-						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Round 1</h2>
+					<!-- self-start keeps the play-ins level with the first two quarter-finals -->
+					<div class="flex flex-col self-start">
+						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Play-In</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each saved.bracket.Lower.Round1 as match, i (i)}
+								{#each saved.bracket.Upper.PlayIn as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -128,7 +137,7 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Quarter Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each saved.bracket.Lower.QuarterFinals as match, i (i)}
+								{#each saved.bracket.Upper.QuarterFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -136,10 +145,10 @@
 						</div>
 					</div>
 					<div class="flex flex-col">
-						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Final</h2>
+						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Finals</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each saved.bracket.Lower.SemiFinal as match, i (i)}
+								{#each saved.bracket.Upper.SemiFinals as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -150,7 +159,18 @@
 						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Final</h2>
 						<div class="grid grow">
 							<div class="stage-container">
-								{#each saved.bracket.Lower.Final as match, i (i)}
+								{#each saved.bracket.Upper.Final as match, i (i)}
+									{@render Match(match)}
+								{/each}
+							</div>
+							<div class="background" style:filter={getFiltersStyle()}></div>
+						</div>
+					</div>
+					<div class="flex flex-col">
+						<h2 class="text-3xl" style:filter={getFiltersStyle()}>Grand Final</h2>
+						<div class="grid grow">
+							<div class="stage-container">
+								{#each saved.bracket.Upper.GrandFinal as match, i (i)}
 									{@render Match(match)}
 								{/each}
 							</div>
@@ -164,28 +184,36 @@
 						{@const col3l = 800}
 						{@const col3r = 1040}
 						{@const col4l = 1200}
+						{@const col4r = 1440}
+						{@const col5l = 1600}
 
-						{@const row1 = 109}
-						{@const row2 = 179}
+						{@const row1 = 108}
+						{@const row2 = 181}
 						{@const row3 = 252}
+						{@const row4 = 323}
+						{@const row5 = 396}
+						{@const row6 = 467}
+						{@const row7 = 541}
 
-						<svg
-							width="1200"
-							height="260"
-							class="absolute -z-1 w-[80%]"
-							style:filter={getFiltersStyle()}
-						>
+						<svg width="1600" height="550" class="absolute -z-1" style:filter={getFiltersStyle()}>
 							{@render Path({ x: col1r, y: row1 }, { x: col2l, y: row1 })}
-
 							{@render Path({ x: col1r, y: row3 }, { x: col2l, y: row3 })}
 
 							{@render Path({ x: col2r, y: row1 }, { x: col3l, y: row2 }, 'down')}
 							{@render Path({ x: col2r, y: row3 }, { x: col3l, y: row2 }, 'up')}
 
-							{@render Path({ x: col3r, y: row2 }, { x: col4l, y: row2 })}
+							{@render Path({ x: col2r, y: row5 }, { x: col3l, y: row6 }, 'down')}
+							{@render Path({ x: col2r, y: row7 }, { x: col3l, y: row6 }, 'up')}
+
+							{@render Path({ x: col3r, y: row2 }, { x: col4l, y: row4 }, 'down')}
+							{@render Path({ x: col3r, y: row6 }, { x: col4l, y: row4 }, 'up')}
+
+							{@render Path({ x: col4r, y: row4 }, { x: col5l, y: row4 })}
 						</svg>
 					{/key}
 				</div>
+				<!-- start the lower bracket under the quarter-finals (one column + gap = 400px) -->
+				{@render Lower8(saved.bracket.Lower, 'ml-100')}
 			</div>
 		</section>
 	{:else if saved.bracket.type == 4}
@@ -304,6 +332,84 @@
 		</section>
 	{/if}
 {/if}
+
+{#snippet Lower8(lower: Bracket8['Lower'], styleClass = '')}
+	<div class="flex gap-40 {styleClass}" in:fade>
+		<h2
+			class="-ml-40 max-w-0 translate-x-30 translate-y-10 rotate-180 text-3xl [writing-mode:vertical-lr]"
+			style:filter={getFiltersStyle()}
+		>
+			Lower Bracket
+		</h2>
+		<div class="flex flex-col">
+			<h2 class="text-3xl" style:filter={getFiltersStyle()}>Round 1</h2>
+			<div class="grid grow">
+				<div class="stage-container">
+					{#each lower.Round1 as match, i (i)}
+						{@render Match(match)}
+					{/each}
+				</div>
+				<div class="background" style:filter={getFiltersStyle()}></div>
+			</div>
+		</div>
+		<div class="flex flex-col">
+			<h2 class="text-3xl" style:filter={getFiltersStyle()}>Quarter Finals</h2>
+			<div class="grid grow">
+				<div class="stage-container">
+					{#each lower.QuarterFinals as match, i (i)}
+						{@render Match(match)}
+					{/each}
+				</div>
+				<div class="background" style:filter={getFiltersStyle()}></div>
+			</div>
+		</div>
+		<div class="flex flex-col">
+			<h2 class="text-3xl" style:filter={getFiltersStyle()}>Semi Final</h2>
+			<div class="grid grow">
+				<div class="stage-container">
+					{#each lower.SemiFinal as match, i (i)}
+						{@render Match(match)}
+					{/each}
+				</div>
+				<div class="background" style:filter={getFiltersStyle()}></div>
+			</div>
+		</div>
+		<div class="flex flex-col">
+			<h2 class="text-3xl" style:filter={getFiltersStyle()}>Final</h2>
+			<div class="grid grow">
+				<div class="stage-container">
+					{#each lower.Final as match, i (i)}
+						{@render Match(match)}
+					{/each}
+				</div>
+				<div class="background" style:filter={getFiltersStyle()}></div>
+			</div>
+		</div>
+		{#key saved.bracket}
+			{@const col1r = 240}
+			{@const col2l = 400}
+			{@const col2r = 640}
+			{@const col3l = 800}
+			{@const col3r = 1040}
+			{@const col4l = 1200}
+
+			{@const row1 = 109}
+			{@const row2 = 179}
+			{@const row3 = 252}
+
+			<svg width="1200" height="260" class="absolute -z-1 w-[80%]" style:filter={getFiltersStyle()}>
+				{@render Path({ x: col1r, y: row1 }, { x: col2l, y: row1 })}
+
+				{@render Path({ x: col1r, y: row3 }, { x: col2l, y: row3 })}
+
+				{@render Path({ x: col2r, y: row1 }, { x: col3l, y: row2 }, 'down')}
+				{@render Path({ x: col2r, y: row3 }, { x: col3l, y: row2 }, 'up')}
+
+				{@render Path({ x: col3r, y: row2 }, { x: col4l, y: row2 })}
+			</svg>
+		{/key}
+	</div>
+{/snippet}
 
 {#snippet Path(A: Coordinate, B: Coordinate, direction?: 'up' | 'down')}
 	{@const mod = direction == 'down' ? 1 : -1}

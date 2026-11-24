@@ -9,7 +9,7 @@ export type Match = {
 };
 
 abstract class Bracket {
-	abstract type: 8 | 4;
+	abstract type: 10 | 8 | 4;
 	Upper: any;
 	Lower: any;
 }
@@ -141,6 +141,45 @@ export class Bracket8 extends Bracket {
 	}
 }
 
+// Same as Bracket8, plus two play-in matches (seeds 8v9 and 7v10) whose winners
+// take the B slot of the matching upper quarter-final. Play-in losers are eliminated.
+export class Bracket10 extends Bracket {
+	type: 10 = 10;
+	Upper: {
+		PlayIn: Match[];
+		QuarterFinals: Match[];
+		SemiFinals: Match[];
+		Final: Match[];
+		GrandFinal: Match[];
+	};
+	Lower: Bracket8['Lower'];
+
+	constructor() {
+		super();
+		const base = new Bracket8();
+		this.Upper = {
+			PlayIn: [
+				{
+					A: undefined,
+					B: undefined,
+					winner: '',
+					winDest: ['Upper', 'QuarterFinals', 0, 'B'],
+					loseDest: null
+				},
+				{
+					A: undefined,
+					B: undefined,
+					winner: '',
+					winDest: ['Upper', 'QuarterFinals', 1, 'B'],
+					loseDest: null
+				}
+			],
+			...base.Upper
+		};
+		this.Lower = base.Lower;
+	}
+}
+
 export class Bracket4 extends Bracket {
 	type: 4 = 4;
 	Upper: { QuarterFinals: Match[]; SemiFinal: Match[]; GrandFinal: Match[] };
@@ -206,6 +245,8 @@ export class Bracket4 extends Bracket {
 		};
 	}
 }
+
+export type AnyBracket = Bracket4 | Bracket8 | Bracket10;
 
 // MARK: REFACTOR
 export function setMatchWinner(bracket: Bracket, m: Match, w: 'A' | 'B' | '') {

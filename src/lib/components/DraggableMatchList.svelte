@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Bracket4, Bracket8 } from '$lib/Bracket.svelte';
+	import type { AnyBracket, Match } from '$lib/Bracket.svelte';
 	import type { BracketSize, Player, SteamID3 } from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
 
@@ -7,7 +7,7 @@
 	let itemBIndex = $state(-1);
 
 	type Props = {
-		bracket: Bracket4 | Bracket8;
+		bracket: AnyBracket;
 		size: BracketSize;
 		onchange?: Function;
 		debug?: boolean;
@@ -21,32 +21,45 @@
 		class: styleClass
 	}: Props = $props();
 
-	let players: SteamID3[] = $derived(getStartingMatches(bracket, size));
+	// a starting position for a player. `gap` ends a match in the list,
+	// and `note` names an opponent that isn't seeded yet
+	type Slot = { round: string; match: number; actor: 'A' | 'B'; gap?: boolean; note?: string };
 
-	function getStartingMatches(bracket: Bracket4 | Bracket8, maxPlayers: BracketSize): SteamID3[] {
-		let list: SteamID3[] = [];
+	let slots: Slot[] = $derived(getStartingSlots(bracket, size));
+	let players: SteamID3[] = $derived(slots.map((s) => getSlotMatch(s)[s.actor]!));
 
+	function getStartingSlots(bracket: AnyBracket, maxPlayers: BracketSize): Slot[] {
+		if (bracket.type == 10) {
+			return [
+				{ round: 'PlayIn', match: 0, actor: 'A' },
+				{ round: 'PlayIn', match: 0, actor: 'B', gap: true },
+				{ round: 'PlayIn', match: 1, actor: 'A' },
+				{ round: 'PlayIn', match: 1, actor: 'B', gap: true },
+				{ round: 'QuarterFinals', match: 0, actor: 'A', gap: true, note: 'vs play-in 1 winner' },
+				{ round: 'QuarterFinals', match: 1, actor: 'A', gap: true, note: 'vs play-in 2 winner' },
+				{ round: 'QuarterFinals', match: 2, actor: 'A' },
+				{ round: 'QuarterFinals', match: 2, actor: 'B', gap: true },
+				{ round: 'QuarterFinals', match: 3, actor: 'A' },
+				{ round: 'QuarterFinals', match: 3, actor: 'B', gap: true }
+			];
+		}
+
+		let list: Slot[] = [];
 		for (let i = 0; i < maxPlayers / 2; i++) {
-			list.push(bracket.Upper.QuarterFinals[i].A!);
-			list.push(bracket.Upper.QuarterFinals[i].B!);
+			list.push({ round: 'QuarterFinals', match: i, actor: 'A' });
+			list.push({ round: 'QuarterFinals', match: i, actor: 'B', gap: true });
 		}
 		return list;
 	}
 
-	function syncBracket(
-		players: SteamID3[],
-		bracket: Bracket4 | Bracket8,
-		maxPlayers: BracketSize
-	) {
-		for (let i = 0; i < maxPlayers; i++) {
-			let actor: 'A' | 'B' = i % 2 == 0 ? 'A' : 'B';
-			let matchIndex: number = Math.floor(i / 2);
-			bracket.Upper.QuarterFinals[matchIndex][actor] = players[i];
-			console.log(`Match ${matchIndex} Actor ${actor} changed to ${players[i]}`);
-			console.log(bracket.Upper.QuarterFinals[matchIndex][actor]);
-			console.log(bracket);
+	function getSlotMatch(slot: Slot): Match {
+		return (bracket.Upper as Record<string, Match[]>)[slot.round][slot.match];
+	}
+
+	function syncBracket(players: SteamID3[]) {
+		for (let i = 0; i < slots.length; i++) {
+			getSlotMatch(slots[i])[slots[i].actor] = players[i];
 		}
-		// bracket = { ...bracket };
 	}
 
 	let playerObjs = $derived(getPlayerObjs(players));
@@ -70,7 +83,7 @@
 		// place dragged item in location of dragover
 		players.splice(bIndex, 0, temp);
 
-		syncBracket(players, bracket, size);
+		syncBracket(players);
 
 		if (onchange) onchange();
 
@@ -88,7 +101,7 @@
 		{#each players as player, i (i)}
 			{@const playerObj = playerObjs[i]}
 			<li
-				class="grid grid-cols-12 bg-obs-padding {i % 2 ? 'mb-2' : ''}"
+				class="grid grid-cols-12 bg-obs-padding {slots[i].gap ? 'mb-2' : ''}"
 				draggable={true}
 				ondragstart={() => {
 					itemAIndex = i;
@@ -110,7 +123,12 @@
 						draggable="false"
 					/>
 				</div>
-				<div class="col-span-8">{playerObj.name}</div>
+				<div class="col-span-8">
+					{playerObj.name}
+					{#if slots[i].note}
+						<span class="opacity-60">({slots[i].note})</span>
+					{/if}
+				</div>
 				<div class="col-span-2 flex flex-col">
 					<button
 						class="button {i == 0 ? 'pointer-events-none opacity-20' : ''}"
