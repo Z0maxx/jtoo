@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { type AnyBracket } from './Bracket.svelte';
+import { type Results } from './Bracket.svelte';
 import type { Tempus2 } from './api/tempus2/api-tempus2';
 
 // MARK: Types
@@ -82,12 +82,12 @@ export type SavedBracket = {
 	id: string;
 	name: string;
 	size: BracketSize;
-	players: SteamID3[]; // seeding order
-	bracket?: AnyBracket;
+	players: SteamID3[]; // seeding order: seed 1 first
+	results: Results;
 };
 
 export function newBracket(): SavedBracket {
-	return { id: uuidv4(), name: '', size: 8, players: [] };
+	return { id: uuidv4(), name: '', size: 8, players: [], results: {} };
 }
 
 // MARK: Settings

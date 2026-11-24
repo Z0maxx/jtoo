@@ -1,304 +1,215 @@
-import { Player, type SteamID3 } from './types.svelte';
+import type { BracketSize, SteamID3 } from './types.svelte';
 
-export type Match = {
-	A: SteamID3 | undefined;
-	B: SteamID3 | undefined;
-	winner: 'A' | 'B' | '';
-	winDest: Array<string | number> | null;
-	loseDest: Array<string | number> | null;
+// MARK: Formats
+// A format says where each match's two players come from: a seed, or the winner or loser of
+// another match. Who is actually in a match is worked out from the seeding and the results,
+// so nothing about players is stored per match.
+
+type SourceText = `seed ${number}` | `winner ${string}` | `loser ${string}`;
+// rounds in the order they're drawn, each holding its matches top to bottom, by match id
+type HalfText = Record<string, Record<string, [SourceText, SourceText]>>;
+type FormatText = { upper: HalfText; lower: HalfText };
+
+export type Source = { seed: number } | { winnerOf: string } | { loserOf: string };
+export type MatchDef = { id: string; half: Half; A: Source; B: Source };
+export type Round = { name: string; matches: MatchDef[] };
+export type Half = 'upper' | 'lower';
+export type Format = { upper: Round[]; lower: Round[]; matches: Record<string, MatchDef> };
+
+function parseSource(text: SourceText): Source {
+	const [kind, ref] = text.split(' ');
+	if (kind == 'seed') return { seed: Number(ref) };
+	if (kind == 'winner') return { winnerOf: ref };
+	return { loserOf: ref };
+}
+
+// turns the readable form into a lookup by match id, and checks it for mistakes
+function defineFormat(text: FormatText): Format {
+	const format: Format = { upper: [], lower: [], matches: {} };
+
+	for (const half of ['upper', 'lower'] as const) {
+		for (const [name, matches] of Object.entries(text[half])) {
+			const round: Round = { name, matches: [] };
+			for (const [id, [A, B]] of Object.entries(matches)) {
+				if (format.matches[id]) throw new Error(`bracket format: match ${id} is defined twice`);
+				const match = { id, half, A: parseSource(A), B: parseSource(B) };
+				format.matches[id] = match;
+				round.matches.push(match);
+			}
+			format[half].push(round);
+		}
+	}
+
+	const seeds: number[] = [];
+	const used = new Set<string>();
+	for (const match of Object.values(format.matches)) {
+		for (const source of [match.A, match.B]) {
+			if ('seed' in source) {
+				seeds.push(source.seed);
+				continue;
+			}
+			const ref = 'winnerOf' in source ? source.winnerOf : source.loserOf;
+			const use = 'winnerOf' in source ? `winner ${ref}` : `loser ${ref}`;
+			if (!format.matches[ref]) {
+				throw new Error(`bracket format: ${match.id} takes the ${use}, which doesn't exist`);
+			}
+			if (used.has(use)) throw new Error(`bracket format: the ${use} goes to two matches`);
+			used.add(use);
+		}
+	}
+	seeds.sort((a, b) => a - b);
+	if (seeds.some((seed, i) => seed != i + 1)) {
+		throw new Error(`bracket format: seeds must be 1 to ${seeds.length}, each used once`);
+	}
+
+	return format;
+}
+
+const lower8: HalfText = {
+	'Round 1': {
+		LR1: ['loser QF1', 'loser QF2'],
+		LR2: ['loser QF3', 'loser QF4']
+	},
+	'Quarter Finals': {
+		LQF1: ['winner LR1', 'loser SF1'],
+		LQF2: ['winner LR2', 'loser SF2']
+	},
+	'Semi Final': {
+		LSF: ['winner LQF1', 'winner LQF2']
+	},
+	Final: {
+		LF: ['winner LSF', 'loser F']
+	}
 };
 
-abstract class Bracket {
-	abstract type: 10 | 8 | 4;
-	Upper: any;
-	Lower: any;
-}
-export class Bracket8 extends Bracket {
-	type: 8 = 8;
-	Upper: { QuarterFinals: Match[]; SemiFinals: Match[]; Final: Match[]; GrandFinal: Match[] };
-	Lower: { Round1: Match[]; QuarterFinals: Match[]; SemiFinal: Match[]; Final: Match[] };
+export const formats: Record<BracketSize, Format> = {
+	4: defineFormat({
+		upper: {
+			'Quarter Finals': {
+				QF1: ['seed 1', 'seed 4'],
+				QF2: ['seed 2', 'seed 3']
+			},
+			'Semi Final': {
+				SF: ['winner QF1', 'winner QF2']
+			},
+			'Grand Final': {
+				GF: ['winner SF', 'winner LF']
+			}
+		},
+		lower: {
+			'Semi Final': {
+				LSF: ['loser QF1', 'loser QF2']
+			},
+			Final: {
+				LF: ['winner LSF', 'loser SF']
+			}
+		}
+	}),
 
-	constructor() {
-		super();
-		this.Upper = {
-			QuarterFinals: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinals', 0, 'A'],
-					loseDest: ['Lower', 'Round1', 0, 'A']
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinals', 0, 'B'],
-					loseDest: ['Lower', 'Round1', 0, 'B']
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinals', 1, 'A'],
-					loseDest: ['Lower', 'Round1', 1, 'A']
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinals', 1, 'B'],
-					loseDest: ['Lower', 'Round1', 1, 'B']
-				}
-			],
-			SemiFinals: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'Final', 0, 'A'],
-					loseDest: ['Lower', 'QuarterFinals', 0, 'B']
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'Final', 0, 'B'],
-					loseDest: ['Lower', 'QuarterFinals', 1, 'B']
-				}
-			],
-			Final: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'GrandFinal', 0, 'A'],
-					loseDest: ['Lower', 'Final', 0, 'B']
-				}
-			],
-			GrandFinal: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: null,
-					loseDest: null
-				}
-			]
-		};
-		this.Lower = {
-			Round1: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'QuarterFinals', 0, 'A'],
-					loseDest: null
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'QuarterFinals', 1, 'A'],
-					loseDest: null
-				}
-			],
-			QuarterFinals: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'SemiFinal', 0, 'A'],
-					loseDest: null
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'SemiFinal', 0, 'B'],
-					loseDest: null
-				}
-			],
-			SemiFinal: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'Final', 0, 'A'],
-					loseDest: null
-				}
-			],
-			Final: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'GrandFinal', 0, 'B'],
-					loseDest: null
-				}
-			]
-		};
-	}
+	8: defineFormat({
+		upper: {
+			'Quarter Finals': {
+				QF1: ['seed 1', 'seed 8'],
+				QF2: ['seed 4', 'seed 5'],
+				QF3: ['seed 2', 'seed 7'],
+				QF4: ['seed 3', 'seed 6']
+			},
+			'Semi Finals': {
+				SF1: ['winner QF1', 'winner QF2'],
+				SF2: ['winner QF3', 'winner QF4']
+			},
+			Final: {
+				F: ['winner SF1', 'winner SF2']
+			},
+			'Grand Final': {
+				GF: ['winner F', 'winner LF']
+			}
+		},
+		lower: lower8
+	}),
+
+	// the 8 player bracket, with play-ins for seeds 7 to 10. Play-in losers are out.
+	10: defineFormat({
+		upper: {
+			'Play-In': {
+				PI1: ['seed 8', 'seed 9'],
+				PI2: ['seed 7', 'seed 10']
+			},
+			'Quarter Finals': {
+				QF1: ['seed 1', 'winner PI1'],
+				QF2: ['seed 4', 'seed 5'],
+				QF3: ['seed 2', 'winner PI2'],
+				QF4: ['seed 3', 'seed 6']
+			},
+			'Semi Finals': {
+				SF1: ['winner QF1', 'winner QF2'],
+				SF2: ['winner QF3', 'winner QF4']
+			},
+			Final: {
+				F: ['winner SF1', 'winner SF2']
+			},
+			'Grand Final': {
+				GF: ['winner F', 'winner LF']
+			}
+		},
+		lower: lower8
+	})
+};
+
+// MARK: Results
+
+export type Slot = 'A' | 'B';
+export type Results = Record<string, SteamID3>; // match id -> who won
+
+// the parts of a saved bracket that decide who plays who
+export type BracketState = { size: BracketSize; players: SteamID3[]; results?: Results };
+
+export function playersOf(
+	b: BracketState,
+	id: string
+): [SteamID3 | undefined, SteamID3 | undefined] {
+	const match = formats[b.size].matches[id];
+	return [playerFrom(b, match.A), playerFrom(b, match.B)];
 }
 
-// Same as Bracket8, plus two play-in matches (seeds 8v9 and 7v10) whose winners
-// take the B slot of the matching upper quarter-final. Play-in losers are eliminated.
-export class Bracket10 extends Bracket {
-	type: 10 = 10;
-	Upper: {
-		PlayIn: Match[];
-		QuarterFinals: Match[];
-		SemiFinals: Match[];
-		Final: Match[];
-		GrandFinal: Match[];
-	};
-	Lower: Bracket8['Lower'];
-
-	constructor() {
-		super();
-		const base = new Bracket8();
-		this.Upper = {
-			PlayIn: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'QuarterFinals', 0, 'B'],
-					loseDest: null
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					// the other half of the bracket, so seeds 1 and 2 can only meet in the final
-					winDest: ['Upper', 'QuarterFinals', 2, 'B'],
-					loseDest: null
-				}
-			],
-			...base.Upper
-		};
-		this.Lower = base.Lower;
-	}
+function playerFrom(b: BracketState, source: Source): SteamID3 | undefined {
+	if ('seed' in source) return b.players[source.seed - 1];
+	if ('winnerOf' in source) return winnerOf(b, source.winnerOf);
+	return loserOf(b, source.loserOf);
 }
 
-export class Bracket4 extends Bracket {
-	type: 4 = 4;
-	Upper: { QuarterFinals: Match[]; SemiFinal: Match[]; GrandFinal: Match[] };
-	Lower: { SemiFinal: Match[]; Final: Match[] };
-
-	constructor() {
-		super();
-		this.Upper = {
-			QuarterFinals: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinal', 0, 'A'],
-					loseDest: ['Lower', 'SemiFinal', 0, 'A']
-				},
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'SemiFinal', 0, 'B'],
-					loseDest: ['Lower', 'SemiFinal', 0, 'B']
-				}
-			],
-			SemiFinal: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'GrandFinal', 0, 'A'],
-					loseDest: ['Lower', 'Final', 0, 'B']
-				}
-			],
-			GrandFinal: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: null,
-					loseDest: null
-				}
-			]
-		};
-		this.Lower = {
-			SemiFinal: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Lower', 'Final', 0, 'A'],
-					loseDest: null
-				}
-			],
-			Final: [
-				{
-					A: undefined,
-					B: undefined,
-					winner: '',
-					winDest: ['Upper', 'GrandFinal', 0, 'B'],
-					loseDest: null
-				}
-			]
-		};
-	}
+// a result only counts while the player who won is still in the match
+export function winnerOf(b: BracketState, id: string): SteamID3 | undefined {
+	const [A, B] = playersOf(b, id);
+	const winner = b.results?.[id];
+	return A && B && (winner == A || winner == B) ? winner : undefined;
 }
 
-export type AnyBracket = Bracket4 | Bracket8 | Bracket10;
-
-// MARK: REFACTOR
-export function setMatchWinner(bracket: Bracket, m: Match, w: 'A' | 'B' | '') {
-	// console.log('setting match winner');
-	// console.log(m);
-	// console.log(w);
-	// remove winner from subsequent matches
-	if (!w) {
-		m.winner = w;
-		if (m.winDest) {
-			setMatchWinner(bracket, bracket[m.winDest[0]][m.winDest[1]][m.winDest[2]], '');
-		}
-		if (m.loseDest) {
-			setMatchWinner(bracket, bracket[m.loseDest[0]][m.loseDest[1]][m.loseDest[2]], '');
-		}
-	}
-
-	// progress players
-	if (m.A && m.B) {
-		m.winner = w;
-		if (m.winDest) {
-			bracket[m.winDest[0]][m.winDest[1]][m.winDest[2]][m.winDest[3]] = w ? m[w] : undefined;
-		}
-		if (m.loseDest) {
-			bracket[m.loseDest[0]][m.loseDest[1]][m.loseDest[2]][m.loseDest[3]] = w
-				? m[w == 'A' ? 'B' : 'A']
-				: undefined;
-		}
-	}
-
-	// console.log(m);
-	// console.log('---------------------------');
+export function loserOf(b: BracketState, id: string): SteamID3 | undefined {
+	const winner = winnerOf(b, id);
+	if (!winner) return undefined;
+	const [A, B] = playersOf(b, id);
+	return winner == A ? B : A;
 }
 
-export function clearMatchWinner(bracket: Bracket, m: Match) {
-	// remove winner from subsequent matches
-	m.winner = '';
-	if (m.winDest) {
-		clearMatchWinner(bracket, bracket[m.winDest[0]][m.winDest[1]][m.winDest[2]]);
-	}
-	if (m.loseDest) {
-		clearMatchWinner(bracket, bracket[m.loseDest[0]][m.loseDest[1]][m.loseDest[2]]);
-	}
+export function setWinner(b: BracketState, id: string, slot: Slot) {
+	const [A, B] = playersOf(b, id);
+	if (!A || !B) return;
+	b.results ??= {};
+	b.results[id] = slot == 'A' ? A : B;
+	pruneResults(b);
+}
 
-	// progress
-	if (m.A && m.B) {
-		if (m.winDest) {
-			bracket[m.winDest[0]][m.winDest[1]][m.winDest[2]][m.winDest[3]] = undefined;
-		}
-		if (m.loseDest) {
-			bracket[m.loseDest[0]][m.loseDest[1]][m.loseDest[2]][m.loseDest[3]] = undefined;
-		}
+export function clearWinner(b: BracketState, id: string) {
+	if (!b.results) return;
+	delete b.results[id];
+	pruneResults(b);
+}
+
+// drops results that no longer count, so they can't come back if an earlier result changes back.
+// One pass in any order is enough: a result that doesn't count never makes another one count.
+function pruneResults(b: BracketState) {
+	for (const id of Object.keys(b.results ?? {})) {
+		if (!formats[b.size].matches[id] || !winnerOf(b, id)) delete b.results![id];
 	}
 }
