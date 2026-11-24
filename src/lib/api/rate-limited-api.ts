@@ -1,4 +1,4 @@
-import { sleep } from '$lib/util';
+import { sleep, clampNum } from '$lib/util';
 
 type FetchQueueItem = {
 	endpoint: string;
@@ -57,13 +57,9 @@ export function createRateLimitedApi({
 		let failureDelay = defaultTimeout;
 
 		try {
+			// every request, including a failed or given-up one, is followed by a wait
 			while (queue.length > 0) {
 				const item = queue[0]!;
-				if (!queue.includes(item)) {
-					nextDelay = defaultTimeout;
-					failureDelay = defaultTimeout;
-					continue;
-				}
 
 				try {
 					const headers: Record<string, string> = {};
@@ -81,19 +77,16 @@ export function createRateLimitedApi({
 						if (item.rateLimitAttempts >= maxRateLimitAttempts) {
 							retire(item, queue);
 							item.reject(new Error('API rate limit retries exhausted'));
-							nextDelay = defaultTimeout;
-							failureDelay = defaultTimeout;
-							continue;
 						}
 
+						// still rate limited for the next item, so wait out Retry-After either way
 						nextDelay = retryAfterDelay(res);
-						continue;
+					} else {
+						retire(item, queue);
+						item.resolve(res);
+						nextDelay = defaultTimeout;
+						failureDelay = defaultTimeout;
 					}
-
-					retire(item, queue);
-					item.resolve(res);
-					nextDelay = defaultTimeout;
-					failureDelay = defaultTimeout;
 				} catch (error) {
 					item.attempts += 1;
 					if (item.attempts >= maxAttempts) {
@@ -101,11 +94,10 @@ export function createRateLimitedApi({
 						item.reject(error);
 						nextDelay = defaultTimeout;
 						failureDelay = defaultTimeout;
-						continue;
+					} else {
+						failureDelay = Math.min(failureDelay * 2, maxTimeout);
+						nextDelay = failureDelay;
 					}
-
-					failureDelay = Math.min(failureDelay * 2, maxTimeout);
-					nextDelay = failureDelay;
 				}
 
 				await sleep(nextDelay);
@@ -122,19 +114,19 @@ export function createRateLimitedApi({
 	}
 
 	function retryAfterDelay(response: Response) {
-		const header = response.headers.get('Retry-After');
+		// Retry-After is either seconds to wait or an HTTP date to wait until
+		const header = response.headers.get('Retry-After')?.trim();
 		let delay = defaultTimeout;
 		if (header) {
-			const retrySeconds = parseInt(header);
-			if (Number.isNaN(retrySeconds)) {
-				const now = new Date();
-				delay = now.getTime() - new Date(header).getTime();
-			} else {
-				delay = retrySeconds * 1000 + 100;
-			}
+			const retrySeconds = Number(header);
+			const delayFromHeader = Number.isNaN(retrySeconds)
+				? new Date(header).getTime() - Date.now()
+				: retrySeconds * 1000 + 100;
+			// an unparseable date gives NaN; keep the default then
+			if (!Number.isNaN(delayFromHeader)) delay = delayFromHeader;
 		}
 
-		return Math.max(delay, 0);
+		return clampNum(delay, 0, maxTimeout);
 	}
 
 	function retire(item: FetchQueueItem, queue: FetchQueueItem[]) {

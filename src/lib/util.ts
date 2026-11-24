@@ -152,3 +152,7 @@ export function playerLabel(steamID3: SteamID3, maxLength?: number): string {
 export function consoleBaseUrl(): string {
 	return settings.current.consoleBaseUrl?.trim() || DEFAULT_CONSOLE_URL;
 }
+
+export function clampNum(num: number, min: number, max: number) {
+	return Math.min(Math.max(min, num), max);
+}
