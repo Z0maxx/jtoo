@@ -165,7 +165,6 @@
 			<ManagePlayers />
 			<ImportMap />
 			<ManageMaps />
-			<SetFundraisingEvent />
 			<EditBracket />
 			<ManageBrackets />
 		</div>
@@ -340,6 +339,7 @@
 					<div>{error.invalidJfRelayToken.msg}</div>
 				{/if}
 			</Accordion>
+			<SetFundraisingEvent />
 		</section>
 	</Accordion>
 	<!-- settings -->
