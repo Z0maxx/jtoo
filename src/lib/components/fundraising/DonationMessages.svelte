@@ -88,7 +88,7 @@
 </script>
 
 <div class="z-50 flex items-center gap-2 px-2 transition-all duration-400">
-	{#each fundraisingState.current.displayedDonationsWithMessages as donation}
+	{#each fundraisingState.current.displayedDonationsWithMessages as donation, i (i)}
 		<div
 			class="flex h-90 w-120 flex-col items-center rounded-md border-2 border-white bg-bordeaux px-2 py-1 transition-colors
         {donation.id === replaced ? 'text-transparent' : ''}"

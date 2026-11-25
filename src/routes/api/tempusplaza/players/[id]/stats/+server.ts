@@ -1,24 +1,24 @@
 // claude
 import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, fetch }) => {
-        const { id } = params;
+	const { id } = params;
 
-        // Only allow numeric IDs so this can't be used to hit arbitrary upstream paths
-        if (!/^\d+$/.test(id)) {
-                throw error(400, 'Invalid player ID');
-        }
+	// Only allow numeric IDs so this can't be used to hit arbitrary upstream paths
+	if (!/^\d+$/.test(id)) {
+		throw error(400, 'Invalid player ID');
+	}
 
-        const res = await fetch(`https://api.tempusplaza.com/players/${id}/stats`);
+	const res = await fetch(`https://api.tempusplaza.com/players/${id}/stats`);
 
-        if (!res.ok) {
-                throw error(res.status, 'Upstream request failed');
-        }
+	if (!res.ok) {
+		throw error(res.status, 'Upstream request failed');
+	}
 
-        const data: unknown = await res.json();
+	const data: unknown = await res.json();
 
-        return json(data, {
-                headers: { 'Cache-Control': 'public, max-age=300' }
-        });
+	return json(data, {
+		headers: { 'Cache-Control': 'public, max-age=300' }
+	});
 };

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { items } from '$lib/storage.svelte';
-	import { Player, type Items } from '$lib/types.svelte';
+	import type { Items } from '$lib/types.svelte';
 	import { slide } from 'svelte/transition';
 
 	type Props = {
 		placeholder: string;
-		item: keyof Items;
+		// the item lists that hold plain strings
+		item: { [K in keyof Items]: Items[K] extends string[] ? K : never }[keyof Items];
 		class?: string;
 	};
 
@@ -19,9 +20,6 @@
 		onkeypress={(e) => {
 			if (e.key === 'Enter') {
 				const value = (e.target as HTMLInputElement).value;
-				if (item === 'players') {
-					return;
-				}
 				// if (item === 'flags' && value.length !== 2) return; // early return for flags
 				(e.target as HTMLInputElement).value = '';
 				if (items.current[item].includes(value)) return; // early return for dupes
@@ -32,11 +30,7 @@
 	<button
 		class="button-remove"
 		onclick={() => {
-			if (item === 'players') {
-				items.current[item] = [new Player()];
-			} else {
-				items.current[item] = [''];
-			}
+			items.current[item] = [''];
 		}}>remove all</button
 	>
 </div>

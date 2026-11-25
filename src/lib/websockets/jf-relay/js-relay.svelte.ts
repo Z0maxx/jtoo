@@ -75,8 +75,6 @@ export class JFRelayWebSocket {
 
 	send(msg: JFRelayEvents) {
 		const msgString = JSON.stringify(msg);
-		console.log('readyState:', this._ws?.readyState); // 0 connecting, 1 open, 2 closing, 3 closed
-		console.log(this._ws?.url);
 
 		if (this._ws?.readyState === WebSocket.OPEN) {
 			this._ws.send(msgString);

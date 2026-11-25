@@ -21,6 +21,8 @@ export const POST: RequestHandler = async (request) => {
 		);
 		return new Response(JSON.stringify({ isAcceptable }), { status: 200 });
 	} catch (e) {
-		return new Response(JSON.stringify(e), { status: 500 });
+		// the error stays in the server log: it can carry details of the openai request
+		console.error('message moderation failed', e);
+		return new Response('moderation failed', { status: 500 });
 	}
 };

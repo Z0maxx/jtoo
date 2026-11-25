@@ -98,17 +98,17 @@
 		<span class="self-center text-center">player {getLabel(playerNum)}</span>
 
 		<!-- score -->
-		<!-- svelte-ignore a11y_consider_explicit_label -->
 		<div class="flex justify-center self-center">
 			<!-- <button
+				aria-label="decrease score"
 				class="button rounded-r-none"
 				onclick={() => {
 					if (player) decrementScore(player);
 				}}><span class="icon-[mdi--minus] align-middle"></span></button
 			>
 			<span class="button button-selected rounded-none">{playerObj.score}</span> -->
-			<!-- svelte-ignore a11y_consider_explicit_label -->
 			<!-- <button
+				aria-label="increase score"
 				class="button rounded-l-none border-ctp-lavender-950/50 bg-ctp-lavender/50 px-2 hover:bg-ctp-lavender/85"
 				onclick={() => {
 					if (player) incrementScore(player);

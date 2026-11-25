@@ -49,8 +49,6 @@
 	}
 
 	function getPlayerPrs(map: TFMap) {
-		console.log(`running player prs for ${map.fileName}-------------`);
-		console.log(map.runs.soldier);
 		let tfclass: 'soldier' | 'demoman' =
 			settings.current.tfClass == 'demoman' ? 'demoman' : 'soldier';
 		let result: { left: MapRun | undefined; right: MapRun | undefined } = {
@@ -61,10 +59,8 @@
 		for (const run of map.runs?.[tfclass] ?? []) {
 			if (run.tempusID == leftPlayer.tempusID) {
 				result.left = run;
-				console.log(`found left pr for ${map.fileName}`);
 			} else if (run.tempusID == rightPlayer.tempusID) {
 				result.right = run;
-				console.log(`found right pr for ${map.fileName}`);
 			}
 		}
 
@@ -84,11 +80,9 @@
 </section>
 
 {#snippet Map(map: TFMap)}
-	{console.log(`snippet run`)}
 	{@const prs = getPlayerPrs(map)}
 	{#if prs.left && prs.right}
 		{@const leftWinner = prs.left.rank < prs.right.rank}
-		{console.log(map.fileName)}
 
 		<div
 			class="@container relative mb-2 h-32 w-95 text-3xl

@@ -35,21 +35,19 @@ export namespace Steam {
 
 		if (PatternSteam3ID.test(id)) {
 			// [U:1:40571167]
-			let Steam3ID = PatternSteam3ID.exec(id);
+			// exec can't miss: the same pattern just passed test()
+			let Steam3ID = PatternSteam3ID.exec(id)!;
 			S3ID_1 = Steam3ID[1];
 			S3ID_2 = Number(Steam3ID[2]);
 			S3ID_3 = Number(Steam3ID[3]);
-			if (Math.abs(S3ID_3 % 2) == 1) {
-				let SID32_2 = 1;
-			} else {
-				let SID32_2 = 0;
-			} //odd or even
+			// sets the outer SID32_2: a `let` here shadowed it, leaving SID32_3 NaN
+			SID32_2 = Math.abs(S3ID_3 % 2) == 1 ? 1 : 0; //odd or even
 			SID32_3 = (S3ID_3 - SID32_2) / 2;
 			SID64_2 = S3ID_3 + SID64_S;
 			isSteamID = true;
 		} else if (PatternSteamID32.test(id)) {
 			// STEAM_0:1:20285583
-			let SteamID32 = PatternSteamID32.exec(id);
+			let SteamID32 = PatternSteamID32.exec(id)!;
 			SID32_1 = Number(SteamID32[1]);
 			SID32_2 = Number(SteamID32[2]);
 			SID32_3 = Number(SteamID32[3]);
@@ -58,7 +56,7 @@ export namespace Steam {
 			isSteamID = true;
 		} else if (PatternSteamID64.test(id)) {
 			// 76561198000836895
-			let SteamID64 = PatternSteamID64.exec(id);
+			let SteamID64 = PatternSteamID64.exec(id)!;
 			SID64_2 = Number(SteamID64[1]);
 			S3ID_3 = SID64_2 - SID64_S;
 			if (Math.abs(S3ID_3 % 2) == 1) {
@@ -94,8 +92,6 @@ export namespace Steam {
 	export async function fetchPlayerSummary(steamID: string) {
 		steamID = convertSteamId(steamID, 'SteamID64') as string;
 
-		const endpoint = `/api/steam/GetPlayerSummaries`;
-		console.log(endpoint);
 		const response = await fetch('/api/steam/GetPlayerSummaries', {
 			method: 'POST',
 			body: JSON.stringify({ steamids: steamID }),
@@ -105,8 +101,7 @@ export namespace Steam {
 			throw error(response.status, 'Upstream request failed');
 		}
 
-		let data = await response.json();
-		console.log(data);
+		const data: { response: Steam.PlayerSummary[] } | null = await response.json();
 
 		if (data) {
 			let steamPlayer: Steam.PlayerSummary = data.response[0];
@@ -120,15 +115,12 @@ export namespace Steam {
 			steamIds[i] = convertSteamId(steamIds[i], 'SteamID64') as string;
 		}
 
-		const endpoint = `/api/steam/GetPlayerSummaries`;
-		console.log(endpoint);
 		const response = await fetch('/api/steam/GetPlayerSummaries', {
 			method: 'POST',
 			body: JSON.stringify({ steamids: steamIds }),
 			headers: { 'Content-Type': 'application/json' }
 		});
-		let data = await response.json();
-		console.log(data);
+		const data: { response: Steam.PlayerSummary[] } | null = await response.json();
 
 		if (data) {
 			let steamPlayers: Steam.PlayerSummary[] = data.response;

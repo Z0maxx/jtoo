@@ -5,8 +5,11 @@
 	type Error = { state: boolean; msg: string };
 
 	const dwbUrlPrefix = 'https://events.doctorswithoutborders.org/';
-	let url = $state(fundraisingState.current.eventUrl);
-	let fetched = $state(!!fundraisingState.current.eventUrl);
+	// fundraisingState changes all the time (donations, the progress bar), so the saved url gets
+	// its own derived: the input below only resets when the url itself changes, not mid-typing
+	const savedUrl = $derived(fundraisingState.current.eventUrl);
+	let url = $derived(savedUrl);
+	let fetched = $derived(!!savedUrl);
 	let error = $state({
 		invalidUrl: { state: false, msg: 'error: invalid DWB event url' } as Error
 	});
@@ -29,11 +32,6 @@
 		fundraisingState.current.eventUrl = url;
 		fetched = true;
 	}
-
-	$effect(() => {
-		url = fundraisingState.current.eventUrl;
-		fetched = !!fundraisingState.current.eventUrl;
-	});
 </script>
 
 <Accordion title="fundraising event" defaultstate="closed">
@@ -51,10 +49,7 @@
 				class="input w-full {fetched ? 'border-b-green-700' : ''}"
 				id="input-fundraising-url"
 				placeholder={dwbUrlPrefix}
-				value={url}
-				onkeyup={(e) => {
-					url = (e.target as HTMLInputElement).value;
-				}}
+				bind:value={url}
 			/>
 		</div>
 		<div class="flex gap-2">

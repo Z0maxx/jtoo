@@ -1,8 +1,14 @@
 <script lang="ts">
-	import { settings, type Settings } from '$lib/storage.svelte';
+	import { settings } from '$lib/storage.svelte';
+	import type { Settings } from '$lib/types.svelte';
+
+	// the settings a slider can drive: the ones that hold a number
+	type NumberSetting = {
+		[K in keyof Settings]: Settings[K] extends number ? K : never;
+	}[keyof Settings];
 
 	type Props = {
-		setting: keyof Settings;
+		setting: NumberSetting;
 		min?: number;
 		max: number;
 	};

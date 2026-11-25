@@ -14,12 +14,13 @@ export namespace Dwb {
 	const donationsSubscribers: Array<Subscriber<Donation[]>> = [];
 	const milestonesSubscribers: Array<Subscriber<DonationMilestone[]>> = [];
 
-	let overview: DonationsOverview = { goal: 0, raised: 0, donationCount: 0 };
+	// undefined until the first fetch, so new subscribers aren't handed a made-up $0 overview
+	let overview: DonationsOverview | undefined;
 	let donations: Donation[] = fundraisingState.current.donations;
 	let milestones: DonationMilestone[] = [];
 
 	function overviewCopy() {
-		return deepCopy(overview);
+		return deepCopy(overview!);
 	}
 
 	function donationsCopy() {
@@ -83,17 +84,14 @@ export namespace Dwb {
 
 	export function unsubscribeFromDonationsOverview(id: string) {
 		removeById(overviewSubscribers, id);
-		console.log('unsubbed');
 	}
 
 	export function unsubscribeFromDonations(id: string) {
 		removeById(donationsSubscribers, id);
-		console.log('unsubbed');
 	}
 
 	export function unsubscribeFromMilestones(id: string) {
 		removeById(milestonesSubscribers, id);
-		console.log('unsubbed');
 	}
 
 	async function fetchAndSetOverview() {
@@ -192,7 +190,6 @@ export namespace Dwb {
 		fetching.add(modelName);
 		while (fetchUntil()) {
 			try {
-				console.log(endpoint());
 				const resp = await fetchDwb(endpoint(), eTags.get(modelName));
 				if (resp.status === 304 || resp.status === 204) {
 					await sleep(fetchInterval);
@@ -207,7 +204,7 @@ export namespace Dwb {
 				const result = (await resp.json()) as TDwbModel;
 				callback(result);
 			} catch (err) {
-				console.log(err);
+				console.error(`dwb: fetching ${modelName} failed`, err);
 			}
 
 			await sleep(fetchInterval);

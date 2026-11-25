@@ -4,74 +4,7 @@
 	import type { DonationMilestone } from '$lib/types.svelte';
 	import { onDestroy } from 'svelte';
 
-	let milestones: DonationMilestone[] = $state([
-		/*{
-        "goal": 100,
-        "description": "top 30 jumpers of all time stream with riot, matty and newjuls",
-        "isComplete": true,
-        "isActive": false
-    },
-    {
-        "goal": 175,
-        "description": "LAN travel vlog ",
-        "isComplete": false,
-        "isActive": true
-    },
-    {
-        "goal": 300,
-        "description": "Revive Jump Podcast",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 500,
-        "description": "Showmatch stream after LAN",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 750,
-        "description": "Replace soldier model with Medic model for Day 1 ",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 1000,
-        "description": "Demos have to play soldier with sticky rockets on jump_starwars map (during demo segment)",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 1250,
-        "description": "roll the dice during demo segment enabled permanently",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 1500,
-        "description": "roll the dice during beggars races enabled permanently",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 1750,
-        "description": "Caster showmatch on 4dakids (rtd enabled)",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 2500,
-        "description": "Jump pugs 2027",
-        "isComplete": false,
-        "isActive": false
-    },
-    {
-        "goal": 3000,
-        "description": "Giveaway HAT and items",
-        "isComplete": false,
-        "isActive": false
-    }*/
-	]);
+	let milestones: DonationMilestone[] = $state([]);
 	const milestonesSubId = Dwb.subscribeToMilestones((newMilestones) => {
 		milestones = newMilestones;
 	});
@@ -86,7 +19,7 @@
     {fundraisingState.current.animationStage === 4 ? 'milestones-animation' : ''}"
 >
 	<h2 class="text-xl">Milestones</h2>
-	{#each milestones as milestone}
+	{#each milestones as milestone, i (i)}
 		<div class="flex gap-2">
 			<div
 				class="rounded-md

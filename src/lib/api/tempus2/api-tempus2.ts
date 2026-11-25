@@ -16,10 +16,8 @@ export namespace Tempus2 {
 		let player = new Player();
 
 		const endpoint = `${Tempus2.Endpoint}/players/id/${id}/stats`;
-		console.log(endpoint);
 		const response = await fetch(endpoint);
 		let data: Tempus2.Error | Tempus2.PlayerStats = await response.json();
-		console.log(data);
 
 		if ('code' in data && data.code == 404) {
 			return null;
@@ -93,10 +91,8 @@ export namespace Tempus2 {
 		let map = new TFMap();
 
 		const endpoint = `${Tempus2.Endpoint}/maps/name/${name}/fullOverview2`;
-		console.log(endpoint);
 		const response = await fetch(endpoint);
 		let data: Tempus2.Error | Tempus2.MapFullOverview2 = await response.json();
-		console.log(data);
 
 		if ('code' in data && data.code == 404) {
 			return null;
@@ -126,10 +122,8 @@ export namespace Tempus2 {
 
 	export async function fetchMapPrs(map: TFMap) {
 		const endpoint = `${Tempus2.Endpoint}/zones/id/${map.mapZoneId}/records/list?limit=0`;
-		console.log(endpoint);
 		const response = await fetch(endpoint);
 		let data: Tempus2.Error | Tempus2.MapRecordList = await response.json();
-		console.log(data);
 
 		if ('code' in data && data.code == 404) {
 			return null;
@@ -158,10 +152,8 @@ export namespace Tempus2 {
 
 	export async function searchPlayersAndMaps(query: string) {
 		const endpoint = `${Tempus2.Endpoint}/search/playersAndMaps/${query}`;
-		console.log(endpoint);
 		const response = await fetch(endpoint);
 		let data: Tempus2.Error | Tempus2.SearchResults = await response.json();
-		console.log(data);
 
 		data = data as Tempus2.SearchResults;
 

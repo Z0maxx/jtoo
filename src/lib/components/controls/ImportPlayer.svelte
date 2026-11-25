@@ -149,7 +149,6 @@
 					{@const searchResultSteam = searchResultsSteam.filter(
 						(r) => r.steamid == Steam.convertSteamId(searchResult.steamid, 'SteamID64')
 					)[0]}
-					{console.log(searchResultSteam)}
 					<div class="col-span-3">
 						<img
 							src={searchResultSteam.avatarmedium}

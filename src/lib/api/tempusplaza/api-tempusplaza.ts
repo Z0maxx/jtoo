@@ -9,11 +9,9 @@ export namespace TempusPlaza {
 
 	export async function fetchPlayerRecords(player: Player) {
 		const endpoint = `/api/tempusplaza/players/${player.tempusID}/stats`;
-		console.log(endpoint);
 		const response = await fetch(endpoint);
 		if (!response.ok) throw new Error(`Failed to fetch stats: ${response.status}`);
 		let data: TempusPlaza.PlayerStats = await response.json();
-		console.log(data);
 
 		player.WRs = {
 			soldier: data.soldier.worldRecords.map,
