@@ -1,16 +1,17 @@
 # Setup
 
-- In .ENV set DWB_API_URL=https://testdrive.donordrive.com/api
+- In .env set DWB_API_URL=https://testdrive.donordrive.com/api
 - In controls set fundraising event to https://events.doctorswithoutborders.org/participants/4715
 
 ## Testing donations
 
-- In FundraisingSection component enable the commented out lines at the top
+- In Donations component enable the commented out lines at the top
 
 ## Testing donation messages
 
-- Same steps as in Testing donations
-- In DonationMessages component comment out the filter that checks if donation has message and enable one of the commented out messages in the template
+- in .env set OPENAI_API_KEY
+- In DonationMessages component enable the commented out lines
+- Set the messages of donations
 
 ## Testing progress bar and animations
 
@@ -23,7 +24,6 @@
 
 ## Testing RTD
 
-- Same steps as in Testing donations
 - In connections set the jf relay websocket plugin token
 - Enable the commented out lines in Rtd component
 - Set a donation's amount to at least 20 and the message to 'rtd snail' for example
