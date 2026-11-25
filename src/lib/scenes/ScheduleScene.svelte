@@ -118,9 +118,6 @@
 						<span class="truncate text-4xl leading-tight text-white" class:font-bold={live}>
 							{s.segment}
 						</span>
-						{#if s.notes}
-							<span class="shrink-0 text-2xl text-ctp-yellow italic">{s.notes}</span>
-						{/if}
 					</span>
 					{#if live}
 						<span

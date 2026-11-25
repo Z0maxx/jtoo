@@ -19,7 +19,7 @@ export const scheduleDays = [
 // Preview: set to a segment's index (0 = the first row) to show it as LIVE, and the next as
 // UP NEXT, whatever the time. -1 is before the show, segments.length after it. undefined uses
 // the real time. Only applies in `npm run dev`, so a leftover value never reaches a build.
-const PREVIEW_SEGMENT_INDEX: number | undefined = 4;
+const PREVIEW_SEGMENT_INDEX: number | undefined = undefined;
 
 // the sheet's times are CET; Europe/Paris follows CET/CEST
 const SCHEDULE_TIME_ZONE = 'Europe/Paris';
