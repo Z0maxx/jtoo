@@ -125,6 +125,7 @@ export const OverlayScenes = [
 	'PlayerListScene',
 	'LeaderboardScene',
 	'ScheduleScene',
+	'DonationsScene',
 	'ThanksScene'
 ] as const;
 // these weren't updated with the last big changes due to time constraints and relevance to the event format

@@ -2,19 +2,13 @@
 	import { Dwb } from '$lib/api/dwb/api-dwb';
 	import type { DonationsOverview } from '$lib/types.svelte';
 	import { onDestroy } from 'svelte';
-	import rocketSparks from '$lib/assets/rocket-sparks.gif';
-	import rocketProjectile from '$lib/assets/rocket-projectile.png';
-	import smoke from '$lib/assets/smoke.png';
-	import explosion from '$lib/assets/explosion.gif';
-	import { sleep } from '$lib/util';
 	import { fundraisingState } from '$lib/storage.svelte';
+	import RocketProgressBar from './RocketProgressBar.svelte';
 
 	/*fundraisingState.current.progressBar.raised = 0;
 	fundraisingState.current.progressBar.sumRaised = 0;
 	fundraisingState.current.stage = 0;
 	fundraisingState.current.sumGoal = 0;*/
-	const emptyImage = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
-	let advancingProgressBar = false;
 	let overview: DonationsOverview = $state({
 		goal: 0,
 		raised: 0,
@@ -23,60 +17,11 @@
 
 	const overviewSubId = Dwb.subscribeToDonationsOverview((newOverview) => {
 		overview = newOverview;
-		if (fundraisingState.current.sumGoal === 0) {
-			fundraisingState.current.sumGoal = overview.goal;
-		}
-
-		advanceProgressBar();
 	});
 
 	onDestroy(() => {
 		Dwb.unsubscribeFromDonationsOverview(overviewSubId);
 	});
-
-	const goalPercentage = $derived(() => {
-		return (fundraisingState.current.progressBar.raised / currentGoal()) * 100;
-	});
-
-	const currentGoal = $derived(() => {
-		return fundraisingState.current.stage === 0 ? overview.goal : 1000;
-	});
-
-	const isStageEven = $derived(() => fundraisingState.current.stage % 2 === 0);
-
-	async function advanceProgressBar() {
-		if (advancingProgressBar) return;
-
-		advancingProgressBar = true;
-		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
-			//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
-			fundraisingState.current.progressBar.sumRaised++;
-			fundraisingState.current.progressBar.raised++;
-			/*fundraisingState.current.progressBar.sumRaised += 4;
-			fundraisingState.current.progressBar.raised += 4;*/
-			if (goalPercentage() === 100) {
-				const explosionLeft = document.getElementById('explosion-left')! as HTMLImageElement;
-				const explosionRight = document.getElementById('explosion-right')! as HTMLImageElement;
-				explosionLeft.src = emptyImage;
-				explosionRight.src = emptyImage;
-				if (isStageEven()) {
-					explosionRight.src = explosion;
-				} else {
-					explosionLeft.src = explosion;
-				}
-
-				fundraisingState.current.stage++;
-				fundraisingState.current.animationStage = fundraisingState.current.stage;
-				fundraisingState.current.sumGoal += currentGoal();
-				fundraisingState.current.progressBar.raised = 0;
-			}
-
-			await sleep(10);
-			//await sleep(2);
-		}
-
-		advancingProgressBar = false;
-	}
 </script>
 
 <div
@@ -95,40 +40,7 @@
 			>${fundraisingState.current.sumGoal} Goal</span
 		>
 	</div>
-	<div class="relative h-6 w-full">
-		<div
-			class="h-full w-full overflow-hidden rounded-md bg-gray-400
-        {isStageEven() ? '' : 'rotate-y-180'}"
-		>
-			<div
-				style="width: {goalPercentage() % 100}%; background-image: url('{smoke}')"
-				class="bg-size-cover relative h-full overflow-hidden bg-size-[auto_100%] bg-repeat-x"
-			>
-				<div class="absolute right-0 aspect-[21/9] h-full bg-gray-400">
-					<div class="relative h-full w-full">
-						<img
-							src={rocketProjectile}
-							alt="rocket-projectile"
-							class="absolute top-[50%] right-0 h-1/2 translate-y-[-50%]"
-						/>
-						<img src={rocketSparks} alt="rocket-trail" class="absolute -left-[16%] h-full" />
-					</div>
-				</div>
-			</div>
-		</div>
-		<img
-			id="explosion-left"
-			class="absolute -top-[125%] left-0 aspect-[1/1] h-[300%] rotate-y-180"
-			src={emptyImage}
-			alt="explosion"
-		/>
-		<img
-			id="explosion-right"
-			class="absolute -top-[125%] right-0 aspect-[1/1] h-[300%]"
-			src={emptyImage}
-			alt="explosion"
-		/>
-	</div>
+	<RocketProgressBar {overview} />
 </div>
 
 <style>

@@ -8,7 +8,7 @@
 	import { getContext } from 'svelte';
 	import { getMap, getPlayer, msToFormattedTime } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
-	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
+	// import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
 	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
 
