@@ -36,6 +36,9 @@
 	import { getMap, consoleBaseUrl } from '$lib/util';
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
+
+	type Error = { state: boolean; msg: string };
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
@@ -91,6 +94,13 @@
 		closed: { state: 'not connected', color: 'text-red-300' }
 	};
 
+	let error = $state({
+		invalidJfRelayToken: {
+			state: false,
+			msg: 'error: invalid jf relay websocket token'
+		} as Error
+	});
+
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
 		// settings saved before this option existed don't have it; it defaults to on
@@ -120,8 +130,28 @@
 			obsConnect(settings.current.obsWsIp, settings.current.obsWsPort, settings.current.obsWsPw);
 		}
 
+		$effect(() => {
+			if (settings.current.overlayScene) {
+				setScene(settings.current.overlayScene);
+			}
+		});
+
+		$effect(() => {
+			if (settings.current.enableFundraisingRtd) {
+				connectToJfRelay();
+			}
+		});
+
 		return () => live.close();
 	});
+
+	async function connectToJfRelay() {
+		error.invalidJfRelayToken.state = await new Promise<boolean>((res) => {
+			jfRelayWs?.connect(settings.current.jfRelayWebSocketToken);
+			jfRelayWs?.addEventListener('open', () => res(false));
+			jfRelayWs?.addEventListener('error', () => res(true));
+		});
+	}
 </script>
 
 <span class="self-center">jtoo controls</span>
@@ -365,23 +395,26 @@
 					<label for="input-websocket-jf">token: </label>
 					<input
 						type="password"
-						class="input w-60"
+						class="input w-60
+              {jfRelayWs?.wsState === WebSocket.OPEN ? 'border-b-green-700' : ''}"
 						id="input-websocket-jf"
 						value={settings.current.jfRelayWebSocketToken}
 						onchange={(e) => {
 							let target = e.target as HTMLInputElement;
-							settings.current.jfRelayWebSocketToken = target.value;
+							settings.current.jfRelayWebSocketToken = target.value.trim();
 						}}
 					/>
 				</div>
 				<div class="flex gap-2">
-					<button
-						class="button button-unselected hover:button-selected"
-						onclick={() => jfRelayWs!.connect(settings.current.jfRelayWebSocketToken.trim())}
+					<button class="button button-unselected hover:button-selected" onclick={connectToJfRelay}
 						>connect</button
 					>
 				</div>
+				{#if error.invalidJfRelayToken.state}
+					<div>{error.invalidJfRelayToken.msg}</div>
+				{/if}
 			</Accordion>
+			<SetFundraisingEvent />
 		</section>
 	</Accordion>
 	<!-- settings -->
@@ -423,6 +456,19 @@
 		<Checkbox desc="use player PRs" setting="enablePRs" />
 		<Checkbox desc="use avatars" setting="enableAvatars" />
 		<Checkbox desc="use tags" setting="enableTags" />
+		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
+		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+		{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
+			<div>{error.invalidJfRelayToken.msg}</div>
+		{/if}
+		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
+		<label>
+			<input
+				class="input w-7 accent-ctp-lavender"
+				bind:value={settings.current.fundraisingShowDonationSeconds}
+			/>
+			<span>seconds to show each donation for</span>
+		</label>
 		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
 		<Checkbox setting="selectDuelPlayers" desc="automatically select a players on 1v1 race start" />
 	</Accordion>

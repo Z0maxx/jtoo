@@ -155,6 +155,9 @@ export type Settings = {
 	enableGradient: boolean;
 	enableTeamColors: boolean;
 	enablePOVGuide: boolean;
+	enableFundraisingSection: boolean;
+	enableFundraisingDonations: boolean;
+	enableFundraisingRtd: boolean;
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
 	idleObsScene: string; // name of the broadcaster's OBS Idle scene
@@ -172,6 +175,7 @@ export type Settings = {
 	obsWsIp: string;
 	obsWsPort: number | undefined;
 	obsWsPw: string;
+	fundraisingShowDonationSeconds: number;
 };
 
 export type Overlay = {
@@ -200,4 +204,48 @@ export type Items = {
 	maps: TFMap[];
 	stages: string[];
 	brackets: SavedBracket[];
+};
+
+export type Subscriber<T> = {
+	id: string;
+	handler: (item: T) => void;
+};
+
+export type DonationsOverview = {
+	goal: number;
+	raised: number;
+	donationCount: number;
+};
+
+export type Donation = {
+	id: string;
+	name: string;
+	amount: number;
+	message?: string;
+	avatarUrl?: string;
+	createdAt: string;
+};
+
+export type DonationMilestone = {
+	goal: number;
+	description: string;
+	isActive: boolean;
+	isComplete: boolean;
+};
+
+export type FundraisingState = {
+	eventUrl: string;
+	lastDonationProcessedByDonationsId: string;
+	lastDonationProcessedByMessagesId: string;
+	lastDonationProcessedByRtdId: string;
+	donations: Donation[];
+	displayedDonations: Donation[];
+	displayedDonationsWithMessages: Donation[];
+	stage: number;
+	animationStage: number;
+	sumGoal: number;
+	progressBar: {
+		raised: number;
+		sumRaised: number;
+	};
 };

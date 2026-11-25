@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay } from '$lib/storage.svelte';
+	import { settings, overlay, items, fundraisingState } from '$lib/storage.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import MatchMapPicks from '$lib/components/match/MatchMapPicks.svelte';
 	import WebSocketTimer from '$lib/components/match/WebSocketTimer.svelte';
@@ -9,6 +9,8 @@
 	import { getMap, getPlayer, msToFormattedTime } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
+	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
+	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -84,13 +86,21 @@
 		style:filter={getFiltersStyle()}
 	>
 		<div
-			class="aspect-video w-full
+			class="aspect-video w-1/2
   {settings.current.enablePOVGuide
 				? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 				: ''}"
-		></div>
+		>
+			{#if settings.current.enableFundraisingSection}
+				{#if fundraisingState.current.eventUrl}
+					<FundraisingSection />
+				{:else}
+					<div class="text-6xl">Fundraising event is not set</div>
+				{/if}
+			{/if}
+		</div>
 		<div
-			class="aspect-video w-full
+			class="aspect-video w-1/2
   {settings.current.enablePOVGuide
 				? 'border-l-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 				: ''}"
@@ -111,6 +121,12 @@
 			>
 		{/key}
 	</div>
+
+	{#if settings.current.enableFundraisingSection}
+		<div class="absolute flex w-full items-start justify-center pt-2">
+			<DonationMessages />
+		</div>
+	{/if}
 
 	<!-- {#if settings.current.ksnWebSocketToken !== '' && !single}
 		<div transition:fade>

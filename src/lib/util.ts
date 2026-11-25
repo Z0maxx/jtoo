@@ -91,6 +91,16 @@ export function toPairs(m: unknown): [string, number][] {
 	return Object.entries(m as Record<string, number>);
 }
 
+export function sleep(ms: number) {
+	return new Promise<void>((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
+
+export function deepCopy<T>(value: T): T {
+	return JSON.parse(JSON.stringify(value));
+}
+
 // MARK: console live feed
 /** Formats integer ms like csToFormattedTime: mm:ss.cc, two decimals, truncated. */
 export function msToFormattedTime(
@@ -141,4 +151,8 @@ export function playerLabel(steamID3: SteamID3, maxLength?: number): string {
 /** The console URL from settings, or the default. */
 export function consoleBaseUrl(): string {
 	return settings.current.consoleBaseUrl?.trim() || DEFAULT_CONSOLE_URL;
+}
+
+export function clampNum(num: number, min: number, max: number) {
+	return Math.min(Math.max(min, num), max);
 }

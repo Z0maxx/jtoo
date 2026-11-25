@@ -38,13 +38,15 @@
 		"tailwindcss": "^4.2.2",
 		"typescript": "^6.0.2",
 		"typescript-eslint": "^8.58.1",
-		"vite": "^8.0.7"
+		"vite": "^8.0.7",
+		"wrangler": "^4.168.0"
 	},
 	"dependencies": {
 		"@friendofsvelte/state": "^0.2.0",
 		"@types/underscore": "^1.13.0",
 		"flag-icons": "^7.5.0",
 		"obs-websocket-js": "^5.0.8",
+		"openai": "^7.64.0",
 		"sveltekit-plugin-console": "^0.1.11",
 		"underscore": "^1.13.8",
 		"uuid": "^14.0.2"

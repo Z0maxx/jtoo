@@ -7,7 +7,8 @@ import {
 	Player,
 	type SteamID3,
 	TFMap,
-	type TempusID
+	type TempusID,
+	type FundraisingState
 } from './types.svelte';
 import { addPlayersFromSteamID3, getMap, getPlayer } from './util';
 import { Tempus2 } from './api/tempus2/api-tempus2';
@@ -40,6 +41,9 @@ export const defaultSettings: Settings = {
 	enableGradient: true,
 	enableTeamColors: true,
 	enablePOVGuide: false,
+	enableFundraisingSection: false,
+	enableFundraisingDonations: true,
+	enableFundraisingRtd: false,
 	useShortMapNames: true,
 	ksnWebSocketToken: '',
 	consoleBaseUrl: 'https://console.jumpfortress.tf',
@@ -56,7 +60,8 @@ export const defaultSettings: Settings = {
 	idleOverlayScene: '',
 	obsWsIp: '',
 	obsWsPort: undefined,
-	obsWsPw: ''
+	obsWsPw: '',
+	fundraisingShowDonationSeconds: 5
 };
 
 export const defaultOverlay: Overlay = {
@@ -75,6 +80,23 @@ export const defaultItems: Items = {
 	brackets: []
 };
 
+export const defaultFundraisingState: FundraisingState = {
+	eventUrl: '',
+	lastDonationProcessedByDonationsId: '',
+	lastDonationProcessedByMessagesId: '',
+	lastDonationProcessedByRtdId: '',
+	donations: [],
+	displayedDonations: [],
+	displayedDonationsWithMessages: [],
+	stage: 0,
+	animationStage: 0,
+	sumGoal: 0,
+	progressBar: {
+		raised: 0,
+		sumRaised: 0
+	}
+};
+
 // overlay settings
 export const settings = new PersistentState('settings', defaultSettings, 'localStorage');
 
@@ -89,6 +111,12 @@ export const pool = new PersistentState<Pool>('pool', { players: [], maps: [] })
 
 // ws messages
 export const wsMessages: PersistentState<any[]> = new PersistentState('wsMessages', []);
+
+export const fundraisingState = new PersistentState(
+	'fundraisingState',
+	defaultFundraisingState,
+	'localStorage'
+);
 
 export function fullReset() {
 	settings.current = defaultSettings;
