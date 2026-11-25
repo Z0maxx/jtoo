@@ -12,12 +12,21 @@
 	import { poolMaps } from '$lib/console-pools.svelte';
 	import { now } from '$lib/clock.svelte';
 	import { fitText } from '$lib/fit-text';
+	import PickAvatar from '$lib/components/maps/PickAvatar.svelte';
+	import {
+		deciderId,
+		mapName,
+		seriesOf,
+		teamBg,
+		teamOutline,
+		teamText,
+		type Actor
+	} from '$lib/map-picks';
 
 	const EVENT_NAME = 'Jump4Charity';
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 
-	type Actor = 'A' | 'B';
 	type Tile = {
 		id: string; // the pick & ban id, or the file name before a session
 		key: string; // the file name in every phase, so a map's tile carries across them
@@ -69,12 +78,6 @@
 	const flyIn: typeof fly = (node, params) =>
 		sceneEntering() ? { duration: 0 } : fly(node, params);
 
-	function mapName(fileName: string, fallback?: string | null): string {
-		const map = getMap(fileName);
-		if (!map.fileName) return fallback || fileName;
-		return settings.current.useShortMapNames ? map.shortName : map.fileName;
-	}
-
 	// the session's maps once it starts, the imported pool before that
 	let tiles: Tile[] = $derived(
 		session
@@ -125,9 +128,6 @@
 				}
 			: { A: noPlayer, B: noPlayer }
 	);
-	const teamText: Record<Actor, string> = { A: 'text-ctp-blue', B: 'text-ctp-red' };
-	const teamBg: Record<Actor, string> = { A: 'bg-ctp-blue', B: 'bg-ctp-red' };
-	const teamOutline: Record<Actor, string> = { A: 'outline-ctp-blue', B: 'outline-ctp-red' };
 
 	// the stage and series length belong to the match, so they only show once a session starts
 	let matchTag = $derived(
@@ -154,26 +154,15 @@
 
 	// the map left over once every step is done; it's played last when picks don't fill the series
 	let decider = $derived.by(() => {
-		if (!session) return undefined;
-		const picks = session.history.filter((h) => h.action === 'pick').length;
-		if (picks >= session.config.seriesLength) return undefined;
-		const left = tiles.filter((t) => !results.has(t.id));
-		return left.length === 1 ? left[0] : undefined;
+		const id = session && deciderId(session);
+		return id ? tileById.get(id) : undefined;
 	});
 
-	let series = $derived.by(() => {
-		const played: { tile: Tile; actor?: Actor }[] = (session?.history ?? [])
-			.filter((h) => h.action === 'pick')
-			// the console adds the leftover map as an 'elimination' pick when the steps run out:
-			// that's the decider, nobody's pick
-			.map((h) => ({
-				tile: tileById.get(h.mapId)!,
-				actor: h.resolvedBy === 'elimination' ? undefined : h.actor
-			}))
-			.filter((p) => p.tile);
-		if (decider) played.push({ tile: decider });
-		return played;
-	});
+	let series = $derived(
+		(session ? seriesOf(session) : [])
+			.map((p) => ({ tile: tileById.get(p.mapId)!, actor: p.actor }))
+			.filter((p) => p.tile)
+	);
 	// the series cards' names start smaller the more cards share the row, then fitText shrinks
 	// any name still too long for its card
 	let seriesNameSize = $derived(series.length <= 3 ? 60 : series.length === 4 ? 54 : 48);
@@ -476,13 +465,5 @@
 {/snippet}
 
 {#snippet Avatar(actor: Actor, className: string)}
-	{#if settings.current.enableAvatars && players[actor].avatar}
-		<img src={players[actor].avatar} alt="" class="object-cover {className}" draggable="false" />
-	{:else}
-		<span
-			class="flex items-center justify-center font-bold text-ctp-crust {teamBg[actor]} {className}"
-		>
-			{players[actor].name.slice(0, 1).toUpperCase()}
-		</span>
-	{/if}
+	<PickAvatar {actor} name={players[actor].name} avatar={players[actor].avatar} class={className} />
 {/snippet}

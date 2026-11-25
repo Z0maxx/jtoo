@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay, items } from '$lib/storage.svelte';
+	import { settings, overlay } from '$lib/storage.svelte';
 	import { fade, slide } from 'svelte/transition';
+	import MatchMapPicks from '$lib/components/match/MatchMapPicks.svelte';
 	import WebSocketTimer from '$lib/components/match/WebSocketTimer.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { getContext } from 'svelte';
-	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { getMap, getPlayer, msToFormattedTime } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
-	import { Steam } from '$lib/api/steam/api-steam';
 	import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 
 	// one scene for both match layouts, so switching between them animates the differences
@@ -16,7 +15,6 @@
 	type Props = { single?: boolean };
 	let { single = false }: Props = $props();
 
-	let ksnWs: KSNWebSocket = getContext('ksnWs');
 	let live: ConsoleLive = getContext('consoleLive');
 </script>
 
@@ -134,55 +132,7 @@
 	</div>
 </div>
 <!-- MARK: map picks -->
-<div class="absolute bottom-4 left-4 z-1 flex w-200 flex-wrap gap-4">
-	{#if ksnWs.pickedMaps.length > 1}
-		{#each ksnWs.pickedMaps as pickedMap, i (i)}
-			{@const player = getPlayer(Steam.convertSteamId(pickedMap.steamID3, 'SteamID3') as number)}
-			{@const mapId = ksnWs.mapIdFor(overlay.current.map)}
-			{@const isCurrent = pickedMap.mapID == mapId}
-			{@const map = () =>
-				items.current.maps.find((m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID)}
-			{#if map()}
-				{@const MAP = map()!}
-				<div
-					class="@container relative h-32 w-55 border-ctp-lavender-900 text-3xl
-                                                {settings.current.monoFont} rounded-2xl
-                                                {isCurrent ? 'border-2' : ''}"
-				>
-					<!-- map name -->
-					<h1
-						class="absolute top-0 right-0 w-full p-2 text-center {settings.current.font}"
-						style:filter={getFiltersStyle()}
-					>
-						{settings.current.useShortMapNames ? MAP.shortName : MAP.fileName}
-					</h1>
-					{#if player}
-						{#if settings.current.enableAvatars && player.avatarURL}
-							{#key player.avatarURL}
-								<img
-									in:fade
-									src={player.avatarURL}
-									alt=""
-									class="absolute bottom-1 left-1 size-13 rounded-xl object-cover object-center"
-									draggable="false"
-								/>
-							{/key}
-						{/if}
-					{/if}
-					<img
-						in:fade
-						src={MAP.imageURL}
-						alt=""
-						class="absolute -z-10 h-full w-full rounded-xl object-cover {isCurrent
-							? 'brightness-70'
-							: 'brightness-50'}"
-						draggable="false"
-					/>
-				</div>
-			{/if}
-		{/each}
-	{/if}
-</div>
+<MatchMapPicks />
 
 <!-- MARK: OverlayPlayer -->
 {#snippet OverlayPlayer(steamID3: number | undefined, playerNum: number)}
