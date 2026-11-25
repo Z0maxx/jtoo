@@ -15,7 +15,14 @@
 
 	import PlayerControl from '$lib/components/controls/PlayerControl.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay, items, defaultStages, defaultSettings } from '$lib/storage.svelte';
+	import {
+		settings,
+		overlay,
+		items,
+		defaultStages,
+		defaultSettings,
+		resetVisualSettings
+	} from '$lib/storage.svelte';
 	import {
 		BrokenOverlayScenes,
 		Fonts,
@@ -189,6 +196,7 @@
 		<button class="button-remove" onclick={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</button
 		>
+		<button class="button-remove" onclick={resetVisualSettings}>reset visual settings</button>
 	</div>
 
 	<!-- items -->
@@ -470,6 +478,8 @@
 		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
 		<label>
 			<input
+				type="number"
+				min="0"
 				class="input w-7 accent-ctp-lavender"
 				bind:value={settings.current.fundraisingShowDonationSeconds}
 			/>

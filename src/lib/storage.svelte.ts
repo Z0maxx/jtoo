@@ -97,6 +97,16 @@ export const defaultFundraisingState: FundraisingState = {
 	}
 };
 
+// PersistentState only uses its defaults when nothing is saved yet, so a key added to the
+// defaults after a browser saved its copy would stay undefined there. fill those in on load,
+// writing only when something is missing so other tabs aren't sent a needless storage event
+function addMissingDefaults<T extends object>(state: PersistentState<T>, defaults: T) {
+	if (typeof localStorage === 'undefined') return;
+	const saved = state.current;
+	if (Object.keys(defaults).every((k) => k in saved)) return;
+	state.current = { ...defaults, ...saved };
+}
+
 // overlay settings
 export const settings = new PersistentState('settings', defaultSettings, 'localStorage');
 
@@ -127,8 +137,35 @@ export const fundraisingState = new PersistentState(
 	'localStorage'
 );
 
-export function fullReset() {
-	settings.current = defaultSettings;
-	overlay.current = defaultOverlay;
-	// items.current = defaultItems;
+addMissingDefaults(settings, defaultSettings);
+addMissingDefaults(overlay, defaultOverlay);
+addMissingDefaults(fundraisingState, defaultFundraisingState);
+
+// the settings that only change how the overlay looks and behaves (fonts, theme and the
+// checkboxes in the controls' settings section); tokens, connections and scenes are left alone
+const visualSettingKeys = [
+	'font',
+	'monoFont',
+	'hue',
+	'saturation',
+	'enableFlags',
+	'enableMovingBG',
+	'useShortMapNames',
+	'enablePOVGuide',
+	'enableGradient',
+	'enableTeamColors',
+	'enablePRs',
+	'enableAvatars',
+	'enableTags',
+	'enableFundraisingSection',
+	'enableFundraisingRtd',
+	'enableFundraisingDonations',
+	'fundraisingShowDonationSeconds',
+	'followRacePlayers',
+	'selectDuelPlayers'
+] as const satisfies ReadonlyArray<keyof Settings>;
+
+export function resetVisualSettings() {
+	const visualDefaults = Object.fromEntries(visualSettingKeys.map((k) => [k, defaultSettings[k]]));
+	settings.current = { ...settings.current, ...visualDefaults };
 }
