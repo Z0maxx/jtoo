@@ -118,14 +118,14 @@ export const OverlayScenes = [
 	'',
 	'DualPovMatchScene',
 	'SinglePovMatchScene',
-	'MapScene',
 	'TournamentInfoScene',
+	'ScheduleScene',
+	'DonationsScene',
+	'MapScene',
+	'LeaderboardScene',
 	'BracketScene',
 	'PlayerCardScene',
 	'PlayerListScene',
-	'LeaderboardScene',
-	'ScheduleScene',
-	'DonationsScene',
 	'ThanksScene'
 ] as const;
 // these weren't updated with the last big changes due to time constraints and relevance to the event format
