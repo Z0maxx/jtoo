@@ -19,6 +19,7 @@
 	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
 	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
+	import { pollSchedule } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
@@ -33,6 +34,9 @@
 	$effect(() => {
 		live.pinTournament(overlay.current.tournament || null);
 	});
+
+	// keep the schedule loaded even off its scene, so switching to it shows it at once
+	pollSchedule();
 
 	onMount(() => {
 		// follow OBS's program scene, to swap to the idle overlay scene on the Idle scene

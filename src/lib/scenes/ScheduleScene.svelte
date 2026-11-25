@@ -3,13 +3,11 @@
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { currentSegmentIndex, pollSchedule, schedule } from '$lib/schedule.svelte';
+	import { currentSegmentIndex, schedule } from '$lib/schedule.svelte';
 	import { settings } from '$lib/storage.svelte';
 	import { fade } from 'svelte/transition';
 
 	const STREAM_URL = 'twitch.tv/jumpfortress';
-
-	pollSchedule();
 
 	// the on-air segment only changes by the minute, so a coarse clock is plenty
 	let time = $state(Date.now());
