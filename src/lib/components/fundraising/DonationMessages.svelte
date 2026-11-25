@@ -52,7 +52,7 @@
 				if (!iterateDonations()) break;
 
 				fundraisingState.current.lastDonationProcessedByMessagesId = d.id;
-				if (!d.message) continue;
+				if (!d.message || !(await isMessageAcceptable(d.message))) continue;
 
 				const lastEmpty = fundraisingState.current.displayedDonationsWithMessages.findIndex(
 					(d) => d.id === ''
@@ -84,6 +84,23 @@
 
 		return donations.slice(idx + 1);
 	}
+
+  async function isMessageAcceptable(message: string) {
+    try {
+      const resp = await fetch('/api/message-moderation', {
+        method: 'POST',
+        body: JSON.stringify({
+          message
+        })
+      })
+
+      const { isAcceptable } = await resp.json() as { isAcceptable: boolean }
+      return isAcceptable
+    }
+    catch {
+      return false
+    }
+  }
 </script>
 
 <div class="z-50 flex items-center gap-2 px-2 transition-all duration-400">
