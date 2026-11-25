@@ -9,7 +9,7 @@
 	fundraisingState.current.animationStage = 0;
 </script>
 
-<div class="relative mx-4 my-2 h-full text-white">
+<div class="relative mx-4 my-2 text-white">
 	<Overview />
 	<div class="mt-4 flex gap-4">
 		<div class="w-2/4">
