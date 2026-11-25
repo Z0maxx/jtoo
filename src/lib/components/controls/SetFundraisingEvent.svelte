@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fundraisingState } from '$lib/storage.svelte';
+	import { defaultFundraisingState, fundraisingState } from '$lib/storage.svelte';
 	import Accordion from './Accordion.svelte';
 
 	type Error = { state: boolean; msg: string };
@@ -25,9 +25,8 @@
 		}
 
 		error.invalidUrl.state = false;
+		fundraisingState.current = defaultFundraisingState;
 		fundraisingState.current.eventUrl = url;
-		fundraisingState.current.donations = [];
-		fundraisingState.current.lastDisplayedDonationId = '';
 		fetched = true;
 	}
 
