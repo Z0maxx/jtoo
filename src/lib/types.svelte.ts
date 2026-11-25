@@ -204,7 +204,7 @@ export type Donation = {
 	amount: number;
 	message?: string;
 	avatarUrl?: string;
-	createdAt?: string; // ISO date from DWB; missing on donations saved before it was added
+	createdAt: string;
 };
 
 export type DonationMilestone = {
@@ -216,11 +216,12 @@ export type DonationMilestone = {
 
 export type FundraisingState = {
 	eventUrl: string;
-	lastDisplayedDonationId: string;
-	lastDisplayedDonationWithMessageId: string;
+	lastDonationProcessedByDonationsId: string;
+	lastDonationProcessedByMessagesId: string;
 	lastDonationProcessedByRtdId: string;
 	donations: Donation[];
 	displayedDonations: Donation[];
+	displayedDonationsWithMessages: Donation[];
 	stage: number;
 	animationStage: number;
 	sumGoal: number;

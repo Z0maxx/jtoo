@@ -1,60 +1,12 @@
 <script lang="ts">
-	import { Dwb } from '$lib/api/dwb/api-dwb';
 	import { fundraisingState, settings } from '$lib/storage.svelte';
-	import type { Donation } from '$lib/types.svelte';
-	import { sleep } from '$lib/util';
-	import { onDestroy } from 'svelte';
 	import Milestones from './Milestones.svelte';
 	import Overview from './Overview.svelte';
 	import Donations from './Donations.svelte';
 	import Rtd from './Rtd.svelte';
 
-	/*fundraisingState.current.lastDisplayedDonationId = '';
-	fundraisingState.current.displayedDonations = [];*/
+  //reset animation stage so animations don't play multiple times
 	fundraisingState.current.animationStage = 0;
-	const displayedDonationCount = 7;
-	let iteratingDonations = false;
-	const iterateDonations = () => settings.current.enableFundraisingDonations;
-	let donations: Donation[] = [];
-	const donationsSubId = Dwb.subscribeToDonations((newDonations) => {
-		donations = newDonations;
-		displayNewDonations();
-	});
-
-	onDestroy(() => {
-		Dwb.unsubscribeFromDonations(donationsSubId);
-	});
-
-	async function displayNewDonations() {
-		if (iteratingDonations) return;
-		iteratingDonations = true;
-
-		const idx = donations.findIndex(
-			(d) => d.id === fundraisingState.current.lastDisplayedDonationId
-		);
-
-		let i = idx + 1;
-		while (i < donations.length) {
-			if (!iterateDonations()) {
-				await sleep(2 * 1000);
-				continue;
-			}
-
-			const donation = donations[i];
-			fundraisingState.current.lastDisplayedDonationId = donation.id;
-			fundraisingState.current.displayedDonations = [
-				donation,
-				...fundraisingState.current.displayedDonations.slice(0, displayedDonationCount - 1)
-			];
-			i++;
-			await sleep(settings.current.fundraisingShowDonationSeconds * 1000);
-		}
-
-		fundraisingState.current.displayedDonations = donations
-			.toReversed()
-			.slice(0, displayedDonationCount);
-		iteratingDonations = false;
-	}
 </script>
 
 <div class="relative mx-4 my-2 h-full text-white">

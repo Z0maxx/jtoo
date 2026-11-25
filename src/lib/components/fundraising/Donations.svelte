@@ -1,5 +1,67 @@
 <script lang="ts">
-	import { fundraisingState } from '$lib/storage.svelte';
+	import { Dwb } from '$lib/api/dwb/api-dwb';
+	import { fundraisingState, settings } from '$lib/storage.svelte';
+	import type { Donation } from '$lib/types.svelte';
+	import { sleep } from '$lib/util';
+	import { onDestroy } from 'svelte';
+
+	/*fundraisingState.current.displayedDonations = [];
+	fundraisingState.current.lastDonationProcessedByDonationsId = '';*/
+
+	const displayedDonationCount = 7;
+	let latestDonations: Donation[] = [];
+	let processing = false;
+	let destroyed = false;
+
+	const iterateDonations = () => settings.current.enableFundraisingDonations;
+
+	const donationsSubId = Dwb.subscribeToDonations((donations) => {
+		latestDonations = donations;
+		processNewDonations();
+	});
+
+	onDestroy(() => {
+		destroyed = true;
+		Dwb.unsubscribeFromDonations(donationsSubId);
+	});
+
+	async function processNewDonations() {
+		if (processing) return;
+
+		processing = true;
+		let pending = unprocessed(latestDonations);
+		while (pending.length > 0) {
+			if (!iterateDonations()) {
+				await sleep(2 * 1000);
+				continue;
+			}
+
+			for (const d of pending) {
+				if (destroyed) return;
+				if (!iterateDonations()) break;
+
+				fundraisingState.current.lastDonationProcessedByDonationsId = d.id;
+				fundraisingState.current.displayedDonations = [
+					d,
+					...fundraisingState.current.displayedDonations.slice(0, displayedDonationCount - 1)
+				];
+
+				await sleep(settings.current.fundraisingShowDonationSeconds * 1000);
+			}
+
+			pending = unprocessed(latestDonations);
+		}
+
+		processing = false;
+	}
+
+	function unprocessed(donations: Donation[]): Donation[] {
+		let idx = donations.findIndex(
+			(d) => d.id === fundraisingState.current.lastDonationProcessedByDonationsId
+		);
+
+		return donations.slice(idx + 1);
+	}
 </script>
 
 <div
@@ -12,7 +74,7 @@
 				{#if donation.avatarUrl}
 					<img src={donation.avatarUrl} alt="avatar" class="size-6 rounded-full" />
 				{/if}
-				<span>{donation.name ?? 'anonymous'}</span>
+				<span>{donation.name ?? 'Anonymous'}</span>
 			</div>
 			<div>${donation.amount}</div>
 		</div>
