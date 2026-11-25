@@ -69,7 +69,10 @@
 	function rtdEffectFor(d: Donation): string | undefined {
 		if (d.amount < rtdAmount) return undefined;
 		const message = d.message?.toLowerCase();
-		return rtdEffects.find((e) => message?.includes('rtd ' + e) || message?.includes('rtd: ' + e));
+		return (
+			rtdEffects.find((e) => message?.includes('rtd ' + e) || message?.includes('rtd: ' + e)) ??
+			rtdEffects[Math.floor(Math.random() * rtdEffects.length)]
+		);
 	}
 
 	async function sendRtdEffect(effect: string) {
