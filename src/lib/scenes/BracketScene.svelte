@@ -276,9 +276,6 @@
 		@apply -z-1 col-[1/1] row-[1/1] min-h-32 min-w-60 rounded-xl bg-gray-900/70;
 	}
 
-	svg > line {
-		@apply stroke-ctp-lavender-900 stroke-2;
-	}
 	svg > path {
 		@apply fill-none stroke-ctp-lavender-900 stroke-2;
 	}
