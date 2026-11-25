@@ -34,12 +34,11 @@
 				</div>
 			{/key}
 		</div>
-		{#if single}
-			<!-- out of the flex flow, or it pushes player 1 away from the left edge -->
+		<!-- {#if single}
 			<div transition:fade class="pointer-events-none absolute inset-0">
 				<WebSocketLeader class="absolute top-4 right-90" />
 			</div>
-		{/if}
+		{/if} -->
 	{/if}
 	<!-- gradients: both layouts' gradients stay in place and crossfade -->
 	{#if settings.current.enableGradient}
@@ -115,11 +114,11 @@
 		{/key}
 	</div>
 
-	{#if settings.current.ksnWebSocketToken !== '' && !single}
+	<!-- {#if settings.current.ksnWebSocketToken !== '' && !single}
 		<div transition:fade>
 			<WebSocketLeader />
 		</div>
-	{/if}
+	{/if} -->
 	<!-- map -->
 	<div
 		class="relative -right-6 flex h-full skew-x-30 items-center justify-end rounded-bl-xl border-b-4 border-l-4 border-ctp-lavender/50 bg-ctp-lavender/25
@@ -142,9 +141,7 @@
 			{@const mapId = ksnWs.mapIdFor(overlay.current.map)}
 			{@const isCurrent = pickedMap.mapID == mapId}
 			{@const map = () =>
-				items.current.maps.find(
-					(m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID
-				)}
+				items.current.maps.find((m) => m.fileName && ksnWs.mapIdFor(m.fileName) == pickedMap.mapID)}
 			{#if map()}
 				{@const MAP = map()!}
 				<div
