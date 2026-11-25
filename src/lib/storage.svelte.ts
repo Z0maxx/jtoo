@@ -49,6 +49,8 @@ export const defaultSettings: Settings = {
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
+	idleObsScene: 'Idle',
+	idleOverlayScene: '',
 	obsWsIp: '',
 	obsWsPort: undefined,
 	obsWsPw: ''

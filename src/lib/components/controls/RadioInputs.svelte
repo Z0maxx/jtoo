@@ -9,6 +9,8 @@
 		value?: any;
 		log?: boolean;
 		onchange?: (value: any) => void;
+		// every click, including on the option that's already selected
+		onpick?: (value: any) => void;
 		undefinedOption?: boolean;
 	};
 	let {
@@ -18,6 +20,7 @@
 		log = false,
 		value = $bindable(),
 		onchange,
+		onpick,
 		undefinedOption = false
 	}: Props = $props();
 
@@ -72,6 +75,7 @@
 				{name}
 				bind:group={value}
 				value={undefined}
+				onclick={() => onpick?.(undefined)}
 				onchange={() => {
 					onSelect();
 				}}
@@ -99,6 +103,7 @@
 			{name}
 			bind:group={value}
 			value={opt}
+			onclick={() => onpick?.(opt)}
 			onchange={() => {
 				onSelect();
 			}}

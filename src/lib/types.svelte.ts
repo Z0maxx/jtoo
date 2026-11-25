@@ -130,6 +130,13 @@ export const BrokenOverlayScenes = [
 	'ThanksScene'
 ];
 export type OverlayScene = (typeof OverlayScenes)[number];
+// match scenes are built around the players' POVs, so they make no sense over the Idle scene
+export const MatchOverlayScenes = ['DualPovMatchScene', 'SinglePovMatchScene'] as const;
+export type IdleOverlayScene = Exclude<OverlayScene, (typeof MatchOverlayScenes)[number]>;
+export const IdleOverlayScenes = OverlayScenes.filter(
+	(s): s is IdleOverlayScene =>
+		!(MatchOverlayScenes as readonly string[]).includes(s) && !BrokenOverlayScenes.includes(s)
+);
 
 export type Settings = {
 	font: Font;
@@ -146,6 +153,8 @@ export type Settings = {
 	enablePOVGuide: boolean;
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
+	idleObsScene: string; // name of the broadcaster's OBS Idle scene
+	idleOverlayScene: IdleOverlayScene; // shown, without backgrounds, while OBS is on the Idle scene
 	ksnWebSocketToken: string;
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race

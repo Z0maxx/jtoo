@@ -1,16 +1,14 @@
 <script lang="ts">
+	import SceneTint from '$lib/components/SceneTint.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { items, overlay, settings } from '$lib/storage.svelte';
 	import { Player } from '$lib/types.svelte';
 	import { fade } from 'svelte/transition';
-	import { page } from '$app/state';
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getPlayer } from '$lib/util';
 
 	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
-
-	const drawBG: boolean = !page.url.searchParams.has('nobg');
 
 	// compact rows so 16 fit on a 1080p canvas: 48px rows, 2px dividers and 4px gaps
 	const MAX_PLAYERS = 16;
@@ -26,24 +24,7 @@
 <div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
 
 <section class="relative z-20 m-auto flex w-full justify-center gap-10 p-4">
-	{#if drawBG}
-		{#if settings.current.enableGradient}
-			<!-- gradients -->
-			{#if settings.current.enableTeamColors}
-				<div
-					class="absolute top-0 left-0 -z-10 size-full bg-linear-to-r from-ctp-blue/35 via-black/35 to-ctp-red/35"
-				></div>
-			{:else}
-				<div
-					class="absolute top-0 left-0 -z-10 size-full bg-linear-to-r from-ctp-lavender/35 via-black/35 to-ctp-lavender/35"
-					style:filter={getFiltersStyle()}
-				></div>
-			{/if}
-		{:else}
-			<!-- transparent black bg -->
-			<div class="absolute top-0 left-0 size-full bg-black/35"></div>
-		{/if}
-	{/if}
+	<SceneTint class="-z-10" />
 	<ul
 		class="grid items-center gap-x-6 gap-y-1 text-3xl"
 		style:grid-template-columns="repeat({(settings.current.enableAvatars ? 1 : 0) +

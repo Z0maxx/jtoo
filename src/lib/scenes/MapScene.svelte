@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SceneTint from '$lib/components/SceneTint.svelte';
 	import MapPickProgressBar from '../components/maps/MapPickProgressBar.svelte';
 
 	import { getFiltersStyle } from '$lib/filters.svelte';
@@ -18,22 +19,7 @@
 <div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
 
 <section class="relative z-20 m-auto flex w-full flex-col justify-center gap-10 p-4">
-	{#if settings.current.enableGradient}
-		<!-- gradients -->
-		{#if settings.current.enableTeamColors}
-			<div
-				class="absolute top-0 left-0 size-full bg-linear-to-r from-ctp-blue/35 via-black/35 to-ctp-red/35"
-			></div>
-		{:else}
-			<div
-				class="absolute top-0 left-0 size-full bg-linear-to-r from-ctp-lavender/35 via-black/35 to-ctp-lavender/35"
-				style:filter={getFiltersStyle()}
-			></div>
-		{/if}
-	{:else}
-		<!-- transparent black bg -->
-		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
-	{/if}
+	<SceneTint />
 	<section class="flex flex-wrap justify-around gap-5 p-10">
 		{#each poolMaps() as mapFilename, i (i)}
 			{@const map = getMap(mapFilename)}

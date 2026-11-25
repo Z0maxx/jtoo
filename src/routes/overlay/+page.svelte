@@ -16,6 +16,7 @@
 	import { consoleBaseUrl } from '$lib/util';
 	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
+	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
@@ -32,6 +33,9 @@
 	});
 
 	onMount(() => {
+		// follow OBS's program scene, to swap to the idle overlay scene on the Idle scene
+		watchOBSScene();
+
 		ksnWs = new KSNWebSocket('ksnWs');
 		setContext('ksnWs', ksnWs);
 
@@ -59,7 +63,9 @@
 		TournamentInfoScene
 	};
 
-	let page = $derived(settings.current.overlayScene);
+	let page: OverlayScene = $derived(
+		onIdleScene() ? (settings.current.idleOverlayScene ?? '') : settings.current.overlayScene
+	);
 </script>
 
 {#if ksnWs}

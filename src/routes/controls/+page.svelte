@@ -21,11 +21,13 @@
 		Fonts,
 		MonoFonts,
 		OverlayScenes,
+		IdleOverlayScenes,
 		TFClasses
 	} from '$lib/types.svelte';
 	// import * as _ from 'underscore';
 
 	import { obsConnect, obsStatus, setScene } from '$lib/websockets/obs/ws-obs.svelte';
+	import { idleOBSSceneName } from '$lib/obs-browser-source.svelte';
 	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
 	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
@@ -102,12 +104,6 @@
 			obsConnect(settings.current.obsWsIp, settings.current.obsWsPort, settings.current.obsWsPw);
 		}
 
-		$effect(() => {
-			if (settings.current.overlayScene) {
-				setScene(settings.current.overlayScene);
-			}
-		});
-
 		return () => live.close();
 	});
 </script>
@@ -160,6 +156,25 @@
 		<RadioInputs
 			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
 			bind:value={settings.current.overlayScene}
+			onpick={(scene) => scene && setScene(scene)}
+		/>
+
+		<div class="flex items-center justify-between gap-2">
+			<label for="input-idle-obs-scene">idle scene</label>
+			<input
+				type="text"
+				class="input"
+				id="input-idle-obs-scene"
+				placeholder="Idle"
+				title="name of the OBS scene this overlay is shown on, without backgrounds"
+				value={settings.current.idleObsScene}
+				onchange={(e) => (settings.current.idleObsScene = (e.target as HTMLInputElement).value)}
+			/>
+		</div>
+		<RadioInputs
+			opts={IdleOverlayScenes}
+			bind:value={settings.current.idleOverlayScene}
+			onpick={() => setScene(idleOBSSceneName())}
 		/>
 
 		<div class="flex justify-between">
