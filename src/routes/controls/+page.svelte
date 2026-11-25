@@ -36,6 +36,7 @@
 	import { getMap, consoleBaseUrl } from '$lib/util';
 	import { onMount, setContext } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
@@ -207,6 +208,33 @@
 			opts={TFClasses.filter((c) => c !== 'overall')}
 			bind:value={settings.current.tfClass}
 		/>
+
+		<div class="flex justify-between">
+			<span>schedule day</span>
+			<button
+				class="button-remove"
+				title="re-fetch the sheet in the controls and on the overlay"
+				disabled={schedule.loading}
+				onclick={refreshSchedule}>refresh</button
+			>
+		</div>
+		<RadioInputs
+			opts={scheduleDays.map((_, i) => i)}
+			optlabels={scheduleDays.map((d) => d.name)}
+			bind:value={
+				() => settings.current.scheduleDay ?? 0, (day) => (settings.current.scheduleDay = day)
+			}
+			onchange={() => schedule.load(scheduleSheetUrl())}
+		/>
+		{#if schedule.loading}
+			<span class="opacity-60">loading...</span>
+		{:else if schedule.error}
+			<span class="text-red-300">{schedule.error}</span>
+		{:else if schedule.schedule}
+			<span class="opacity-60">
+				{schedule.schedule.title} ({schedule.schedule.segments.length} segments)
+			</span>
+		{/if}
 	</Accordion>
 
 	<Accordion title="connections">

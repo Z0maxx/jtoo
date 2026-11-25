@@ -8,6 +8,7 @@
 	import PlayerListScene from '$lib/scenes/PlayerListScene.svelte';
 	import ThanksScene from '$lib/scenes/ThanksScene.svelte';
 	import TournamentInfoScene from '$lib/scenes/TournamentInfoScene.svelte';
+	import ScheduleScene from '$lib/scenes/ScheduleScene.svelte';
 	import { OverlayScenes, type OverlayScene } from '$lib/types.svelte';
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
@@ -60,6 +61,7 @@
 		PlayerListScene,
 		ThanksScene,
 		LeaderboardScene,
+		ScheduleScene,
 		TournamentInfoScene
 	};
 

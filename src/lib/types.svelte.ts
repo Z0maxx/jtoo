@@ -92,12 +92,15 @@ export function newBracket(): SavedBracket {
 
 // MARK: Settings
 export const Fonts = [
-	'font-fredoka',
 	'font-inter',
-	'font-bebas',
 	'font-montserrat',
 	'font-roboto',
-	'font-space-grotesk'
+	'font-space-grotesk',
+	'font-geist',
+	'font-lexend-deca',
+	'font-manrope',
+	'font-nunito-sans',
+	'font-outfit'
 ] as const;
 export type Font = (typeof Fonts)[number];
 
@@ -121,6 +124,7 @@ export const OverlayScenes = [
 	'PlayerCardScene',
 	'PlayerListScene',
 	'LeaderboardScene',
+	'ScheduleScene',
 	'ThanksScene'
 ] as const;
 // these weren't updated with the last big changes due to time constraints and relevance to the event format
@@ -160,6 +164,7 @@ export type Settings = {
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
 	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
+	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;
 	obsWsIp: string;
@@ -176,6 +181,8 @@ export type Overlay = {
 	bracket: string; // id of the bracket the bracket scene shows
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
+	// time of the controls' last schedule refresh; the overlay re-fetches the sheet when it changes
+	scheduleRefreshedAt?: number;
 };
 
 // the event's players and maps, imported from a console player pool and map pool

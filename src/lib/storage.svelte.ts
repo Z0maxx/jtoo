@@ -46,6 +46,7 @@ export const defaultSettings: Settings = {
 	followConsoleStageMap: true,
 	followRacePlayers: true,
 	tfClass: 'soldier',
+	scheduleDay: 0,
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
