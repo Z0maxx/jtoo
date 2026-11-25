@@ -6,12 +6,13 @@
 	type Props = {
 		placeholder: string;
 		item: keyof Items;
+		class?: string;
 	};
 
-	let { placeholder, item }: Props = $props();
+	let { placeholder, item, class: className }: Props = $props();
 </script>
 
-<div transition:slide>
+<div transition:slide class={[className]}>
 	<input
 		class="input"
 		{placeholder}

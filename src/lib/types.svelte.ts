@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { type Bracket4, type Bracket8 } from './Bracket.svelte';
+import { type Results } from './Bracket.svelte';
 import type { Tempus2 } from './api/tempus2/api-tempus2';
 
 // MARK: Types
@@ -75,29 +75,32 @@ export const BracketOptions = ['whole', 'upper', 'lower'] as const;
 export type BracketOption = (typeof BracketOptions)[number];
 
 // a double elimination bracket, made on its own from JTOO's players
-export const BracketSizes = [4, 8] as const;
+export const BracketSizes = [4, 8, 10] as const;
 export type BracketSize = (typeof BracketSizes)[number];
 
 export type SavedBracket = {
 	id: string;
 	name: string;
 	size: BracketSize;
-	players: SteamID3[]; // seeding order
-	bracket?: Bracket4 | Bracket8;
+	players: SteamID3[]; // seeding order: seed 1 first
+	results: Results;
 };
 
 export function newBracket(): SavedBracket {
-	return { id: uuidv4(), name: '', size: 8, players: [] };
+	return { id: uuidv4(), name: '', size: 8, players: [], results: {} };
 }
 
 // MARK: Settings
 export const Fonts = [
-	'font-fredoka',
 	'font-inter',
-	'font-bebas',
 	'font-montserrat',
 	'font-roboto',
-	'font-space-grotesk'
+	'font-space-grotesk',
+	'font-geist',
+	'font-lexend-deca',
+	'font-manrope',
+	'font-nunito-sans',
+	'font-outfit'
 ] as const;
 export type Font = (typeof Fonts)[number];
 
@@ -121,6 +124,7 @@ export const OverlayScenes = [
 	'PlayerCardScene',
 	'PlayerListScene',
 	'LeaderboardScene',
+	'ScheduleScene',
 	'ThanksScene'
 ] as const;
 // these weren't updated with the last big changes due to time constraints and relevance to the event format
@@ -130,6 +134,13 @@ export const BrokenOverlayScenes = [
 	'ThanksScene'
 ];
 export type OverlayScene = (typeof OverlayScenes)[number];
+// match scenes are built around the players' POVs, so they make no sense over the Idle scene
+export const MatchOverlayScenes = ['DualPovMatchScene', 'SinglePovMatchScene'] as const;
+export type IdleOverlayScene = Exclude<OverlayScene, (typeof MatchOverlayScenes)[number]>;
+export const IdleOverlayScenes = OverlayScenes.filter(
+	(s): s is IdleOverlayScene =>
+		!(MatchOverlayScenes as readonly string[]).includes(s) && !BrokenOverlayScenes.includes(s)
+);
 
 export type Settings = {
 	font: Font;
@@ -149,10 +160,16 @@ export type Settings = {
 	enableFundraisingRtd: boolean;
 	useShortMapNames: boolean;
 	overlayScene: OverlayScene;
+	idleObsScene: string; // name of the broadcaster's OBS Idle scene
+	idleOverlayScene: IdleOverlayScene; // shown, without backgrounds, while OBS is on the Idle scene
 	ksnWebSocketToken: string;
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
+	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
+	selectDuelPlayers: boolean; // a duel race selects its racers as player A and B
+	useDummyData: boolean; // show made-up race and tournament data instead of the console's
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
+	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
 	jfRelayWebSocketToken: string;
 	logWsMessages: boolean;
 	obsWsIp: string;
@@ -170,6 +187,8 @@ export type Overlay = {
 	bracket: string; // id of the bracket the bracket scene shows
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
+	// time of the controls' last schedule refresh; the overlay re-fetches the sheet when it changes
+	scheduleRefreshedAt?: number;
 };
 
 // the event's players and maps, imported from a console player pool and map pool

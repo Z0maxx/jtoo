@@ -4,6 +4,7 @@ import { Steam } from '../steam/api-steam';
 import _ from 'underscore';
 import { TempusPlaza } from '../tempusplaza/api-tempusplaza';
 
+// TODO - rate limit using zomaxx's implementation on DWB branch
 export namespace Tempus2 {
 	// Tempus2 API Interfaces
 	// https://tempus2.xyz/apidocs/
@@ -50,8 +51,7 @@ export namespace Tempus2 {
 	 * miss; a wrong player is never picked. Save the result's tempusID to skip this next time.
 	 */
 	export async function findTempusID(steamID3: number, names: string[] = []) {
-		const isMatch = (p: PlayerInfo) =>
-			Steam.convertSteamId(p.steamid, 'SteamID3') === steamID3;
+		const isMatch = (p: PlayerInfo) => Steam.convertSteamId(p.steamid, 'SteamID3') === steamID3;
 
 		const tried = new Set<string>();
 		const search = async (name: string | undefined) => {

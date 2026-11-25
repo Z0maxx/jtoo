@@ -1,8 +1,8 @@
 <script lang="ts">
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { settings } from '$lib/storage.svelte';
 	import { fade } from 'svelte/transition';
-	import { page } from '$app/state';
 	import { getContext } from 'svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
@@ -32,8 +32,6 @@
 	let leaderPrMs = $derived(results.find((r) => r.prMs !== null)?.prMs ?? null);
 
 	const maxPlayers = 8;
-
-	const drawBG: boolean = !page.url.searchParams.has('nobg');
 
 	// A round only has results once it's finalized. Until then, show the live race if it's
 	// this round's race.
@@ -70,28 +68,7 @@
 	let validRoundCount = $derived(rounds.filter(roundIsValid).length);
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section class="relative z-20 m-auto flex w-full flex-col justify-center gap-10 p-4">
-	{#if drawBG}
-		{#if settings.current.enableGradient}
-			<!-- gradients -->
-			{#if settings.current.enableTeamColors}
-				<div
-					class="absolute top-0 left-0 -z-10 size-full bg-linear-to-r from-ctp-blue/35 via-black/35 to-ctp-red/35"
-				></div>
-			{:else}
-				<div
-					class="absolute top-0 left-0 -z-10 size-full bg-linear-to-r from-ctp-lavender/35 via-black/35 to-ctp-lavender/35"
-					style:filter={getFiltersStyle()}
-				></div>
-			{/if}
-		{:else}
-			<!-- transparent black bg -->
-			<div class="absolute top-0 left-0 size-full bg-black/35"></div>
-		{/if}
-	{/if}
+<SceneFrame layout="centered" class="flex-col gap-10">
 	{#if !tournament}
 		<div class="text-center text-3xl italic opacity-60">
 			{live.tournamentId ? 'loading tournament...' : 'no tournament'}
@@ -182,7 +159,7 @@
 			</ul>
 		{/if}
 	{/if}
-</section>
+</SceneFrame>
 
 {#snippet Header(title: string)}
 	<li class="pr-20 italic opacity-60" style:filter={getFiltersStyle()}>{title}</li>

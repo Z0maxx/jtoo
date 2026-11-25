@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { overlay } from '$lib/storage.svelte';
 	import { settings } from '$lib/storage.svelte';
@@ -10,30 +11,11 @@
 	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section class="relative z-20 m-auto flex w-full justify-center gap-10 p-4">
-	{#if settings.current.enableGradient}
-		<!-- gradients -->
-		{#if settings.current.enableTeamColors}
-			<div
-				class="absolute top-0 left-0 size-full bg-linear-to-r from-ctp-blue/35 via-black/35 to-ctp-red/35"
-			></div>
-		{:else}
-			<div
-				class="absolute top-0 left-0 size-full bg-linear-to-r from-ctp-lavender/35 via-black/35 to-ctp-lavender/35"
-				style:filter={getFiltersStyle()}
-			></div>
-		{/if}
-	{:else}
-		<!-- transparent black bg -->
-		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
-	{/if}
+<SceneFrame layout="centered" class="gap-10">
 	{@render PlayerCard('leftPlayer')}
 	<PRDisplay />
 	{@render PlayerCard('rightPlayer')}
-</section>
+</SceneFrame>
 
 {#snippet PlayerCard(sideKey: 'leftPlayer' | 'rightPlayer')}
 	<!-- player A and B as picked in the controls -->

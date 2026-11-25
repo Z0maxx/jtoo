@@ -29,8 +29,8 @@ export const defaultStages: Array<string> = [
 ];
 
 export const defaultSettings: Settings = {
-	font: 'font-space-grotesk',
-	monoFont: 'font-chivo-mono',
+	font: 'font-geist',
+	monoFont: 'font-azeret-mono',
 	hue: 0,
 	saturation: 100,
 	enableMovingBG: true,
@@ -48,10 +48,16 @@ export const defaultSettings: Settings = {
 	ksnWebSocketToken: '',
 	consoleBaseUrl: 'https://console.jumpfortress.tf',
 	followConsoleStageMap: true,
+	followRacePlayers: true,
+	selectDuelPlayers: true,
+	useDummyData: false,
 	tfClass: 'soldier',
+	scheduleDay: 0,
 	jfRelayWebSocketToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
+	idleObsScene: 'Idle',
+	idleOverlayScene: '',
 	obsWsIp: '',
 	obsWsPort: undefined,
 	obsWsPw: '',

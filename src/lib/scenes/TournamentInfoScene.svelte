@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getFiltersStyle } from '$lib/filters.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import { pool, settings } from '$lib/storage.svelte';
 	import { getMap, getPlayer } from '$lib/util';
 	import { poolMaps, poolPlayers } from '$lib/console-pools.svelte';
@@ -12,16 +13,11 @@
 	let name = $derived(live.tournament?.name ?? pool.current.playerPoolName ?? '');
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section>
+<SceneFrame class="gap-10">
+	<SceneHeader title={name} />
 	<div class="grid grid-cols-12">
-		<div class="col-span-full flex">
-			<h1 class="text-6xl">{name}</h1>
-		</div>
-		<div class="col-span-8 row-start-2 flex">prizepool info</div>
-		<div class="col-span-8 row-start-3 flex">
+		<div class="col-span-8 row-start-1 flex">prizepool info</div>
+		<div class="col-span-8 row-start-2 flex">
 			{#each poolPlayers() as playerId, i (i)}
 				{@const player = getPlayer(playerId)}
 				<div>
@@ -32,7 +28,7 @@
 				</div>
 			{/each}
 		</div>
-		<div class="col-span-4 row-span-2 row-start-2 flex">
+		<div class="col-span-4 row-span-2 row-start-1 flex">
 			{#each poolMaps() as mapFilename, i (i)}
 				{@const map = getMap(mapFilename)}
 				<div>
@@ -42,4 +38,4 @@
 			{/each}
 		</div>
 	</div>
-</section>
+</SceneFrame>

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import '../layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import grain from '$lib/assets/grain.gif';
-	import grid from '$lib/assets/grid.png';
 	import { settings } from '$lib/storage.svelte';
-	import { fade } from 'svelte/transition';
+	import MovingBackground from '$lib/components/MovingBackground.svelte';
+	import { showSceneBackground } from '$lib/obs-browser-source.svelte';
 
 	let { children } = $props();
 </script>
@@ -13,15 +12,7 @@
 <div class="flex h-screen w-full flex-col overflow-hidden {settings.current.font}">
 	{@render children()}
 
-	{#if settings.current.enableMovingBG && settings.current.overlayScene != 'SinglePovMatchScene'}
-		<!-- grid mask -->
-		<div
-			transition:fade={{ duration: 500 }}
-			class="absolute size-full animate-[movingMaskBG_20s_linear_infinite] opacity-100"
-			style:mask-image="url({grid})"
-		>
-			<!-- grain -->
-			<div class="absolute size-full opacity-5" style:background-image="url({grain})"></div>
-		</div>
+	{#if settings.current.enableMovingBG && settings.current.overlayScene != 'SinglePovMatchScene' && showSceneBackground()}
+		<MovingBackground />
 	{/if}
 </div>

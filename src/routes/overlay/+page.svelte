@@ -8,6 +8,7 @@
 	import PlayerListScene from '$lib/scenes/PlayerListScene.svelte';
 	import ThanksScene from '$lib/scenes/ThanksScene.svelte';
 	import TournamentInfoScene from '$lib/scenes/TournamentInfoScene.svelte';
+	import ScheduleScene from '$lib/scenes/ScheduleScene.svelte';
 	import { OverlayScenes, type OverlayScene } from '$lib/types.svelte';
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
@@ -16,6 +17,7 @@
 	import { consoleBaseUrl } from '$lib/util';
 	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
+	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
@@ -23,8 +25,8 @@
 	const live = new ConsoleLive({ tournament: true });
 	setContext('consoleLive', live);
 
-	// add the race's players and map to JTOO when it doesn't know them
-	syncWithRace(live);
+	// add the race's players and map to JTOO when it doesn't know them, and select a duel's racers
+	syncWithRace(live, () => ksnWs?.messages.mapPicks?.session);
 
 	// the leaderboard scene shows the tournament picked in the controls, or the race's own
 	$effect(() => {
@@ -32,6 +34,9 @@
 	});
 
 	onMount(() => {
+		// follow OBS's program scene, to swap to the idle overlay scene on the Idle scene
+		watchOBSScene();
+
 		ksnWs = new KSNWebSocket('ksnWs');
 		setContext('ksnWs', ksnWs);
 
@@ -56,10 +61,13 @@
 		PlayerListScene,
 		ThanksScene,
 		LeaderboardScene,
+		ScheduleScene,
 		TournamentInfoScene
 	};
 
-	let page = $derived(settings.current.overlayScene);
+	let page: OverlayScene = $derived(
+		onIdleScene() ? (settings.current.idleOverlayScene ?? '') : settings.current.overlayScene
+	);
 </script>
 
 {#if ksnWs}

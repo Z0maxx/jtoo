@@ -24,6 +24,7 @@ _discord overlay, chat overlay, and gameplay not included_
 4. add the following urls with a width of 1920 and height of 1080, disable custom css
    - [https://jtoo.mmarc.net/overlay](https://jtoo.mmarc.net/overlay) - the main overlay, switch between scenes (match, leaderboard, etc.) from the controls dock
    - [https://jtoo.mmarc.net/mini-leaderboard](https://jtoo.mmarc.net/mini-leaderboard) - optional standalone mini leaderboard
+5. optional: to show an overlay scene on your idle/break screen, add the same overlay source to an OBS scene named `Idle` (the name can be changed in the controls dock), and set its page permissions to at least `Read access to user information`. while OBS is on that scene, the overlay shows the scene picked under the controls dock's second scene picker, without backgrounds
 
 that's all! you can access overlay controls in `Docks`
 

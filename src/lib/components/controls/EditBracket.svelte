@@ -1,8 +1,8 @@
 <script lang="ts">
 	import PopOver from './PopOver.svelte';
 	import RadioInputs from './RadioInputs.svelte';
-	import SeedBracket from './SeedBracket.svelte';
 	import DraggablePlayerList from '../DraggablePlayerList.svelte';
+	import StartingMatches from '../StartingMatches.svelte';
 	import { items } from '$lib/storage.svelte';
 	import { BracketSizes, newBracket, type SavedBracket, type SteamID3 } from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
@@ -32,9 +32,9 @@
 					.map((id) => getPlayer(id))
 	);
 
-	// the seeding is rebuilt whenever the players change
+	// the players' order is the seeding, so any change to it starts the results over
 	function setPlayers(players: SteamID3[]) {
-		bracket = { ...bracket, players, bracket: undefined };
+		bracket = { ...bracket, players, results: {} };
 		error = '';
 	}
 
@@ -52,8 +52,8 @@
 			error = 'enter a name';
 			return;
 		}
-		if (bracket.players.length != bracket.size || !bracket.bracket) {
-			error = `add ${bracket.size} players and seed the bracket`;
+		if (bracket.players.length != bracket.size) {
+			error = `add ${bracket.size} players`;
 			return;
 		}
 
@@ -96,9 +96,9 @@
 		<DraggablePlayerList
 			bind:players={bracket.players}
 			class="col-span-full"
-			onchange={() => (bracket.bracket = undefined)}
+			onchange={() => (bracket.results = {})}
 			onremove={() => {
-				bracket.bracket = undefined;
+				bracket.results = {};
 				error = '';
 			}}
 		/>
@@ -130,18 +130,16 @@
 		{/if}
 
 		<!-- MARK: Seeding -->
+		<!-- who each seed plays first. Drag a player onto another to swap their seeds -->
 		{#if bracket.players.length == bracket.size}
 			<hr class="hr" />
-			<div class="col-span-full">
-				{#key bracket.players}
-					<SeedBracket
-						container={false}
-						size={bracket.size}
-						players={bracket.players}
-						bind:bracket={bracket.bracket}
-					/>
-				{/key}
-			</div>
+			<h2 class="col-span-full text-xl">starting matches</h2>
+			<StartingMatches
+				size={bracket.size}
+				bind:players={bracket.players}
+				onchange={() => (bracket.results = {})}
+				class="col-span-full"
+			/>
 		{/if}
 
 		<hr class="hr" />

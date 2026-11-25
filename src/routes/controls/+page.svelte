@@ -21,25 +21,40 @@
 		Fonts,
 		MonoFonts,
 		OverlayScenes,
+		IdleOverlayScenes,
 		TFClasses
 	} from '$lib/types.svelte';
 	// import * as _ from 'underscore';
 
 	import { obsConnect, obsStatus, setScene } from '$lib/websockets/obs/ws-obs.svelte';
+	import { idleOBSSceneName } from '$lib/obs-browser-source.svelte';
 	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
 	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
 	import { getMap, consoleBaseUrl } from '$lib/util';
-	import { onMount, setContext } from 'svelte';
+	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
 	type Error = { state: boolean; msg: string };
+	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+
+	// tell the relay who player A and B are whenever they change, whether picked here or selected
+	// by the overlay when a duel race starts; not on load, only on a change
+	let relayedPlayers: string | undefined;
+	$effect(() => {
+		const players = [overlay.current.players[0], overlay.current.players[1]];
+		const key = JSON.stringify(players);
+		if (relayedPlayers !== undefined && key !== relayedPlayers) {
+			untrack(() => jfRelayWs?.broadcastSelectedPlayers(players));
+		}
+		relayedPlayers = key;
+	});
 	// the controls open their own race feed, to show whether the console is reachable and to
 	// order the player lists by the race's leaderboard
 	const live = new ConsoleLive();
@@ -92,6 +107,12 @@
 		if (settings.current.followConsoleStageMap === undefined) {
 			settings.current.followConsoleStageMap = true;
 		}
+		if (settings.current.followRacePlayers === undefined) {
+			settings.current.followRacePlayers = true;
+		}
+		if (settings.current.selectDuelPlayers === undefined) {
+			settings.current.selectDuelPlayers = true;
+		}
 		if (settings.current.ksnWebSocketToken) {
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
 		}
@@ -115,11 +136,11 @@
 			}
 		});
 
-    $effect(() => {
-      if (settings.current.enableFundraisingRtd) {
-        connectToJfRelay()
-      }
-    })
+		$effect(() => {
+			if (settings.current.enableFundraisingRtd) {
+				connectToJfRelay();
+			}
+		});
 
 		return () => live.close();
 	});
@@ -174,8 +195,6 @@
 			<EditBracket />
 			<ManageBrackets />
 		</div>
-
-		<ItemInput placeholder="add stage" item="stages" />
 	</Accordion>
 
 	<Accordion title="scenes">
@@ -183,6 +202,25 @@
 		<RadioInputs
 			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
 			bind:value={settings.current.overlayScene}
+			onpick={(scene) => scene && setScene(scene)}
+		/>
+
+		<div class="flex items-center justify-between gap-2">
+			<label for="input-idle-obs-scene">idle scene</label>
+			<input
+				type="text"
+				class="input"
+				id="input-idle-obs-scene"
+				placeholder="Idle"
+				title="name of the OBS scene this overlay is shown on, without backgrounds"
+				value={settings.current.idleObsScene}
+				onchange={(e) => (settings.current.idleObsScene = (e.target as HTMLInputElement).value)}
+			/>
+		</div>
+		<RadioInputs
+			opts={IdleOverlayScenes}
+			bind:value={settings.current.idleOverlayScene}
+			onpick={() => setScene(idleOBSSceneName())}
 		/>
 
 		<div class="flex justify-between">
@@ -215,6 +253,33 @@
 			opts={TFClasses.filter((c) => c !== 'overall')}
 			bind:value={settings.current.tfClass}
 		/>
+
+		<div class="flex justify-between">
+			<span>schedule day</span>
+			<button
+				class="button-remove"
+				title="re-fetch the sheet in the controls and on the overlay"
+				disabled={schedule.loading}
+				onclick={refreshSchedule}>refresh</button
+			>
+		</div>
+		<RadioInputs
+			opts={scheduleDays.map((_, i) => i)}
+			optlabels={scheduleDays.map((d) => d.name)}
+			bind:value={
+				() => settings.current.scheduleDay ?? 0, (day) => (settings.current.scheduleDay = day)
+			}
+			onchange={() => schedule.load(scheduleSheetUrl())}
+		/>
+		{#if schedule.loading}
+			<span class="opacity-60">loading...</span>
+		{:else if schedule.error}
+			<span class="text-red-300">{schedule.error}</span>
+		{:else if schedule.schedule}
+			<span class="opacity-60">
+				{schedule.schedule.title} ({schedule.schedule.segments.length} segments)
+			</span>
+		{/if}
 	</Accordion>
 
 	<Accordion title="connections">
@@ -302,6 +367,9 @@
 						<span class={feedStates[live.raceState].color}>
 							{feedStates[live.raceState].state}
 						</span>
+						{#if live.dummy}
+							<span class="text-ctp-yellow">(showing dummy data)</span>
+						{/if}
 					</div>
 				</div>
 				<div class="flex gap-2">
@@ -319,6 +387,7 @@
 					/>
 				</div>
 				<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
+				<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>
 			<Accordion title="jf relay plugin websocket" defaultstate="closed">
@@ -389,9 +458,9 @@
 		<Checkbox desc="use tags" setting="enableTags" />
 		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
 		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
-    {#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
-      <div>{error.invalidJfRelayToken.msg}</div>
-    {/if}
+		{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
+			<div>{error.invalidJfRelayToken.msg}</div>
+		{/if}
 		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
 		<label>
 			<input
@@ -400,6 +469,8 @@
 			/>
 			<span>seconds to show each donation for</span>
 		</label>
+		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
+		<Checkbox setting="selectDuelPlayers" desc="automatically select a players on 1v1 race start" />
 	</Accordion>
 
 	<!-- overlay -->
@@ -441,6 +512,7 @@
 				}}>reset to default</button
 			>
 		</div>
+		<ItemInput placeholder="add stage" item="stages" class="pb-2" />
 		<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
 	</div>
 {/if}
