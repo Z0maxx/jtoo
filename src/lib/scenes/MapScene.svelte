@@ -173,6 +173,10 @@
 		if (decider) played.push({ tile: decider });
 		return played;
 	});
+	// the series cards' names start smaller the more cards share the row, then fitText shrinks
+	// any name still too long for its card
+	let seriesNameSize = $derived(series.length <= 3 ? 60 : series.length === 4 ? 54 : 48);
+
 	let bans = $derived(
 		(session?.history ?? [])
 			.filter((h) => h.action === 'ban')
@@ -281,23 +285,18 @@
 				>
 					{#each series as map, i (map.tile.key)}
 						<div class="flex flex-col gap-4">
-							<div
-								class="flex items-baseline justify-between gap-4"
+							<span
+								class="truncate text-4xl font-bold whitespace-nowrap text-white uppercase"
 								in:fadeIn|global={{ delay: 400 }}
 								out:fadeOut|global={{ duration: 200 }}
 							>
-								<span class="text-4xl font-bold text-white uppercase">Map {i + 1}</span>
-								<span
-									class="truncate text-2xl font-semibold {map.actor ? teamText[map.actor] : ''}"
-									style:filter={map.actor ? '' : getFiltersStyle()}
-								>
-									{map.actor ? `${players[map.actor].name}'s pick` : 'Decider'}
-								</span>
-							</div>
+								Map {i + 1}
+							</span>
 							<div
 								in:receiveIn|global={{ key: map.tile.key }}
 								out:sendOut|global={{ key: map.tile.key }}
-								class="relative h-100 overflow-hidden rounded-3xl outline-4 {map.actor
+								class="relative h-100 overflow-hidden rounded-3xl outline-4
+                                                                {map.actor
 									? teamOutline[map.actor]
 									: 'outline-ctp-lavender'}"
 							>
@@ -306,10 +305,31 @@
 									class="absolute inset-0 bg-linear-to-t from-ctp-crust/90 to-transparent to-60%"
 								></div>
 								<span
-									class="absolute right-7 bottom-5 left-7 truncate text-6xl font-bold text-white uppercase"
+									class="absolute right-7 bottom-5 left-7 truncate leading-none font-bold text-white uppercase"
+									{@attach fitText(seriesNameSize, settings.current.font, map.tile.name)}
 								>
 									{map.tile.name}
 								</span>
+								<!-- who picked it, styled like the picking phase's badge -->
+								<div
+									class="absolute bottom-22 left-4 flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-ctp-crust/85 py-1.5 pr-3.5 {map.actor
+										? 'pl-1.5'
+										: 'pl-3.5'}"
+								>
+									{#if map.actor}
+										{@render Avatar(map.actor, 'size-10 shrink-0 rounded-lg text-xl')}
+										<span class="truncate text-2xl font-semibold text-white">
+											{players[map.actor].name}'s pick
+										</span>
+									{:else}
+										<span
+											class="truncate py-1 text-2xl font-semibold text-white"
+											style:filter={getFiltersStyle()}
+										>
+											Decider
+										</span>
+									{/if}
+								</div>
 							</div>
 						</div>
 					{/each}
@@ -407,7 +427,7 @@
 								>
 									{@render Avatar(r.actor, 'size-10 rounded-lg text-xl')}
 									<span class="text-2xl font-semibold text-white">
-										{r.action === 'pick' ? 'Picked' : 'Banned'} by {players[r.actor].name}
+										{r.action === 'pick' ? 'Pick' : 'Ban'} by {players[r.actor].name}
 									</span>
 								</div>
 							{/if}
