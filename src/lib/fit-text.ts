@@ -7,6 +7,7 @@ import type { Attachment } from 'svelte/attachments';
  *
  * `<h1 {@attach fitText(112, settings.current.font)}>`
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- only read by svelte, to refit
 export function fitText(maxPx: number, ..._refitOn: unknown[]): Attachment<HTMLElement> {
 	return (el) => {
 		el.style.whiteSpace = 'nowrap';

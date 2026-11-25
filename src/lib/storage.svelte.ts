@@ -28,8 +28,8 @@ export const defaultStages: Array<string> = [
 ];
 
 export const defaultSettings: Settings = {
-	font: 'font-space-grotesk',
-	monoFont: 'font-chivo-mono',
+	font: 'font-geist',
+	monoFont: 'font-azaret-mono',
 	hue: 0,
 	saturation: 100,
 	enableMovingBG: true,
