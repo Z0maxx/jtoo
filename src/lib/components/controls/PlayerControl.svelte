@@ -5,10 +5,8 @@
 	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext, untrack } from 'svelte';
 	import RadioInputs from './RadioInputs.svelte';
-	import type { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 
-	let jfRelayWs: JFRelayWebSocket = getContext('jfRelayWs');
 	let live: ConsoleLive = getContext('consoleLive');
 
 	type Props = {
@@ -146,9 +144,6 @@
 						optlabels={shownPlayers.map(playerLabel)}
 						opts={shownPlayers}
 						bind:value={overlay.current.players[playerNum]}
-						onchange={() => {
-							jfRelayWs.broadcastSelectedPlayers(overlay.current.players);
-						}}
 						undefinedOption={true}
 					/>
 				</div>

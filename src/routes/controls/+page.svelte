@@ -34,12 +34,24 @@
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
 	import { getMap, consoleBaseUrl } from '$lib/util';
-	import { onMount, setContext } from 'svelte';
+	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
 	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+
+	// tell the relay who player A and B are whenever they change, whether picked here or selected
+	// by the overlay when a duel race starts; not on load, only on a change
+	let relayedPlayers: string | undefined;
+	$effect(() => {
+		const players = [overlay.current.players[0], overlay.current.players[1]];
+		const key = JSON.stringify(players);
+		if (relayedPlayers !== undefined && key !== relayedPlayers) {
+			untrack(() => jfRelayWs?.broadcastSelectedPlayers(players));
+		}
+		relayedPlayers = key;
+	});
 	// the controls open their own race feed, to show whether the console is reachable and to
 	// order the player lists by the race's leaderboard
 	const live = new ConsoleLive();
@@ -87,6 +99,9 @@
 		}
 		if (settings.current.followRacePlayers === undefined) {
 			settings.current.followRacePlayers = true;
+		}
+		if (settings.current.selectDuelPlayers === undefined) {
+			settings.current.selectDuelPlayers = true;
 		}
 		if (settings.current.ksnWebSocketToken) {
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
@@ -404,6 +419,8 @@
 		<Checkbox desc="use player PRs" setting="enablePRs" />
 		<Checkbox desc="use avatars" setting="enableAvatars" />
 		<Checkbox desc="use tags" setting="enableTags" />
+		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
+		<Checkbox setting="selectDuelPlayers" desc="automatically select a players on 1v1 race start" />
 	</Accordion>
 
 	<!-- overlay -->
@@ -413,9 +430,6 @@
 	</div> -->
 
 	<!-- players -->
-	<div class="max-w-lg self-center">
-		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
-	</div>
 	<div class="flex w-full max-w-lg justify-evenly gap-x-20 self-center">
 		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
 		<PlayerControl player={overlay.current.players[1]} playerNum={1} />

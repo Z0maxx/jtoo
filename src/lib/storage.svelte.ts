@@ -29,7 +29,7 @@ export const defaultStages: Array<string> = [
 
 export const defaultSettings: Settings = {
 	font: 'font-geist',
-	monoFont: 'font-azaret-mono',
+	monoFont: 'font-azeret-mono',
 	hue: 0,
 	saturation: 100,
 	enableMovingBG: true,
@@ -45,6 +45,7 @@ export const defaultSettings: Settings = {
 	consoleBaseUrl: 'https://console.jumpfortress.tf',
 	followConsoleStageMap: true,
 	followRacePlayers: true,
+	selectDuelPlayers: true,
 	tfClass: 'soldier',
 	scheduleDay: 0,
 	jfRelayWebSocketToken: '',

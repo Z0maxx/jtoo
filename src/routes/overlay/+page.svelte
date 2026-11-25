@@ -25,8 +25,8 @@
 	const live = new ConsoleLive({ tournament: true });
 	setContext('consoleLive', live);
 
-	// add the race's players and map to JTOO when it doesn't know them
-	syncWithRace(live);
+	// add the race's players and map to JTOO when it doesn't know them, and select a duel's racers
+	syncWithRace(live, () => ksnWs?.messages.mapPicks?.session);
 
 	// the leaderboard scene shows the tournament picked in the controls, or the race's own
 	$effect(() => {
