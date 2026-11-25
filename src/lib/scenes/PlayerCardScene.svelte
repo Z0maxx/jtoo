@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SceneTint from '$lib/components/SceneTint.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { overlay } from '$lib/storage.svelte';
 	import { settings } from '$lib/storage.svelte';
@@ -11,15 +11,11 @@
 	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section class="relative z-20 m-auto flex w-full justify-center gap-10 p-4">
-	<SceneTint />
+<SceneFrame layout="centered" class="gap-10">
 	{@render PlayerCard('leftPlayer')}
 	<PRDisplay />
 	{@render PlayerCard('rightPlayer')}
-</section>
+</SceneFrame>
 
 {#snippet PlayerCard(sideKey: 'leftPlayer' | 'rightPlayer')}
 	<!-- player A and B as picked in the controls -->

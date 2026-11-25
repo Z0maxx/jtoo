@@ -1,5 +1,7 @@
 <script lang="ts">
-	import SceneTint from '$lib/components/SceneTint.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
+	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { settings, overlay } from '$lib/storage.svelte';
 	import { crossfade, fade, fly, slide } from 'svelte/transition';
@@ -10,7 +12,6 @@
 	import { poolMaps } from '$lib/console-pools.svelte';
 	import { now } from '$lib/clock.svelte';
 	import { fitText } from '$lib/fit-text';
-	import jfLogo from '$lib/assets/jf-logo.png';
 
 	const EVENT_NAME = 'Jump4Charity';
 
@@ -228,28 +229,9 @@
 	});
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section
-	class="relative z-20 flex min-h-0 w-full grow flex-col gap-10 px-24 py-14 text-ctp-text {settings
-		.current.font}"
->
-	<SceneTint class="-z-10" />
-
-	<header class="flex items-start justify-between gap-12">
-		<!-- flex-1 gives the column the header's spare width, which the heading shrinks to fit -->
-		<div class="flex min-w-0 flex-1 flex-col gap-1">
-			<span class="text-2xl tracking-[0.18em] text-ctp-subtext0 uppercase">{EVENT_NAME}</span>
-			{#key phase === 'pool'}
-				<h1
-					in:fade={{ duration: 400 }}
-					class="leading-none font-bold tracking-tight text-white uppercase"
-					{@attach fitText(112, settings.current.font)}
-				>
-					{phase === 'pool' ? 'Maps' : 'Map Picks'}
-				</h1>
-			{/key}
+<SceneFrame class="gap-10">
+	<SceneHeader eventName={EVENT_NAME} title={phase === 'pool' ? 'Maps' : 'Map Picks'}>
+		{#snippet subtitle()}
 			{#if players.A.name && players.B.name}
 				<span
 					transition:slide={{ duration: 500, easing: cubicOut }}
@@ -260,19 +242,15 @@
 					<span class={teamText.B}>{players.B.name}</span>
 				</span>
 			{/if}
-		</div>
-		<div class="flex shrink-0 flex-col items-end gap-4">
-			<img src={jfLogo} alt="Jump Fortress" class="size-32 object-contain" draggable="false" />
+		{/snippet}
+		{#snippet aside()}
 			{#if matchTag}
-				<span
-					transition:fade
-					class="border-2 border-ctp-lavender/35 bg-ctp-lavender/10 px-5 py-2 text-3xl font-bold text-white uppercase"
-				>
-					{matchTag}
-				</span>
+				<div transition:fade>
+					<SceneTag class="text-3xl uppercase">{matchTag}</SceneTag>
+				</div>
 			{/if}
-		</div>
-	</header>
+		{/snippet}
+	</SceneHeader>
 
 	<!-- both views share one cell, so the outgoing one stays in place while maps fly out of it -->
 	<div class="grid min-h-0 flex-1 *:[grid-area:1/1]">
@@ -489,7 +467,7 @@
 			</div>
 		{/if}
 	</div>
-</section>
+</SceneFrame>
 
 {#snippet MapImage(src: string)}
 	{#if src}

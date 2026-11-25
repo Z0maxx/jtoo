@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SceneTint from '$lib/components/SceneTint.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { items, overlay, settings } from '$lib/storage.svelte';
 	import { Player } from '$lib/types.svelte';
@@ -20,11 +20,7 @@
 	);
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section class="relative z-20 m-auto flex w-full justify-center gap-10 p-4">
-	<SceneTint class="-z-10" />
+<SceneFrame layout="centered" class="gap-10">
 	<ul
 		class="grid items-center gap-x-6 gap-y-1 text-3xl"
 		style:grid-template-columns="repeat({(settings.current.enableAvatars ? 1 : 0) +
@@ -50,7 +46,7 @@
 			<hr class="hr my-0" />
 		{/each}
 	</ul>
-</section>
+</SceneFrame>
 
 {#snippet Header(title: string)}
 	<li class="pr-20 italic opacity-60" style:filter={getFiltersStyle()}>{title}</li>

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import SceneTint from '$lib/components/SceneTint.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
+	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { currentSegmentIndex, pollSchedule, schedule } from '$lib/schedule.svelte';
 	import { settings } from '$lib/storage.svelte';
 	import { fade } from 'svelte/transition';
-	import jfLogo from '$lib/assets/jf-logo.png';
-	import { fitText } from '$lib/fit-text';
 
 	const STREAM_URL = 'twitch.tv/jumpfortress';
 
@@ -50,48 +50,29 @@
 	}
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section
-	class="relative z-20 flex min-h-0 w-full grow flex-col gap-8 px-24 py-14 text-ctp-text {settings
-		.current.font}"
->
-	<SceneTint class="-z-10" />
-
+<SceneFrame class="gap-8">
 	{#if schedule.schedule}
-		<header class="flex items-start justify-between gap-12" in:fade>
-			<!-- flex-1 gives the column the header's spare width, which the heading shrinks to fit -->
-			<div class="flex min-w-0 flex-1 flex-col gap-1">
-				{#if eventName}
-					<span class="text-2xl tracking-[0.18em] text-ctp-subtext0 uppercase">{eventName}</span>
-				{/if}
-				<h1
-					class="leading-none font-bold tracking-tight text-white uppercase"
-					{@attach fitText(112, settings.current.font)}
-				>
-					Broadcast Schedule
-				</h1>
-				{#if dayLine}
-					<span
-						class="text-5xl leading-tight font-bold text-ctp-lavender uppercase"
-						style:filter={getFiltersStyle()}
-					>
-						{dayLine}
-					</span>
-				{/if}
-			</div>
-			<div class="flex shrink-0 flex-col items-end gap-4">
-				<img src={jfLogo} alt="Jump Fortress" class="size-32 object-contain" draggable="false" />
-				<div
-					class="flex items-center gap-4 border-2 border-ctp-lavender/35 bg-ctp-lavender/10 px-6 py-2"
-				>
-					<span class="size-4 rounded-full bg-ctp-red"></span>
-					<span class="text-4xl font-bold text-white">{STREAM_URL}</span>
-				</div>
-				<span class="text-xl tracking-[0.12em] text-ctp-subtext0 uppercase">all times CET</span>
-			</div>
-		</header>
+		<div in:fade>
+			<SceneHeader {eventName} title="Broadcast Schedule">
+				{#snippet subtitle()}
+					{#if dayLine}
+						<span
+							class="text-5xl leading-tight font-bold text-ctp-lavender uppercase"
+							style:filter={getFiltersStyle()}
+						>
+							{dayLine}
+						</span>
+					{/if}
+				{/snippet}
+				{#snippet aside()}
+					<SceneTag class="px-6 text-4xl">
+						<span class="size-4 rounded-full bg-ctp-red"></span>
+						{STREAM_URL}
+					</SceneTag>
+					<span class="text-xl tracking-[0.12em] text-ctp-subtext0 uppercase">all times CET</span>
+				{/snippet}
+			</SceneHeader>
+		</div>
 
 		<ul class="flex flex-col">
 			{#each segments as s, i (i)}
@@ -139,4 +120,4 @@
 	{:else if schedule.error}
 		<p class="text-2xl text-ctp-red">schedule: {schedule.error}</p>
 	{/if}
-</section>
+</SceneFrame>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SceneTint from '$lib/components/SceneTint.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { settings } from '$lib/storage.svelte';
 	import { fade } from 'svelte/transition';
@@ -68,11 +68,7 @@
 	let validRoundCount = $derived(rounds.filter(roundIsValid).length);
 </script>
 
-<!-- isolated border filter -->
-<div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
-
-<section class="relative z-20 m-auto flex w-full flex-col justify-center gap-10 p-4">
-	<SceneTint class="-z-10" />
+<SceneFrame layout="centered" class="flex-col gap-10">
 	{#if !tournament}
 		<div class="text-center text-3xl italic opacity-60">
 			{live.tournamentId ? 'loading tournament...' : 'no tournament'}
@@ -163,7 +159,7 @@
 			</ul>
 		{/if}
 	{/if}
-</section>
+</SceneFrame>
 
 {#snippet Header(title: string)}
 	<li class="pr-20 italic opacity-60" style:filter={getFiltersStyle()}>{title}</li>
