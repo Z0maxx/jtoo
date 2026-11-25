@@ -34,8 +34,9 @@ export function syncWithRace(live: ConsoleLive, pickSession: () => PickSession |
 	let selectedFor: number | undefined;
 
 	$effect(() => {
+		// dummy data never changes JTOO's own state
 		const race = live.currentRace;
-		if (!race) return;
+		if (!race || live.dummy) return;
 
 		untrack(() => {
 			syncPlayers(race, requestedPlayers);

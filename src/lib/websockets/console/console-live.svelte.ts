@@ -1,4 +1,7 @@
 import { now } from '$lib/clock.svelte';
+import { poolPlayers } from '$lib/console-pools.svelte';
+import { overlay, settings } from '$lib/storage.svelte';
+import { dummyPlayers, dummyRace, dummyTournament } from './dummy-live';
 import type {
 	IdleSnapshot,
 	LeaderboardEntry,
@@ -21,14 +24,16 @@ type Options = {
 const RETRY_MS = 5000;
 // Snapshots per second the race stream asks for. Timers tick locally between them.
 const RACE_INTERVAL_MS = 250;
+// How often the dummy snapshots are rebuilt, so their race window never runs out.
+const DUMMY_CYCLE_MS = 6 * 60_000;
 
 /**
  * The console's live feeds for one page: the current race, and optionally a tournament.
  * Every (re)connect starts with a full snapshot, so nothing needs replaying.
  */
 export class ConsoleLive {
-	race: RaceSnapshot | IdleSnapshot | null = $state(null);
-	tournament: TournamentSnapshot | null = $state(null);
+	private liveRace: RaceSnapshot | IdleSnapshot | null = $state(null);
+	private liveTournament: TournamentSnapshot | null = $state(null);
 	/** serverTime - Date.now(), updated on every snapshot. */
 	clockOffset = $state(0);
 	raceState: FeedState = $state('closed');
@@ -44,6 +49,38 @@ export class ConsoleLive {
 	private tournamentSource: EventSource | undefined;
 	private tournamentRetry: ReturnType<typeof setTimeout> | undefined;
 	private tournamentSourceId: string | null = null;
+
+	// MARK: dummy data
+	// With 'use dummy data' on, race and tournament are static made-up snapshots instead of the
+	// feeds'. The feeds stay connected underneath, so turning it off shows them straight away.
+	// The board is the selected players and the pool, so nothing has to be fetched for it.
+	private dummyCycle = $derived(
+		settings.current.useDummyData ? Math.floor(now() / DUMMY_CYCLE_MS) : null
+	);
+	private dummyBoard = $derived(
+		this.dummyCycle === null ? [] : dummyPlayers(overlay.current.players, poolPlayers())
+	);
+	private dummyRace = $derived.by(() => {
+		if (this.dummyCycle === null) return null;
+		const { map, stage } = overlay.current;
+		return dummyRace(this.dummyBoard, { map, stage }, Date.now());
+	});
+	private dummyTournament = $derived(
+		this.dummyCycle === null ? null : dummyTournament(this.dummyBoard, Date.now())
+	);
+
+	/** Whether race and tournament are dummy data, not the console's. */
+	get dummy(): boolean {
+		return this.dummyCycle !== null;
+	}
+
+	get race(): RaceSnapshot | IdleSnapshot | null {
+		return this.dummy ? this.dummyRace : this.liveRace;
+	}
+
+	get tournament(): TournamentSnapshot | null {
+		return this.dummy ? this.dummyTournament : this.liveTournament;
+	}
 
 	constructor(options: Options = {}) {
 		this.followTournament = options.tournament ?? false;
@@ -78,12 +115,19 @@ export class ConsoleLive {
 	}
 
 	get tournamentId(): string | null {
-		return this.pinnedTournamentId ?? this.currentRace?.context.tournamentId ?? null;
+		if (this.dummy) return this.dummyTournament?.tournamentId ?? null;
+		return this.liveTournamentId;
 	}
 
-	/** The console's time now, ticking every animation frame. */
+	/** The tournament the stream follows, whether or not dummy data is shown. */
+	private get liveTournamentId(): string | null {
+		const race = this.liveRace?.sessionId !== null ? (this.liveRace as RaceSnapshot | null) : null;
+		return this.pinnedTournamentId ?? race?.context.tournamentId ?? null;
+	}
+
+	/** The console's time now, ticking every animation frame. Dummy data runs on local time. */
 	serverNow(): number {
-		return now() + this.clockOffset;
+		return this.dummy ? now() : now() + this.clockOffset;
 	}
 
 	entryFor(steamId3: number | undefined): LeaderboardEntry | undefined {
@@ -133,7 +177,7 @@ export class ConsoleLive {
 		const onRace = (event: MessageEvent) => {
 			const snapshot = this.onSnapshot(event.data);
 			if (snapshot) {
-				this.race = snapshot as RaceSnapshot | IdleSnapshot;
+				this.liveRace = snapshot as RaceSnapshot | IdleSnapshot;
 				this.syncTournament();
 			}
 		};
@@ -161,12 +205,12 @@ export class ConsoleLive {
 	private syncTournament() {
 		if (!this.followTournament || !this.raceSource) return;
 
-		const id = this.tournamentId;
+		const id = this.liveTournamentId;
 		if (id === this.tournamentSourceId) return;
 		this.tournamentSourceId = id;
 
 		this.closeTournament();
-		this.tournament = null;
+		this.liveTournament = null;
 		if (id) this.openTournament(id);
 	}
 
@@ -180,7 +224,7 @@ export class ConsoleLive {
 		source.onopen = () => (this.tournamentState = 'open');
 		source.addEventListener('tournament', (event: MessageEvent) => {
 			const snapshot = this.onSnapshot(event.data);
-			if (snapshot) this.tournament = snapshot as TournamentSnapshot;
+			if (snapshot) this.liveTournament = snapshot as TournamentSnapshot;
 		});
 		source.onerror = () => {
 			if (source.readyState === EventSource.CLOSED) {

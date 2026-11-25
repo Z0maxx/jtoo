@@ -337,6 +337,9 @@
 						<span class={feedStates[live.raceState].color}>
 							{feedStates[live.raceState].state}
 						</span>
+						{#if live.dummy}
+							<span class="text-ctp-yellow">(showing dummy data)</span>
+						{/if}
 					</div>
 				</div>
 				<div class="flex gap-2">
@@ -354,6 +357,7 @@
 					/>
 				</div>
 				<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
+				<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>
 			<Accordion title="jf relay plugin websocket" defaultstate="closed">

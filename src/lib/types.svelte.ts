@@ -164,6 +164,7 @@ export type Settings = {
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
 	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
 	selectDuelPlayers: boolean; // a duel race selects its racers as player A and B
+	useDummyData: boolean; // show made-up race and tournament data instead of the console's
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
 	jfRelayWebSocketToken: string;

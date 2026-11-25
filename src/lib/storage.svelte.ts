@@ -46,6 +46,7 @@ export const defaultSettings: Settings = {
 	followConsoleStageMap: true,
 	followRacePlayers: true,
 	selectDuelPlayers: true,
+	useDummyData: false,
 	tfClass: 'soldier',
 	scheduleDay: 0,
 	jfRelayWebSocketToken: '',
