@@ -82,7 +82,7 @@
 	let error = $state({
 		invalidJfRelayToken: {
 			state: false,
-			msg: 'error: invalid token'
+			msg: 'error: invalid jf relay websocket token'
 		} as Error
 	});
 
@@ -114,6 +114,12 @@
 				setScene(settings.current.overlayScene);
 			}
 		});
+
+    $effect(() => {
+      if (settings.current.enableFundraisingRtd) {
+        connectToJfRelay()
+      }
+    })
 
 		return () => live.close();
 	});
@@ -383,6 +389,9 @@
 		<Checkbox desc="use tags" setting="enableTags" />
 		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
 		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+    {#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
+      <div>{error.invalidJfRelayToken.msg}</div>
+    {/if}
 		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
 		<label>
 			<input
