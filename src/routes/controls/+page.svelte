@@ -55,6 +55,13 @@
 		}
 		relayedPlayers = key;
 	});
+	// any settings change re-runs whatever reads settings.current, so the effects that switch the
+	// OBS scene and connect the relay read these instead: they only change when the value does.
+	// read straight from settings, picking an idle scene (a settings change) would switch OBS
+	// straight back to the overlay scene
+	const overlayScene = $derived(settings.current.overlayScene);
+	const rtdEnabled = $derived(settings.current.enableFundraisingRtd);
+
 	// the controls open their own race feed, to show whether the console is reachable and to
 	// order the player lists by the race's leaderboard
 	const live = new ConsoleLive();
@@ -130,16 +137,15 @@
 			obsConnect(settings.current.obsWsIp, settings.current.obsWsPort, settings.current.obsWsPw);
 		}
 
+		// untracked: setScene reads the obs connection's state and connectToJfRelay the settings,
+		// which would make these re-run on a reconnect or any settings change
 		$effect(() => {
-			if (settings.current.overlayScene) {
-				setScene(settings.current.overlayScene);
-			}
+			const scene = overlayScene;
+			if (scene) untrack(() => setScene(scene));
 		});
 
 		$effect(() => {
-			if (settings.current.enableFundraisingRtd) {
-				connectToJfRelay();
-			}
+			if (rtdEnabled) untrack(connectToJfRelay);
 		});
 
 		return () => live.close();

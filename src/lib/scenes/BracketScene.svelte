@@ -18,6 +18,7 @@
 	import { getPlayer, playerLabel } from '$lib/util';
 	import { fade, type TransitionConfig } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { onIdleScene } from '$lib/obs-browser-source.svelte';
 
 	type Coordinate = { x: number; y: number };
 	type Line = { A: Coordinate; B: Coordinate };
@@ -134,6 +135,11 @@
 </script>
 
 {#if saved && format}
+	{#if onIdleScene()}
+		<!-- the bracket has no backdrop of its own, so over the Idle scene's game footage it gets
+		     the same darkening the other scenes' SceneTint gives them -->
+		<div class="pointer-events-none fixed inset-0 bg-black/50"></div>
+	{/if}
 	<section class="relative isolate z-1 m-auto" {@attach watchSection}>
 		<div class="grid gap-x-40 gap-y-20">
 			{#each format.upper as round, i (round.name)}

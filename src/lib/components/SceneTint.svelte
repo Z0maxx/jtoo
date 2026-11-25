@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { showSceneBackground } from '$lib/obs-browser-source.svelte';
+	import { onIdleScene, showSceneBackground } from '$lib/obs-browser-source.svelte';
 	import { settings } from '$lib/storage.svelte';
 
 	// the translucent backdrop behind a scene's content; place it inside the scene's relative container
@@ -22,6 +22,10 @@
 		{/if}
 	{:else}
 		<!-- transparent black bg -->
-		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
+		<div class="absolute top-0 left-0 size-full bg-black/35 {className}"></div>
 	{/if}
+{:else if onIdleScene()}
+	<!-- the Idle scene has no backgrounds, but sits over busy game footage, so a plain darker
+	     backdrop keeps the text readable -->
+	<div class="absolute top-0 left-0 size-full bg-black/75 {className}"></div>
 {/if}

@@ -81,7 +81,7 @@ export const defaultItems: Items = {
 };
 
 export const defaultFundraisingState: FundraisingState = {
-	eventUrl: '',
+	eventUrl: 'https://events.doctorswithoutborders.org/campaigns/Jump-Fortress-DWB-event',
 	lastDonationProcessedByDonationsId: '',
 	lastDonationProcessedByMessagesId: '',
 	lastDonationProcessedByRtdId: '',
@@ -111,6 +111,15 @@ export const pool = new PersistentState<Pool>('pool', { players: [], maps: [] })
 
 // ws messages
 export const wsMessages: PersistentState<any[]> = new PersistentState('wsMessages', []);
+
+// OBS's live (program) scene as reported by the controls' obs-websocket connection, with when it
+// was reported. the overlay prefers it to its browser source's own scene events, which can miss
+// a switch (and can't be asked for the scene below the 'read user information' permission)
+export const obsProgramScene = new PersistentState<{ name: string; at: number }>(
+	'obsProgramScene',
+	{ name: '', at: 0 },
+	'localStorage'
+);
 
 export const fundraisingState = new PersistentState(
 	'fundraisingState',
