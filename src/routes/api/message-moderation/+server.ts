@@ -2,10 +2,12 @@ import { env } from '$env/dynamic/private';
 import type { RequestHandler } from '@sveltejs/kit';
 import openai from 'openai';
 
-const openaiClient = new openai({ apiKey: env.OPENAI_API_KEY });
+// created on first request: the key isn't available at build time, when sveltekit imports this module
+let openaiClient: openai | undefined;
 
 export const POST: RequestHandler = async (request) => {
 	try {
+		openaiClient ??= new openai({ apiKey: env.OPENAI_API_KEY });
 		const body = (await request.request.json()) as { message?: string };
 		if (!body.message) {
 			return new Response('no message', { status: 400 });
