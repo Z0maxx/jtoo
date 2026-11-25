@@ -6,17 +6,19 @@ const openaiClient = new openai({ apiKey: env.OPENAI_API_KEY });
 
 export const POST: RequestHandler = async (request) => {
 	try {
-		const body = (await request.request.json()) as { message?: string; };
+		const body = (await request.request.json()) as { message?: string };
 		if (!body.message) {
 			return new Response('no message', { status: 400 });
 		}
-    
+
 		const resp = await openaiClient.moderations.create({
 			input: body.message,
 			model: 'omni-moderation-2024-09-26'
 		});
 
-		const isAcceptable = !Object.entries(resp.results[0].categories).some(([_, flagged]) => flagged);
+		const isAcceptable = !Object.entries(resp.results[0].categories).some(
+			([_, flagged]) => flagged
+		);
 		return new Response(JSON.stringify({ isAcceptable }), { status: 200 });
 	} catch (e) {
 		return new Response(JSON.stringify(e), { status: 500 });

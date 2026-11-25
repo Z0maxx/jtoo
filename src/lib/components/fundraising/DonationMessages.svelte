@@ -85,22 +85,21 @@
 		return donations.slice(idx + 1);
 	}
 
-  async function isMessageAcceptable(message: string) {
-    try {
-      const resp = await fetch('/api/message-moderation', {
-        method: 'POST',
-        body: JSON.stringify({
-          message
-        })
-      })
+	async function isMessageAcceptable(message: string) {
+		try {
+			const resp = await fetch('/api/message-moderation', {
+				method: 'POST',
+				body: JSON.stringify({
+					message
+				})
+			});
 
-      const { isAcceptable } = await resp.json() as { isAcceptable: boolean }
-      return isAcceptable
-    }
-    catch {
-      return false
-    }
-  }
+			const { isAcceptable } = (await resp.json()) as { isAcceptable: boolean };
+			return isAcceptable;
+		} catch {
+			return false;
+		}
+	}
 </script>
 
 <div class="z-50 flex items-center gap-2 px-2 transition-all duration-400">

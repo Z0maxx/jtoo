@@ -5,7 +5,7 @@
 	import Donations from './Donations.svelte';
 	import Rtd from './Rtd.svelte';
 
-  //reset animation stage so animations don't play multiple times
+	//reset animation stage so animations don't play multiple times
 	fundraisingState.current.animationStage = 0;
 </script>
 

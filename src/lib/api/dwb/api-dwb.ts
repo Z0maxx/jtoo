@@ -4,7 +4,7 @@ import { deepCopy, sleep } from '$lib/util';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
-  //fundraisingState.current.donations = []
+	//fundraisingState.current.donations = []
 	const participantEndpoint = () =>
 		'/participants/' + fundraisingState.current.eventUrl.split('/').at(-1);
 	const fetching = new Set<DwbModelName>();

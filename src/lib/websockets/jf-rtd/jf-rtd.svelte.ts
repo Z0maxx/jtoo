@@ -2,21 +2,21 @@ import { ProxyWebSocket } from '$lib/ProxyWebSocket';
 
 export const rtdEffects = [
 	'frozen',
-  'funnyfeeling',
-  'fasthands',
-  'smite',
-  'lag',
-  'stronggravity',
-  'lowgravity',
-  'tinymann',
-  'snail',
-  'earthquake',
-  'infinitejump',
-  'noclip',
-  'increasedspeed',
-  'frog',
-  'cursed',
-  'drunkwalk',
+	'funnyfeeling',
+	'fasthands',
+	'smite',
+	'lag',
+	'stronggravity',
+	'lowgravity',
+	'tinymann',
+	'snail',
+	'earthquake',
+	'infinitejump',
+	'noclip',
+	'increasedspeed',
+	'frog',
+	'cursed',
+	'drunkwalk'
 ];
 
 export class JfRtdWebSocket {

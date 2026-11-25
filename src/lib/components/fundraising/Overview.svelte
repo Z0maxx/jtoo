@@ -49,7 +49,7 @@
 
 		advancingProgressBar = true;
 		while (fundraisingState.current.progressBar.sumRaised < overview.raised) {
-		//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
+			//while (fundraisingState.current.progressBar.raised < overview.raised * 1.5) {
 			fundraisingState.current.progressBar.sumRaised++;
 			fundraisingState.current.progressBar.raised++;
 			/*fundraisingState.current.progressBar.sumRaised += 4;
@@ -66,7 +66,7 @@
 				}
 
 				fundraisingState.current.stage++;
-        fundraisingState.current.animationStage = fundraisingState.current.stage
+				fundraisingState.current.animationStage = fundraisingState.current.stage;
 				fundraisingState.current.sumGoal += currentGoal();
 				fundraisingState.current.progressBar.raised = 0;
 			}
