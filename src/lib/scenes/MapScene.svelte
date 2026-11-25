@@ -43,6 +43,31 @@
 				: 'picking'
 	);
 
+	// the outros are global so maps fly between the phases' layouts, but global outros also run
+	// when the whole scene is swapped out, keeping it on screen over the next scene. the phase the
+	// last render settled on tells them apart: an outro started while it still matches the phase
+	// isn't a phase change, and one whose map is still in the pool isn't a map leaving the pool,
+	// so the scene itself is leaving and the outro is skipped
+	let settledPhase: typeof phase | undefined;
+	$effect(() => {
+		settledPhase = phase;
+	});
+	const sceneLeaving = (key?: string) =>
+		phase === settledPhase && (key === undefined || tiles.some((t) => t.key === key));
+	const sendOut: typeof send = (node, params) =>
+		sceneLeaving(params.key) ? () => ({ duration: 0 }) : send(node, params);
+	const fadeOut: typeof fade = (node, params) =>
+		sceneLeaving() ? { duration: 0 } : fade(node, params);
+	// global intros likewise run when the scene is swapped in: before the first render settles,
+	// everything shown is the scene arriving, so it appears at once
+	const sceneEntering = () => settledPhase === undefined;
+	const receiveIn: typeof receive = (node, params) =>
+		sceneEntering() ? () => ({ duration: 0 }) : receive(node, params);
+	const fadeIn: typeof fade = (node, params) =>
+		sceneEntering() ? { duration: 0 } : fade(node, params);
+	const flyIn: typeof fly = (node, params) =>
+		sceneEntering() ? { duration: 0 } : fly(node, params);
+
 	function mapName(fileName: string, fallback?: string | null): string {
 		const map = getMap(fileName);
 		if (!map.fileName) return fallback || fileName;
@@ -258,8 +283,8 @@
 						<div class="flex flex-col gap-4">
 							<div
 								class="flex items-baseline justify-between gap-4"
-								in:fade|global={{ delay: 400 }}
-								out:fade|global={{ duration: 200 }}
+								in:fadeIn|global={{ delay: 400 }}
+								out:fadeOut|global={{ duration: 200 }}
 							>
 								<span class="text-4xl font-bold text-white uppercase">Map {i + 1}</span>
 								<span
@@ -270,8 +295,8 @@
 								</span>
 							</div>
 							<div
-								in:receive|global={{ key: map.tile.key }}
-								out:send|global={{ key: map.tile.key }}
+								in:receiveIn|global={{ key: map.tile.key }}
+								out:sendOut|global={{ key: map.tile.key }}
 								class="relative h-100 overflow-hidden rounded-3xl outline-4 {map.actor
 									? teamOutline[map.actor]
 									: 'outline-ctp-lavender'}"
@@ -294,8 +319,8 @@
 					<div class="mt-auto flex items-center gap-8">
 						<span
 							class="shrink-0 text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
-							in:fade|global={{ delay: 400 }}
-							out:fade|global={{ duration: 200 }}>Banned</span
+							in:fadeIn|global={{ delay: 400 }}
+							out:fadeOut|global={{ duration: 200 }}>Banned</span
 						>
 						<div
 							class="grid grow gap-5"
@@ -303,8 +328,8 @@
 						>
 							{#each bans as ban (ban.tile.key)}
 								<div
-									in:receive|global={{ key: ban.tile.key }}
-									out:send|global={{ key: ban.tile.key }}
+									in:receiveIn|global={{ key: ban.tile.key }}
+									out:sendOut|global={{ key: ban.tile.key }}
 									class="flex items-center gap-4 rounded-xl border-2 border-ctp-lavender/15 bg-ctp-lavender/5 p-2"
 								>
 									<div
@@ -339,8 +364,8 @@
 					{#each tiles as tile (tile.key)}
 						{@const r = results.get(tile.id)}
 						<div
-							in:receive|global={{ key: tile.key }}
-							out:send|global={{ key: tile.key }}
+							in:receiveIn|global={{ key: tile.key }}
+							out:sendOut|global={{ key: tile.key }}
 							style:width={tileWidth}
 							style:height={tileHeight}
 							class="relative overflow-hidden rounded-2xl transition-[width,height] duration-700 ease-out {r?.action ===
@@ -393,8 +418,8 @@
 				{#if phase === 'picking' && session}
 					<div
 						class="flex flex-col gap-4"
-						in:fly|global={{ y: 60, duration: 500, easing: cubicOut }}
-						out:fade|global={{ duration: 200 }}
+						in:flyIn|global={{ y: 60, duration: 500, easing: cubicOut }}
+						out:fadeOut|global={{ duration: 200 }}
 					>
 						{#if turn}
 							<div class="flex items-baseline justify-between">
