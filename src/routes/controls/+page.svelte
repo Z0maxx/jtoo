@@ -336,11 +336,11 @@
 							settings.current.obsWsIp = target.value;
 						}}
 					/>
-					<label for="input-websocket-obs">port: </label>
+					<label for="input-websocket-obs-port">port: </label>
 					<input
 						type="number"
 						class="input remove-arrow"
-						id="input-websocket-obs"
+						id="input-websocket-obs-port"
 						placeholder="4455"
 						value={settings.current.obsWsPort}
 						onchange={(e) => {
@@ -348,11 +348,11 @@
 							settings.current.obsWsPort = parseInt(target.value);
 						}}
 					/>
-					<label for="input-websocket-obs">password: </label>
+					<label for="input-websocket-obs-pw">password: </label>
 					<input
 						type="password"
 						class="input"
-						id="input-websocket-obs"
+						id="input-websocket-obs-pw"
 						value={settings.current.obsWsPw}
 						onchange={(e) => {
 							let target = e.target as HTMLInputElement;
