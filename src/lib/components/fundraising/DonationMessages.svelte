@@ -3,7 +3,6 @@
 	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import type { Donation } from '$lib/types.svelte';
 	import { sleep } from '$lib/util';
-	import { isMessageAcceptable } from '$lib/message-moderation.svelte';
 	import { onDestroy } from 'svelte';
 
 	/*fundraisingState.current.displayedDonationsWithMessages = [];
@@ -53,7 +52,7 @@
 				if (!iterateDonations()) break;
 
 				fundraisingState.current.lastDonationProcessedByMessagesId = d.id;
-				if (!d.message || !(await isMessageAcceptable(d))) continue;
+				if (!d.message) continue;
 
 				const lastEmpty = fundraisingState.current.displayedDonationsWithMessages.findIndex(
 					(d) => d.id === ''

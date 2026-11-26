@@ -7,7 +7,6 @@
 	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import type { Donation, DonationMilestone, DonationsOverview } from '$lib/types.svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import { isMessageAcceptable, messageVerdict } from '$lib/message-moderation.svelte';
 	import RocketProgressBar, { FILL_IN } from '$lib/components/fundraising/RocketProgressBar.svelte';
 	import { Tween } from 'svelte/motion';
 	import { flip } from 'svelte/animate';
@@ -95,14 +94,6 @@
 			frame = requestAnimationFrame(tick);
 		});
 		return () => cancelAnimationFrame(frame);
-	});
-
-	// messages are only shown once moderation accepts them. verdicts are cached across scenes
-	// and reloads, so only messages never checked before wait on a request
-	$effect(() => {
-		for (const d of [...top, ...recent]) {
-			if (d.message && messageVerdict(d) === undefined) isMessageAcceptable(d);
-		}
 	});
 
 	// MARK: milestones
@@ -266,7 +257,7 @@
 
 					<!-- a donation's avatar, name, accepted message and amount -->
 					{#snippet donationRow(d: Donation, large = false)}
-						{@const message = d.message && messageVerdict(d) ? d.message : ''}
+						{@const message = d.message ? d.message : ''}
 						<span
 							class="flex shrink-0 items-center justify-center bg-ctp-lavender/15 font-bold text-ctp-lavender uppercase {large
 								? 'size-14 rounded-xl text-3xl'
