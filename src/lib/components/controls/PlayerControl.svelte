@@ -7,7 +7,7 @@
 	import RadioInputs from './RadioInputs.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
-	import { progressOrder, type JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import { massSingleOrder, type JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 
 	let live: ConsoleLive = getContext('consoleLive');
 	let jfRelayWs: JFRelayWebSocket = getContext('jfRelayWs');
@@ -45,21 +45,9 @@
 				const kept = players.filter((id) => onBoard.includes(id));
 				return [...kept, ...onBoard.filter((id) => !kept.includes(id))];
 			}
-			// finished players by position, then the running players by how far through the map
-			// they are, per the game servers' progress, which updates more often than positions do.
-			// anyone left follows by position
-			case 'mass-single': {
-				const ordered = byPosition(board);
-				const finished = board
-					.filter((e) => e.status === 'finished')
-					.sort((a, b) => a.position - b.position)
-					.map((e) => e.steamId3);
-				const running = progressOrder(jfRelayWs.progress).filter(
-					(id) => ordered.includes(id) && !finished.includes(id)
-				);
-				const rest = ordered.filter((id) => !finished.includes(id) && !running.includes(id));
-				return [...finished, ...running, ...rest];
-			}
+			// finished, then running by map progress, then the rest; see massSingleOrder
+			case 'mass-single':
+				return massSingleOrder(board, jfRelayWs.progress);
 			default:
 				return byPosition(board);
 		}

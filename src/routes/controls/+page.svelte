@@ -170,6 +170,10 @@
 	});
 
 	async function connectToJfRelay() {
+		// the mini leaderboard page keeps its own relay connection; reconnect it too
+		const channel = new BroadcastChannel('jfRelayWs');
+		channel.postMessage({ type: 'connect', value: settings.current.jfRelayWebSocketToken });
+		channel.close();
 		error.invalidJfRelayToken.state = await new Promise<boolean>((res) => {
 			jfRelayWs?.connect(settings.current.jfRelayWebSocketToken);
 			jfRelayWs?.addEventListener('open', () => res(false));

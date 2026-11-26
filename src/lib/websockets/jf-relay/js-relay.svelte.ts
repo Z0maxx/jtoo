@@ -1,6 +1,7 @@
 import { ProxyWebSocket } from '$lib/ProxyWebSocket';
 import { consoleBaseUrl } from '$lib/util';
 import type { SteamID3 } from '$lib/types.svelte';
+import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
 
 interface JFRelayEvent {
 	type: 'spectator_select' | 'overlay_connected';
@@ -66,6 +67,22 @@ export function progressOrder(snapshots: RelayProgress[]): SteamID3[] {
 	}
 }
 
+/**
+ * A mass-single race's players: finished players by position, then the running players by how
+ * far through the map they are, per the game servers' progress, which updates more often than
+ * positions do. Anyone left follows by position.
+ */
+export function massSingleOrder(board: LeaderboardEntry[], progress: RelayProgress[]): SteamID3[] {
+	const byPosition = [...board].sort((a, b) => a.position - b.position);
+	const ordered = byPosition.map((e) => e.steamId3);
+	const finished = byPosition.filter((e) => e.status === 'finished').map((e) => e.steamId3);
+	const running = progressOrder(progress).filter(
+		(id) => ordered.includes(id) && !finished.includes(id)
+	);
+	const rest = ordered.filter((id) => !finished.includes(id) && !running.includes(id));
+	return [...finished, ...running, ...rest];
+}
+
 export class JFRelayWebSocket {
 	private _ws: ProxyWebSocket | undefined;
 	private _unsubscribeState: (() => void) | undefined;
@@ -114,6 +131,13 @@ export class JFRelayWebSocket {
 			console.log('closing jf relay websocket...');
 			old.close(1000);
 		}
+	}
+
+	/** Closes the connection for good, without reconnecting. */
+	close() {
+		this.detach();
+		this._wsState = WebSocket.CLOSED;
+		this._progress = {};
 	}
 
 	connect(wsToken: string) {

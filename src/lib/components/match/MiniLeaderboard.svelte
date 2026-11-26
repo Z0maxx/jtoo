@@ -6,25 +6,45 @@
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
+	import {
+		massSingleOrder,
+		progressOrder,
+		type JFRelayWebSocket
+	} from '$lib/websockets/jf-relay/js-relay.svelte';
 
 	type Props = { class?: string };
 	let { class: styleClass }: Props = $props();
 
 	let live: ConsoleLive = getContext('consoleLive');
+	// optional: without it, mass-single races keep the console's order
+	let jfRelayWs: JFRelayWebSocket | undefined = getContext('jfRelayWs');
 
 	const maxPlayers = 8;
 	const maxNameLength = 12;
 
 	const isOut = (e: LeaderboardEntry) => e.status === 'disqualified' || e.status === 'withdrawn';
-	const hasProgress = (e: LeaderboardEntry) =>
-		e.prMs !== null || e.bestProgress.checkpointCount > 0;
+	// mass-single races are ordered like the controls' player list: finished players by
+	// position, then the running players by map progress from the relay. Other modes keep the
+	// console's order
+	let ordered = $derived.by(() => {
+		const race = live.currentRace;
+		const board = race?.leaderboard ?? [];
+		if (race?.mode !== 'mass-single' || !jfRelayWs) return board;
+		const byId = new Map(board.map((e) => [e.steamId3, e]));
+		return massSingleOrder(board, jfRelayWs.progress).map((id) => byId.get(id)!);
+	});
 
-	// players with a PR or progress, in the console's order, then disqualified and withdrawn
+	// players the relay reports running, who may not have reached a checkpoint yet
+	let relayRunning = $derived(new Set(jfRelayWs ? progressOrder(jfRelayWs.progress) : []));
+
+	const hasProgress = (e: LeaderboardEntry) =>
+		e.prMs !== null || e.bestProgress.checkpointCount > 0 || relayRunning.has(e.steamId3);
+
+	// players with a PR or progress, in the order above, then disqualified and withdrawn
 	// players at the bottom
 	let rows = $derived.by(() => {
-		const board = live.currentRace?.leaderboard ?? [];
-		const racing = board.filter((e) => !isOut(e) && hasProgress(e));
-		const out = board.filter(isOut);
+		const racing = ordered.filter((e) => !isOut(e) && hasProgress(e));
+		const out = ordered.filter(isOut);
 		return [...racing, ...out].slice(0, maxPlayers);
 	});
 
