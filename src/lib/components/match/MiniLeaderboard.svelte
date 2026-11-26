@@ -5,102 +5,174 @@
 	import { settings } from '$lib/storage.svelte';
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
-	import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
+	import type { LeaderboardEntry, RaceSnapshot } from '$lib/websockets/console/live-types';
 	import {
 		massSingleOrder,
 		progressOrder,
 		type JFRelayWebSocket
 	} from '$lib/websockets/jf-relay/js-relay.svelte';
 
-	type Props = { class?: string };
-	let { class: styleClass }: Props = $props();
+	// fills the height it's given, with room for maxPlayers rows
+	// translucent: a fainter background, for over a pov
+	type Props = { class?: string; translucent?: boolean };
+	let { class: styleClass = '', translucent = false }: Props = $props();
 
 	let live: ConsoleLive = getContext('consoleLive');
-	// optional: without it, mass-single races keep the console's order
+	// optional: without it, single run races keep the console's order
 	let jfRelayWs: JFRelayWebSocket | undefined = getContext('jfRelayWs');
 
 	const maxPlayers = 8;
-	const maxNameLength = 12;
+
+	type Row = {
+		entry: LeaderboardEntry;
+		out: boolean; // disqualified or withdrawn, shown as DNF
+		value: string;
+		// how far through the map, 0 to 1, for single run races; null hides the bar
+		progress: number | null;
+		running: boolean;
+	};
 
 	const isOut = (e: LeaderboardEntry) => e.status === 'disqualified' || e.status === 'withdrawn';
-	// mass-single races are ordered like the controls' player list: finished players by
-	// position, then the running players by map progress from the relay. Other modes keep the
-	// console's order
-	let ordered = $derived.by(() => {
-		const race = live.currentRace;
-		const board = race?.leaderboard ?? [];
-		if (race?.mode !== 'mass-single' || !jfRelayWs) return board;
+	const time = (ms: number | null) => (ms !== null ? msToFormattedTime(ms) : '--');
+	const gap = (ms: number | null) => (ms !== null ? msToGap(ms) : '--');
+	const reached = (splits: (number | null)[]) => splits.filter((s) => s !== null).length;
+
+	let race = $derived(live.currentRace);
+	let singleRun = $derived(race?.mode === 'mass-single');
+
+	// single run races: finished players by position, then the running players by map progress,
+	// then DNF. Players who haven't started are left out
+	function singleRunRows(race: RaceSnapshot): Row[] {
+		const board = race.leaderboard;
+		const total = race.checkpoints.length;
 		const byId = new Map(board.map((e) => [e.steamId3, e]));
-		return massSingleOrder(board, jfRelayWs.progress).map((id) => byId.get(id)!);
-	});
+		const ordered = jfRelayWs
+			? massSingleOrder(board, jfRelayWs.progress).map((id) => byId.get(id)!)
+			: [...board].sort((a, b) => a.position - b.position);
+		const relayRunning = new Set(jfRelayWs ? progressOrder(jfRelayWs.progress) : []);
+		const started = (e: LeaderboardEntry) =>
+			e.status === 'finished' ||
+			e.status === 'running' ||
+			e.bestProgress.checkpointCount > 0 ||
+			relayRunning.has(e.steamId3);
 
-	// players the relay reports running, who may not have reached a checkpoint yet
-	let relayRunning = $derived(new Set(jfRelayWs ? progressOrder(jfRelayWs.progress) : []));
+		const racing = ordered.filter((e) => !isOut(e) && started(e));
+		const leader = racing.find((e) => e.status === 'finished');
+		return [...racing, ...ordered.filter(isOut)].slice(0, maxPlayers).map((entry) => {
+			const out = isOut(entry);
+			const finished = entry.status === 'finished';
+			const running = entry.status === 'running';
+			const checkpoints = running
+				? reached(entry.currentSplitsMs)
+				: entry.bestProgress.checkpointCount;
+			let value = '';
+			if (out) value = 'DNF';
+			else if (finished) value = entry === leader ? time(entry.prMs) : gap(entry.gapToLeaderMs);
+			return {
+				entry,
+				out,
+				value,
+				progress: finished ? 1 : total ? Math.min(checkpoints / total, 1) : 0,
+				running
+			};
+		});
+	}
 
-	const hasProgress = (e: LeaderboardEntry) =>
-		e.prMs !== null || e.bestProgress.checkpointCount > 0 || relayRunning.has(e.steamId3);
+	// time attack races (and duels): only players with a completed run, by position
+	function timeAttackRows(race: RaceSnapshot): Row[] {
+		return race.leaderboard
+			.filter((e) => !isOut(e) && e.prMs !== null)
+			.sort((a, b) => a.position - b.position)
+			.slice(0, maxPlayers)
+			.map((entry, i) => ({
+				entry,
+				out: false,
+				value: i === 0 ? time(entry.prMs) : gap(entry.gapToLeaderMs),
+				progress: null,
+				running: entry.status === 'running'
+			}));
+	}
 
-	// players with a PR or progress, in the order above, then disqualified and withdrawn
-	// players at the bottom
-	let rows = $derived.by(() => {
-		const racing = ordered.filter((e) => !isOut(e) && hasProgress(e));
-		const out = ordered.filter(isOut);
-		return [...racing, ...out].slice(0, maxPlayers);
-	});
+	let rows = $derived(!race ? [] : singleRun ? singleRunRows(race) : timeAttackRows(race));
 
-	function gap(entry: LeaderboardEntry, i: number): string {
-		if (isOut(entry)) return entry.status === 'disqualified' ? 'DQ' : 'WD';
-		if (i == 0) return entry.prMs !== null ? msToFormattedTime(entry.prMs) : '--';
-		return entry.gapToLeaderMs !== null ? msToGap(entry.gapToLeaderMs) : '--';
+	function barColor(row: Row): string {
+		if (row.out) return 'bg-ctp-overlay0';
+		if (row.entry.status === 'finished') return 'bg-ctp-lavender';
+		return row.running ? 'bg-ctp-green' : 'bg-ctp-overlay0';
 	}
 </script>
 
-{#if rows.length > 0}
-	<!-- positioned by the scene that shows it -->
-	<section class="{styleClass} relative z-20 p-2" transition:fade>
-		<!-- position, avatar (when shown), name and gap -->
-		<div
-			class="grid gap-x-2 gap-y-0 text-xl *:m-0 *:p-0"
-			style:grid-template-columns="repeat({settings.current.enableAvatars ? 4 : 3}, auto)"
-		>
-			{#each rows as entry, i (entry.steamId3)}
-				{@render Row(entry, i)}
-			{/each}
-		</div>
+<!-- duels don't need a leaderboard -->
+{#if race && race.mode !== 'duel'}
+	<section class="{styleClass} relative isolate flex flex-col px-4 pt-3 pb-3.5" transition:fade>
 		<!-- background -->
 		<div
-			class="absolute top-0 left-0 -z-1 h-full w-full rounded-md bg-[#0f0f16] opacity-90"
+			class="absolute inset-0 -z-1 rounded-[10px] ring-1 ring-ctp-lavender/20 ring-inset {translucent
+				? 'bg-[#0f0f16]/55'
+				: 'bg-[#0f0f16]/92'}"
 			style:filter={getFiltersStyle()}
 		></div>
+		<div
+			class="mb-1 flex justify-between border-b border-ctp-lavender/20 px-0.5 pb-2 text-sm font-medium tracking-[0.08em] text-ctp-overlay2 uppercase"
+		>
+			<span>Leaderboard</span>
+			<span>{singleRun ? 'run / gap' : 'pr / gap'}</span>
+		</div>
+		<div class="grid min-h-0 flex-1 grid-rows-8">
+			{#each rows as row, i (row.entry.steamId3)}
+				{@render Row(row, i)}
+			{/each}
+		</div>
 	</section>
 {/if}
 
-{#snippet Row(entry: LeaderboardEntry, i: number)}
-	{@const player = getPlayer(entry.steamId3)}
-	{@const out = isOut(entry)}
-	<!-- position -->
-	<div class={out ? 'opacity-40' : ''}>{out ? '-' : i + 1}</div>
-	{#if settings.current.enableAvatars}
+{#snippet Row(row: Row, i: number)}
+	{@const lead = i === 0 && !row.out}
+	{@const avatar = getPlayer(row.entry.steamId3).avatarURL}
+	<div
+		class="flex min-w-0 items-center gap-3 rounded-md px-1.5
+        {lead ? 'bg-ctp-lavender/14' : ''} 
+        {row.out ? 'opacity-45' : ''}"
+	>
+		<!-- position -->
+		<span
+			class="w-5.5 shrink-0 text-right text-xl font-bold {lead
+				? 'text-ctp-lavender'
+				: 'text-ctp-overlay2'}">{row.out ? '–' : i + 1}</span
+		>
 		<!-- avatar -->
-		<div class={out ? 'opacity-40' : ''}>
-			{#if player.avatarURL}
+		{#if settings.current.enableAvatars}
+			{#if avatar}
 				<img
-					in:fade
-					src={player.avatarURL}
+					src={avatar}
 					alt=""
-					class="size-7 rounded-md object-cover object-center"
+					class="size-7.5 shrink-0 rounded-[7px] object-cover"
 					draggable="false"
 				/>
+			{:else}
+				<span class="size-7.5 shrink-0 rounded-[7px] bg-ctp-surface0"></span>
 			{/if}
-		</div>
-	{/if}
-	<!-- name -->
-	<div class={out ? 'line-through opacity-40' : ''}>
-		{playerLabel(entry.steamId3, maxNameLength)}
+		{/if}
+		<!-- name, cut off with an ellipsis when it doesn't fit -->
+		<span
+			class="truncate text-[22px] font-medium
+            {row.progress === null ? 'min-w-0 flex-1' : 'w-26 shrink-0'}
+            {row.out ? 'line-through' : ''}"
+		>
+			{playerLabel(row.entry.steamId3)}
+		</span>
+		<!-- progress through the map -->
+		{#if row.progress !== null}
+			<div class="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-ctp-lavender/12">
+				<div
+					class="h-full rounded-full transition-[width] duration-700 {barColor(row)}"
+					style:width="{row.progress * 100}%"
+				></div>
+			</div>
+		{/if}
+		<!-- time, gap or DNF -->
+		<span class="w-27 shrink-0 text-right text-xl {settings.current.monoFont}">
+			{row.value}
+		</span>
 	</div>
-	<!-- gap -->
-	<div class="w-full min-w-20 text-end {settings.current.monoFont} {out ? 'opacity-40' : ''}">
-		{gap(entry, i)}
-	</div>
-	<hr class="hr m-1!" />
 {/snippet}

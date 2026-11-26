@@ -4,13 +4,16 @@
 	import PickAvatar from '$lib/components/maps/PickAvatar.svelte';
 	import { fitText } from '$lib/fit-text';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { mapName, seriesOf } from '$lib/map-picks';
+	import { mapName, seriesOf, teamOutline } from '$lib/map-picks';
 	import { overlay, settings } from '$lib/storage.svelte';
 	import { getMap } from '$lib/util';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 
 	// the series from the pick & ban session, as small versions of the map scene's series cards,
-	// with the map being played lit and the rest dimmed
+	// with the map being played lit and the rest dimmed. One row of cards, sized by the scene
+	type Props = { class?: string };
+	let { class: styleClass = '' }: Props = $props();
+
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 
 	let session = $derived(ksnWs.messages.mapPicks?.session ?? null);
@@ -43,25 +46,34 @@
 </script>
 
 {#if cards.length > 1}
-	<div transition:fade class="absolute bottom-4 left-4 z-1 flex w-200 flex-wrap gap-4">
+	<div
+		transition:fade
+		class="{styleClass} grid gap-3.5 p-0.75"
+		style:grid-template-columns="repeat({cards.length}, minmax(0, 1fr))"
+	>
 		{#each cards as card, i (card.key)}
 			{@const dimmed = currentId !== undefined && card.id !== currentId}
-			<div class="relative h-32 w-55 overflow-hidden rounded-2xl">
+			<!-- outlined in the picker's team colour, like the map scene's series cards -->
+			<div
+				class={[
+					'relative min-w-0 overflow-hidden rounded-xl outline-3 transition-opacity duration-500',
+					card.actor ? teamOutline[card.actor] : 'outline-ctp-lavender',
+					{ 'opacity-60': dimmed }
+				]}
+			>
 				{#if card.image}
 					<img
 						in:fade
 						src={card.image}
 						alt=""
-						class="absolute inset-0 size-full object-cover transition-[filter] duration-500"
-						class:brightness-50={dimmed}
+						class="absolute inset-0 size-full object-cover"
 						draggable="false"
 					/>
 				{/if}
 				<div class="absolute inset-0 bg-linear-to-t from-ctp-crust/90 to-transparent to-60%"></div>
 				<span
-					class="absolute right-3 bottom-2 left-3 truncate leading-none font-bold text-white uppercase"
-					class:opacity-60={dimmed}
-					{@attach fitText(30, settings.current.font, card.name)}
+					class="absolute right-3 bottom-2.5 left-3 truncate leading-none font-bold text-white uppercase"
+					{@attach fitText(26, settings.current.font, card.name)}
 				>
 					{card.name}
 				</span>
@@ -88,14 +100,6 @@
 						</span>
 					{/if}
 				</div>
-				<!-- the map being played is outlined; on its own layer, so the colour filters
-				     tint the outline and not the map's image -->
-				<div
-					class="pointer-events-none absolute inset-0 rounded-2xl ring-3 ring-ctp-lavender transition-opacity duration-500 ring-inset"
-					class:opacity-0={card.id !== currentId}
-					class:opacity-60={card.id == currentId}
-					style:filter={getFiltersStyle()}
-				></div>
 			</div>
 		{/each}
 	</div>

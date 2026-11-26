@@ -231,7 +231,8 @@
 						>
 						{#if recent.length}
 							<div
-								class="min-h-0 flex-1 overflow-hidden {scrolling
+								class="min-h-0 flex-1 overflow-hidden
+                                                                {scrolling
 									? 'mask-t-from-92% mask-t-to-100% mask-b-from-80% mask-b-to-100%'
 									: ''}"
 								bind:clientHeight={viewHeight}
@@ -300,9 +301,9 @@
 							{/if}
 						</div>
 						<span
-							class="shrink-0 font-semibold text-ctp-lavender tabular-nums {large
-								? 'text-4xl'
-								: 'text-3xl'} {settings.current.monoFont}"
+							class="shrink-0 font-semibold text-ctp-lavender tabular-nums
+                                                        {large ? 'text-4xl' : 'text-3xl'} 
+                                                        {settings.current.monoFont}"
 							style:filter={getFiltersStyle()}
 						>
 							{usd(d.amount)}

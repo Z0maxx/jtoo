@@ -22,6 +22,21 @@
 		raceWindow?.state === 'racing' ? countdownMs(raceWindow, live.serverNow()) : null
 	);
 	let overtime = $derived(raceWindow?.state === 'overtime');
+
+	// a single run race's players all start together and get one run each, so their timers always
+	// match: it shows one shared timer instead of each player's. It runs while anyone is running,
+	// then holds the longest run. A duel with no time limit is a single run duel
+	let singleRun = $derived.by(() => {
+		const race = live.currentRace;
+		return race?.mode === 'mass-single' || (race?.mode === 'duel' && race.window.endsAt === null);
+	});
+	let sharedRun = $derived.by(() => {
+		const runs = (live.currentRace?.leaderboard ?? []).filter(
+			(e) => e.runStartedAt !== null && e.runStartedAt >= clearedAt
+		);
+		const running = runs.filter((e) => e.status === 'running');
+		return { running: running.length > 0, entries: running.length ? running : runs };
+	});
 </script>
 
 {#if numPlayers == 2}
@@ -29,19 +44,43 @@
 		class="{styleClass} grid h-20 grid-cols-3 items-center justify-center
                 {settings.current.monoFont}"
 	>
-		{@render PlayerStopwatch(overlay.current.players[0])}
-		{@render CompetitionTimer()}
-		{@render PlayerStopwatch(overlay.current.players[1])}
+		{#if singleRun}
+			<div></div>
+			{@render SharedStopwatch()}
+			<div></div>
+		{:else}
+			{@render PlayerStopwatch(overlay.current.players[0])}
+			{@render CompetitionTimer()}
+			{@render PlayerStopwatch(overlay.current.players[1])}
+		{/if}
 	</div>
 {:else if numPlayers == 1}
 	<div
 		class="{styleClass} flex h-20 items-center justify-between *:w-fit
                 {settings.current.monoFont}"
 	>
-		{@render PlayerStopwatch(overlay.current.players[0])}
-		{@render CompetitionTimer()}
+		{#if singleRun}
+			<div></div>
+			{@render SharedStopwatch()}
+		{:else}
+			{@render PlayerStopwatch(overlay.current.players[0])}
+			{@render CompetitionTimer()}
+		{/if}
 	</div>
 {/if}
+
+{#snippet SharedStopwatch()}
+	{@const now = sharedRun.running ? live.serverNow() : 0}
+	{@const ms = Math.max(0, ...sharedRun.entries.map((e) => runDisplayMs(e, now)))}
+	<!-- no label, centred on the 128px top bar: the box is centred on it in the single layout, but
+	     sits 20px lower in the dual layout to leave room for the other timers' labels -->
+	<div
+		class="text-palewhite text-center text-5xl transition-colors duration-1000
+        {numPlayers == 2 ? '-translate-y-5' : ''} {sharedRun.running ? '' : 'opacity-40'}"
+	>
+		{msToFormattedTime(ms)}
+	</div>
+{/snippet}
 
 {#snippet PlayerStopwatch(player: SteamID3 | undefined)}
 	{@const found = live.entryFor(player)}

@@ -4,7 +4,12 @@
 	import type { Donation } from '$lib/types.svelte';
 	import { sleep } from '$lib/util';
 	import { isMessageAcceptable } from '$lib/message-moderation.svelte';
+	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { onDestroy } from 'svelte';
+
+	// two donation message cards side by side, filling the size the scene gives them
+	type Props = { class?: string };
+	let { class: styleClass = '' }: Props = $props();
 
 	/*fundraisingState.current.displayedDonationsWithMessages = [];
 	fundraisingState.current.lastDonationProcessedByMessagesId = '';*/
@@ -87,22 +92,39 @@
 	}
 </script>
 
-<div class="z-50 flex items-center gap-2 px-2 transition-all duration-400">
+<div class="{styleClass} grid grid-cols-2 gap-3.5">
 	{#each fundraisingState.current.displayedDonationsWithMessages as donation, i (i)}
-		<div
-			class="flex h-90 w-120 flex-col items-center rounded-md border-2 border-white bg-bordeaux px-2 py-1 transition-colors
-        {donation.id === replaced ? 'text-transparent' : ''}"
-		>
+		<!-- an empty slot keeps its place until a message fills it -->
+		<div class="relative isolate min-h-0">
 			{#if donation.id !== ''}
-				<div class="flex items-center gap-1 text-xl">
-					{#if donation.avatarUrl}
-						<img src={donation.avatarUrl} alt="avatar" class="size-6 rounded-full" />
-					{/if}
-					<span>{donation.name ?? 'Anonymous'}</span>
-				</div>
-				<div>${donation.amount}</div>
-				<div class="max-w-full truncate overflow-hidden text-wrap">
-					{donation.message}
+				<div
+					class="flex h-full flex-col gap-2.5 overflow-hidden px-4.5 py-3.5 transition-colors duration-300
+                    {donation.id === replaced ? 'text-transparent' : ''}"
+				>
+					<div
+						class="absolute inset-0 -z-1 rounded-[10px] bg-[#0f0f16]/92 ring-1 ring-ctp-lavender/35 ring-inset"
+						style:filter={getFiltersStyle()}
+					></div>
+					<div class="flex items-center gap-2.5">
+						{#if donation.avatarUrl}
+							<img src={donation.avatarUrl} alt="" class="size-7 rounded-full" draggable="false" />
+						{/if}
+						<span class="truncate text-[21px] font-bold">{donation.name || 'Anonymous'}</span>
+						<span
+							class="ml-auto text-[21px] {donation.id === replaced
+								? ''
+								: 'text-ctp-lavender'} {settings.current.monoFont}"
+						>
+							${donation.amount.toLocaleString('en-US')}
+						</span>
+					</div>
+					<p
+						class="m-0 line-clamp-4 text-lg leading-snug {donation.id === replaced
+							? ''
+							: 'text-ctp-subtext1'}"
+					>
+						{donation.message}
+					</p>
 				</div>
 			{/if}
 		</div>

@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay, items, fundraisingState } from '$lib/storage.svelte';
+	import { settings, overlay } from '$lib/storage.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import MatchMapPicks from '$lib/components/match/MatchMapPicks.svelte';
 	import WebSocketTimer from '$lib/components/match/WebSocketTimer.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { getContext } from 'svelte';
-	import { getMap, getPlayer, msToFormattedTime } from '$lib/util';
+	import { getPlayer, msToFormattedTime } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	// import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
-	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
-	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
 	import MiniLeaderboard from '$lib/components/match/MiniLeaderboard.svelte';
+	import RoundTab from '$lib/components/match/RoundTab.svelte';
+	import BottomArea from '$lib/components/match/BottomArea.svelte';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -79,6 +79,14 @@
 <!-- isolated border filter -->
 <div class="border-b-4 border-ctp-lavender/50" style:filter={getFiltersStyle()}></div>
 
+<!-- MARK: round tab -->
+<!-- the stage and map hang from the top bar: dual, centred over the seam between the povs;
+     single, against the right edge where the old map tag was -->
+<RoundTab
+	align={single ? 'right' : 'center'}
+	class="absolute top-33 z-20 {single ? 'right-0' : 'left-1/2 -translate-x-1/2'}"
+/>
+
 <!-- MARK: POVs -->
 {#if !single}
 	<div
@@ -91,15 +99,7 @@
   {settings.current.enablePOVGuide
 				? 'border-r-2 border-dashed border-ctp-lavender/50 bg-ctp-lavender/25'
 				: ''}"
-		>
-			{#if settings.current.enableFundraisingSection}
-				{#if fundraisingState.current.eventUrl}
-					<FundraisingSection />
-				{:else}
-					<div class="text-6xl">Fundraising event is not set</div>
-				{/if}
-			{/if}
-		</div>
+		></div>
 		<div
 			class="aspect-video w-1/2
   {settings.current.enablePOVGuide
@@ -109,58 +109,24 @@
 	</div>
 {/if}
 
-<!-- MARK: bottom bar -->
-<div class="flex h-16 w-full justify-between" style:filter={getFiltersStyle()}>
-	<!-- stage -->
-	<div
-		class="relative -left-6 flex h-full -skew-x-30 items-center justify-end rounded-br-xl border-r-4 border-b-4 border-ctp-lavender/50 bg-ctp-lavender/25
-                {overlay.current.stage === '' ? 'opacity-0' : ''}"
-	>
-		{#key overlay.current.stage}
-			<span in:fade class="relative left-2 skew-x-30 px-8 text-2xl text-ctp-text/75"
-				>{overlay.current.stage}</span
-			>
-		{/key}
+<!-- MARK: bottom area -->
+<!-- dual: chat space, mini leaderboard, fundraising and map picks under the povs -->
+{#if !single}
+	<div transition:fade={{ duration: 500 }} class="flex min-h-0 flex-1">
+		<BottomArea />
 	</div>
+{/if}
 
-	{#if settings.current.enableFundraisingSection}
-		<div class="absolute flex w-full items-start justify-center pt-2">
-			<DonationMessages />
-		</div>
-	{/if}
-
-	<!-- {#if settings.current.ksnWebSocketToken !== '' && !single}
-		<div transition:fade>
-			<WebSocketLeader />
-		</div>
-	{/if} -->
-	<!-- map -->
+<!-- MARK: single: mini leaderboard and map picks -->
+{#if single}
 	<div
-		class="relative -right-6 flex h-full skew-x-30 items-center justify-end rounded-bl-xl border-b-4 border-l-4 border-ctp-lavender/50 bg-ctp-lavender/25
-                {overlay.current.map === '' ? 'opacity-0' : ''}"
+		transition:fade={{ duration: 500 }}
+		class="absolute top-1/2 left-4 flex h-97 w-130 -translate-y-1/2"
 	>
-		{#key overlay.current.stage}
-			<span in:fade class="relative right-2 -skew-x-30 px-8 text-3xl text-ctp-text/75"
-				>{settings.current.useShortMapNames
-					? getMap(overlay.current.map).shortName
-					: overlay.current.map}</span
-			>
-		{/key}
+		<MiniLeaderboard class="flex-1" translucent />
 	</div>
-</div>
-<!-- MARK: mini leaderboard -->
-<!-- dual: centred in the area under the bottom bar. single: middle left of the screen -->
-{#key single}
-	<div
-		in:fade={{ duration: 500 }}
-		class={single ? 'absolute top-1/2 left-4 -translate-y-1/2' : 'flex w-full justify-center pt-4'}
-	>
-		<MiniLeaderboard />
-	</div>
-{/key}
-
-<!-- MARK: map picks -->
-<MatchMapPicks />
+	<MatchMapPicks class="absolute bottom-4 left-4 z-1 h-32 w-200" />
+{/if}
 
 <!-- MARK: OverlayPlayer -->
 {#snippet OverlayPlayer(steamID3: number | undefined, playerNum: number)}
