@@ -40,7 +40,8 @@
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
 	import { getMap, consoleBaseUrl } from '$lib/util';
-	import { onMount, setContext, tick, untrack } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
@@ -136,9 +137,9 @@
 	});
 
 	// MARK: status bar
-	// which sections are open, so the status bar can open the one behind a status
-	let panels = $state({ items: true, connections: true, obs: false, ksn: false, relay: false });
-	type Panel = keyof typeof panels;
+	// each status opens its connection's settings right below the bar, one at a time
+	type StatusId = 'obs' | 'console' | 'relay' | 'pools';
+	let openStatus: StatusId | null = $state(null);
 
 	// 'off' is a connection that isn't set up, which isn't worth a red dot
 	type Status = FeedState | 'off';
@@ -148,40 +149,32 @@
 		closed: 'bg-red-300',
 		off: 'bg-ctp-text/30'
 	};
-	const statuses = $derived<
-		{ label: string; status: Status; detail: string; panels: Panel[]; target: string }[]
-	>([
+	const statuses = $derived<{ id: StatusId; status: Status; detail: string }[]>([
 		{
-			label: 'obs',
+			id: 'obs',
 			status: settings.current.obsWsPw ? obsStatus.state : 'off',
-			detail: obsStatus.error || (settings.current.obsWsPw ? '' : 'no password set'),
-			panels: ['connections', 'obs'],
-			target: 'panel-obs'
+			detail: obsStatus.error || (settings.current.obsWsPw ? '' : 'no password set')
 		},
 		{
-			label: 'console',
+			id: 'console',
 			status: settings.current.ksnWebSocketToken ? live.raceState : 'off',
 			detail: live.dummy
 				? 'showing dummy data'
 				: settings.current.ksnWebSocketToken
 					? ''
-					: 'no token set',
-			panels: ['connections', 'ksn'],
-			target: 'panel-ksn'
+					: 'no token set'
 		},
 		{
-			label: 'relay',
+			id: 'relay',
 			status: settings.current.jfRelayWebSocketToken ? relayState : 'off',
 			detail: error.invalidJfRelayToken.state
 				? error.invalidJfRelayToken.msg
 				: settings.current.jfRelayWebSocketToken
 					? ''
-					: 'no token set',
-			panels: ['connections', 'relay'],
-			target: 'panel-relay'
+					: 'no token set'
 		},
 		{
-			label: 'pools',
+			id: 'pools',
 			status:
 				poolImport === undefined
 					? 'off'
@@ -193,21 +186,13 @@
 			detail:
 				poolImport && poolImport !== 'importing'
 					? poolImport.errors.join(', ') || `${poolImport.players} players, ${poolImport.maps} maps`
-					: '',
-			panels: ['items'],
-			target: 'panel-items'
+					: ''
 		}
 	]);
 	const statusText: Record<Status, string> = {
 		...Object.fromEntries(Object.entries(feedStates).map(([k, v]) => [k, v.state])),
 		off: 'not set up'
 	} as Record<Status, string>;
-
-	async function showPanel(open: Panel[], target: string) {
-		for (const p of open) panels[p] = true;
-		await tick();
-		document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
 
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
@@ -275,20 +260,190 @@
 {#if ksnWs}
 	<!-- status bar: every connection at a glance, and a click away from its settings -->
 	<nav
-		class="sticky top-[env(safe-area-inset-top,0px)] z-10 -mx-4 flex w-[calc(100%+2rem)] flex-wrap justify-center gap-x-4 gap-y-1 self-center bg-obs-content px-4 py-1"
-		aria-label="connection status"
+		class="sticky top-[env(safe-area-inset-top,0px)] z-10 -mx-4 flex w-[calc(100%+2rem)] flex-col items-center self-center bg-obs-content px-4 py-1"
+		aria-label="connections"
 	>
-		{#each statuses as s (s.label)}
-			<button
-				class="flex items-center gap-1.5 opacity-80 hover:opacity-100"
-				title="{s.label}: {statusText[s.status]}{s.detail ? ` (${s.detail})` : ''}"
-				onclick={() => showPanel(s.panels, s.target)}
+		<div class="flex flex-wrap justify-center gap-x-4 gap-y-1">
+			{#each statuses as s (s.id)}
+				<button
+					class="flex items-center gap-1.5 hover:opacity-100
+						{openStatus === s.id ? 'underline decoration-ctp-lavender' : 'opacity-80'}"
+					title="{s.id}: {statusText[s.status]}{s.detail ? ` (${s.detail})` : ''}"
+					aria-expanded={openStatus === s.id}
+					aria-controls="status-panel"
+					onclick={() => (openStatus = openStatus === s.id ? null : s.id)}
+				>
+					<span class="size-2.5 rounded-full {statusDots[s.status]}" aria-hidden="true"></span>
+					<span>{s.id}</span>
+					<span class="sr-only">{statusText[s.status]}</span>
+				</button>
+			{/each}
+		</div>
+		{#if openStatus}
+			<!-- capped so a tall panel can't push the whole page out from under the bar -->
+			<div
+				id="status-panel"
+				class="mt-1 flex max-h-[60vh] w-full max-w-lg flex-col gap-1 overflow-y-auto border-t-2 border-obs-padding pt-2 pb-1"
+				transition:slide
 			>
-				<span class="size-2.5 rounded-full {statusDots[s.status]}" aria-hidden="true"></span>
-				<span>{s.label}</span>
-				<span class="sr-only">{statusText[s.status]}</span>
-			</button>
-		{/each}
+				{#if openStatus === 'obs'}
+					<div class="grid grid-cols-[auto_auto]">
+						<label for="input-websocket-obs">ip: </label>
+						<input
+							type="text"
+							class="input"
+							id="input-websocket-obs"
+							placeholder="localhost"
+							value={settings.current.obsWsIp}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.obsWsIp = target.value;
+							}}
+						/>
+						<label for="input-websocket-obs-port">port: </label>
+						<input
+							type="number"
+							class="input remove-arrow"
+							id="input-websocket-obs-port"
+							placeholder="4455"
+							value={settings.current.obsWsPort}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.obsWsPort = parseInt(target.value);
+							}}
+						/>
+						<label for="input-websocket-obs-pw">password: </label>
+						<input
+							type="password"
+							class="input"
+							id="input-websocket-obs-pw"
+							value={settings.current.obsWsPw}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.obsWsPw = target.value;
+							}}
+						/>
+						<button
+							class="button button-unselected hover:button-selected"
+							onclick={() => {
+								if (settings.current.obsWsPw) {
+									obsConnect(
+										settings.current.obsWsIp,
+										settings.current.obsWsPort,
+										settings.current.obsWsPw
+									);
+								}
+							}}>connect</button
+						>
+						<div class="flex gap-2">
+							<p>status:</p>
+							<span class={feedStates[obsStatus.state].color}>
+								{feedStates[obsStatus.state].state}
+							</span>
+						</div>
+						{#if obsStatus.error}
+							<span class="col-span-full text-red-300">{obsStatus.error}</span>
+						{/if}
+					</div>
+				{:else if openStatus === 'console'}
+					<div class="flex gap-2">
+						<label for="input-websocket">token: </label>
+						<input
+							type="password"
+							class="input w-60"
+							id="input-websocket"
+							value={settings.current.ksnWebSocketToken}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.ksnWebSocketToken = target.value;
+							}}
+						/>
+					</div>
+					<div class="flex gap-2">
+						<button class="button button-unselected hover:button-selected" onclick={connectConsole}
+							>connect</button
+						>
+						<div class="flex gap-2">
+							<p>status:</p>
+							<span class={feedStates[live.raceState].color}>
+								{feedStates[live.raceState].state}
+							</span>
+							{#if live.dummy}
+								<span class="text-ctp-yellow">(showing dummy data)</span>
+							{/if}
+						</div>
+					</div>
+					<div class="flex gap-2">
+						<label for="input-console-url">console url: </label>
+						<input
+							type="text"
+							class="input w-60"
+							id="input-console-url"
+							placeholder="https://console.jumpfortress.tf"
+							value={settings.current.consoleBaseUrl}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.consoleBaseUrl = target.value.trim();
+							}}
+						/>
+					</div>
+					<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
+					<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
+					<Checkbox setting="logWsMessages" desc="log websocket messages" />
+				{:else if openStatus === 'relay'}
+					<div class="flex gap-2">
+						<label for="input-websocket-jf">token: </label>
+						<input
+							type="password"
+							class="input w-60
+              {jfRelayWs?.wsState === WebSocket.OPEN ? 'border-b-green-700' : ''}"
+							id="input-websocket-jf"
+							value={settings.current.jfRelayWebSocketToken}
+							onchange={(e) => {
+								let target = e.target as HTMLInputElement;
+								settings.current.jfRelayWebSocketToken = target.value.trim();
+							}}
+						/>
+					</div>
+					<div class="flex gap-2">
+						<button
+							class="button button-unselected hover:button-selected"
+							onclick={connectToJfRelay}>connect</button
+						>
+						<div class="flex gap-2">
+							<p>status:</p>
+							<span class={feedStates[relayState].color}>{feedStates[relayState].state}</span>
+						</div>
+					</div>
+					{#if error.invalidJfRelayToken.state}
+						<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
+					{/if}
+				{:else if openStatus === 'pools'}
+					<div class="flex justify-between gap-2">
+						{#if poolImport === 'importing'}
+							<span class="text-yellow-200">importing console pools...</span>
+						{:else if poolImport}
+							<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
+								imported {poolImport.players} players and {poolImport.maps} maps from the console
+							</span>
+						{:else}
+							<span></span>
+						{/if}
+						<button
+							class="button-remove"
+							title="import the event's players and maps from the console pools again"
+							disabled={poolImport === 'importing'}
+							onclick={importPools}>re-import</button
+						>
+					</div>
+					{#if poolImport && poolImport !== 'importing'}
+						{#each poolImport.errors as err, i (i)}
+							<span class="text-red-300">{err}</span>
+						{/each}
+					{/if}
+				{/if}
+			</div>
+		{/if}
 	</nav>
 
 	<!-- presets -->
@@ -306,29 +461,7 @@
 	</div>
 
 	<!-- items -->
-	<Accordion title="items" id="panel-items" bind:open={panels.items}>
-		<div class="flex justify-between gap-2">
-			{#if poolImport === 'importing'}
-				<span class="text-yellow-200">importing console pools...</span>
-			{:else if poolImport}
-				<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
-					imported {poolImport.players} players and {poolImport.maps} maps from the console
-				</span>
-			{:else}
-				<span></span>
-			{/if}
-			<button
-				class="button-remove"
-				title="import the event's players and maps from the console pools again"
-				disabled={poolImport === 'importing'}
-				onclick={importPools}>re-import</button
-			>
-		</div>
-		{#if poolImport && poolImport !== 'importing'}
-			{#each poolImport.errors as err, i (i)}
-				<span class="text-red-300">{err}</span>
-			{/each}
-		{/if}
+	<Accordion title="items">
 		<div class="grid w-full grid-cols-2">
 			<Importplayer />
 			<ManagePlayers />
@@ -438,145 +571,7 @@
 		{/if}
 	</Accordion>
 
-	<Accordion title="connections" bind:open={panels.connections}>
-		<section class="ml-5 w-[calc(100%-1.25rem)]">
-			<Accordion title="obs websocket" id="panel-obs" bind:open={panels.obs}>
-				<div class="grid grid-cols-[auto_auto]">
-					<label for="input-websocket-obs">ip: </label>
-					<input
-						type="text"
-						class="input"
-						id="input-websocket-obs"
-						placeholder="localhost"
-						value={settings.current.obsWsIp}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.obsWsIp = target.value;
-						}}
-					/>
-					<label for="input-websocket-obs-port">port: </label>
-					<input
-						type="number"
-						class="input remove-arrow"
-						id="input-websocket-obs-port"
-						placeholder="4455"
-						value={settings.current.obsWsPort}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.obsWsPort = parseInt(target.value);
-						}}
-					/>
-					<label for="input-websocket-obs-pw">password: </label>
-					<input
-						type="password"
-						class="input"
-						id="input-websocket-obs-pw"
-						value={settings.current.obsWsPw}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.obsWsPw = target.value;
-						}}
-					/>
-					<button
-						class="button button-unselected hover:button-selected"
-						onclick={() => {
-							if (settings.current.obsWsPw) {
-								obsConnect(
-									settings.current.obsWsIp,
-									settings.current.obsWsPort,
-									settings.current.obsWsPw
-								);
-							}
-						}}>connect</button
-					>
-					<div class="flex gap-2">
-						<p>status:</p>
-						<span class={feedStates[obsStatus.state].color}>
-							{feedStates[obsStatus.state].state}
-						</span>
-					</div>
-					{#if obsStatus.error}
-						<span class="col-span-full text-red-300">{obsStatus.error}</span>
-					{/if}
-				</div>
-			</Accordion>
-			<Accordion title="ksn server websocket" id="panel-ksn" bind:open={panels.ksn}>
-				<div class="flex gap-2">
-					<label for="input-websocket">token: </label>
-					<input
-						type="password"
-						class="input w-60"
-						id="input-websocket"
-						value={settings.current.ksnWebSocketToken}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.ksnWebSocketToken = target.value;
-						}}
-					/>
-				</div>
-				<div class="flex gap-2">
-					<button class="button button-unselected hover:button-selected" onclick={connectConsole}
-						>connect</button
-					>
-					<div class="flex gap-2">
-						<p>status:</p>
-						<span class={feedStates[live.raceState].color}>
-							{feedStates[live.raceState].state}
-						</span>
-						{#if live.dummy}
-							<span class="text-ctp-yellow">(showing dummy data)</span>
-						{/if}
-					</div>
-				</div>
-				<div class="flex gap-2">
-					<label for="input-console-url">console url: </label>
-					<input
-						type="text"
-						class="input w-60"
-						id="input-console-url"
-						placeholder="https://console.jumpfortress.tf"
-						value={settings.current.consoleBaseUrl}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.consoleBaseUrl = target.value.trim();
-						}}
-					/>
-				</div>
-				<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
-				<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
-				<Checkbox setting="logWsMessages" desc="log websocket messages" />
-			</Accordion>
-			<Accordion title="jf relay plugin websocket" id="panel-relay" bind:open={panels.relay}>
-				<div class="flex gap-2">
-					<label for="input-websocket-jf">token: </label>
-					<input
-						type="password"
-						class="input w-60
-              {jfRelayWs?.wsState === WebSocket.OPEN ? 'border-b-green-700' : ''}"
-						id="input-websocket-jf"
-						value={settings.current.jfRelayWebSocketToken}
-						onchange={(e) => {
-							let target = e.target as HTMLInputElement;
-							settings.current.jfRelayWebSocketToken = target.value.trim();
-						}}
-					/>
-				</div>
-				<div class="flex gap-2">
-					<button class="button button-unselected hover:button-selected" onclick={connectToJfRelay}
-						>connect</button
-					>
-					<div class="flex gap-2">
-						<p>status:</p>
-						<span class={feedStates[relayState].color}>{feedStates[relayState].state}</span>
-					</div>
-				</div>
-				{#if error.invalidJfRelayToken.state}
-					<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
-				{/if}
-			</Accordion>
-			<SetFundraisingEvent />
-		</section>
-	</Accordion>
+	<SetFundraisingEvent />
 	<!-- settings -->
 	<Accordion title="settings" defaultstate="closed">
 		<span>font</span>

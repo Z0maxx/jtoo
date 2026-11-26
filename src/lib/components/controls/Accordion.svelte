@@ -1,28 +1,19 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 
 	type Props = {
 		title: string;
 		children: Snippet;
 		defaultstate?: 'open' | 'closed';
-		// bind to open or close it from outside, e.g. from the status bar
-		open?: boolean;
-		// for scrolling to it
-		id?: string;
 	};
 
-	let {
-		title,
-		children,
-		defaultstate = 'open',
-		open = $bindable(defaultstate === 'open'),
-		id
-	}: Props = $props();
+	let { title, children, defaultstate = 'open' }: Props = $props();
+
+	let open = $state(untrack(() => defaultstate === 'open'));
 </script>
 
-<!-- scroll-mt: room for the sticky status bar when it's scrolled to -->
-<div class="relative w-full max-w-lg scroll-mt-12 self-center" {id}>
+<div class="relative w-full max-w-lg self-center">
 	<button
 		class="w-full text-left"
 		aria-expanded={open}
