@@ -56,7 +56,8 @@
 </script>
 
 {#if rows.length > 0}
-	<section class="{styleClass} absolute top-0 left-0 z-20 p-2" transition:fade>
+	<!-- positioned by the scene that shows it -->
+	<section class="{styleClass} relative z-20 p-2" transition:fade>
 		<!-- position, avatar (when shown), name and gap -->
 		<div
 			class="grid gap-x-2 gap-y-0 text-xl *:m-0 *:p-0"

@@ -11,6 +11,7 @@
 	// import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 	import FundraisingSection from '$lib/components/fundraising/FundraisingSection.svelte';
 	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
+	import MiniLeaderboard from '$lib/components/match/MiniLeaderboard.svelte';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -147,6 +148,17 @@
 		{/key}
 	</div>
 </div>
+<!-- MARK: mini leaderboard -->
+<!-- dual: centred in the area under the bottom bar. single: middle left of the screen -->
+{#key single}
+	<div
+		in:fade={{ duration: 500 }}
+		class={single ? 'absolute top-1/2 left-4 -translate-y-1/2' : 'flex w-full justify-center pt-4'}
+	>
+		<MiniLeaderboard />
+	</div>
+{/key}
+
 <!-- MARK: map picks -->
 <MatchMapPicks />
 
