@@ -75,6 +75,7 @@ export namespace KSN {
 		playerB: PlayerRecord;
 		mapPoolId: string;
 		mapPoolName: string;
+		roundName?: string | null; // the round the console set for the series, e.g. "Grand Final"
 		maps: MapOption[];
 		steps: StepDefinition[];
 		currentStepIndex: number;

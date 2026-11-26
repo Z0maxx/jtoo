@@ -486,7 +486,7 @@
 			<span>seconds to show each donation for</span>
 		</label>
 		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
-		<Checkbox setting="selectDuelPlayers" desc="automatically select a players on 1v1 race start" />
+		<Checkbox setting="selectDuelPlayers" desc="automatically select players on 1v1 race and map picks start" />
 	</Accordion>
 
 	<!-- overlay -->
