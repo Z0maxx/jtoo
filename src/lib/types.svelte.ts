@@ -220,10 +220,9 @@ export type DonationsOverview = {
 
 export type Donation = {
 	id: string;
-	name: string;
+	name?: string;
 	amount: number;
 	message?: string;
-	avatarUrl?: string;
 	createdAt: string;
 };
 

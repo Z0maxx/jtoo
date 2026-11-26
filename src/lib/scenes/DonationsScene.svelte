@@ -267,23 +267,14 @@
 					<!-- a donation's avatar, name, accepted message and amount -->
 					{#snippet donationRow(d: Donation, large = false)}
 						{@const message = d.message && messageVerdict(d) ? d.message : ''}
-						{#if d.avatarUrl}
-							<img
-								src={d.avatarUrl}
-								alt=""
-								class="shrink-0 object-cover {large ? 'size-14 rounded-xl' : 'size-11 rounded-lg'}"
-								draggable="false"
-							/>
-						{:else}
-							<span
-								class="flex shrink-0 items-center justify-center bg-ctp-lavender/15 font-bold text-ctp-lavender uppercase {large
-									? 'size-14 rounded-xl text-3xl'
-									: 'size-11 rounded-lg text-2xl'}"
-								style:filter={getFiltersStyle()}
-							>
-								{(d.name || 'A')[0]}
-							</span>
-						{/if}
+						<span
+							class="flex shrink-0 items-center justify-center bg-ctp-lavender/15 font-bold text-ctp-lavender uppercase {large
+								? 'size-14 rounded-xl text-3xl'
+								: 'size-11 rounded-lg text-2xl'}"
+							style:filter={getFiltersStyle()}
+						>
+							{(d.name || 'A')[0]}
+						</span>
 						<div class="flex min-w-0 grow flex-col">
 							<span class="truncate leading-tight text-white {large ? 'text-4xl' : 'text-3xl'}">
 								{d.name || 'Anonymous'}

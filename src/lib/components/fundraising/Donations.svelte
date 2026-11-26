@@ -71,9 +71,6 @@
 	{#each fundraisingState.current.displayedDonations as donation (donation.id)}
 		<div class="flex flex-col items-center rounded-md border-2 bg-bordeaux">
 			<div class="flex items-center gap-1 text-xl">
-				{#if donation.avatarUrl}
-					<img src={donation.avatarUrl} alt="avatar" class="size-6 rounded-full" />
-				{/if}
 				<span>{donation.name ?? 'Anonymous'}</span>
 			</div>
 			<div>${donation.amount}</div>
