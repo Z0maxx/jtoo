@@ -68,6 +68,10 @@ export function progressOrder(snapshots: RelayProgress[]): SteamID3[] {
 
 export class JFRelayWebSocket {
 	private _ws: ProxyWebSocket | undefined;
+	private _unsubscribeState: (() => void) | undefined;
+	private _token = '';
+	private _reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+	private _reconnectDelayMs = 1000;
 	private _wsState: number;
 	// each game server's latest progress, by server code
 	private _progress: Record<string, RelayProgress>;
@@ -95,28 +99,52 @@ export class JFRelayWebSocket {
 		}
 	}
 
-	connect(wsToken: string) {
-		if (this._ws && this._ws.readyState == ProxyWebSocket.OPEN) {
-			console.log('closing web socket connection...');
-			this._ws.close();
+	/**
+	 * Detaches and closes the current socket. Its events are ignored from here on, so its close
+	 * can't mark a newer socket as closed.
+	 */
+	private detach() {
+		clearTimeout(this._reconnectTimer);
+		this._reconnectTimer = undefined;
+		this._unsubscribeState?.();
+		this._unsubscribeState = undefined;
+		const old = this._ws;
+		this._ws = undefined;
+		if (old && old.readyState !== WebSocket.CLOSED) {
+			console.log('closing jf relay websocket...');
+			old.close(1000);
 		}
+	}
 
+	connect(wsToken: string) {
+		this._token = wsToken.trim();
+		this._reconnectDelayMs = 1000;
+		this.open();
+	}
+
+	private open() {
+		this.detach();
 		console.log('initializing jf relay websocket');
 
 		// connect to websocket
 		// the console set in the controls, like the ksn websocket
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const url = new URL(consoleBaseUrl());
-		url.searchParams.set('token', wsToken);
+		url.searchParams.set('token', this._token);
 		url.searchParams.set('channel', 'progress');
-		this._ws = new ProxyWebSocket(url.toString());
+		const ws = new ProxyWebSocket(url.toString());
+		this._ws = ws;
 
 		this._progress = {};
-		this._ws.onmessage = (event) => this.onWsMessage(event);
+		ws.onmessage = (event) => {
+			if (this._ws === ws) this.onWsMessage(event);
+		};
 
 		// broadcast welcome on connect
-		this._ws.onopen = () => {
+		ws.onopen = () => {
+			if (this._ws !== ws) return;
 			console.log('jf relay websocket connected');
+			this._reconnectDelayMs = 1000;
 			const msg: JFRelayWelcomeEvent = {
 				type: 'overlay_connected',
 				value: 'hello world'
@@ -124,13 +152,22 @@ export class JFRelayWebSocket {
 			this.send(msg);
 		};
 
-		this._ws.onclose = () => {
-			console.log('jf relay websocket closing');
+		ws.onclose = (event) => {
+			console.log(`jf relay websocket closed: code ${event.code} ${event.reason}`.trim());
+			// a replaced socket, or one closed on purpose
+			if (this._ws !== ws) return;
+			this._progress = {};
+			// retry with backoff, up to 30s between attempts
+			const delay = this._reconnectDelayMs;
+			this._reconnectDelayMs = Math.min(delay * 2, 30_000);
+			console.log(`jf relay reconnecting in ${delay / 1000}s`);
+			this._reconnectTimer = setTimeout(() => {
+				if (this._ws === ws) this.open();
+			}, delay);
 		};
 
-		this._ws.state?.subscribe((state) => {
-			console.log(`wsState: ${state}`);
-			this._wsState = state;
+		this._unsubscribeState = ws.state.subscribe((state) => {
+			if (this._ws === ws) this._wsState = state;
 		});
 	}
 

@@ -147,7 +147,8 @@
 		importPools();
 		loadTournaments();
 
-		if (settings.current.jfRelayWebSocketToken)
+		// with rtd on, the effect below connects instead (and checks the token)
+		if (settings.current.jfRelayWebSocketToken && !rtdEnabled)
 			jfRelayWs.connect(settings.current.jfRelayWebSocketToken);
 
 		if (settings.current.obsWsPw) {
