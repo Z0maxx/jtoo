@@ -121,6 +121,14 @@
 		open: { state: 'connected', color: 'text-green-300' },
 		closed: { state: 'not connected', color: 'text-red-300' }
 	};
+	// the relay reports a websocket readyState instead
+	const relayState = $derived<FeedState>(
+		jfRelayWs.wsState === WebSocket.OPEN
+			? 'open'
+			: jfRelayWs.wsState === WebSocket.CONNECTING
+				? 'connecting'
+				: 'closed'
+	);
 
 	let error = $state({
 		invalidJfRelayToken: {
@@ -211,6 +219,28 @@
 
 	<!-- items -->
 	<Accordion title="items">
+		<div class="flex justify-between gap-2">
+			{#if poolImport === 'importing'}
+				<span class="text-yellow-200">importing console pools...</span>
+			{:else if poolImport}
+				<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
+					imported {poolImport.players} players and {poolImport.maps} maps from the console
+				</span>
+			{:else}
+				<span></span>
+			{/if}
+			<button
+				class="button-remove"
+				title="import the event's players and maps from the console pools again"
+				disabled={poolImport === 'importing'}
+				onclick={importPools}>re-import</button
+			>
+		</div>
+		{#if poolImport && poolImport !== 'importing'}
+			{#each poolImport.errors as err, i (i)}
+				<span class="text-red-300">{err}</span>
+			{/each}
+		{/if}
 		<div class="grid w-full grid-cols-2">
 			<Importplayer />
 			<ManagePlayers />
@@ -447,9 +477,13 @@
 					<button class="button button-unselected hover:button-selected" onclick={connectToJfRelay}
 						>connect</button
 					>
+					<div class="flex gap-2">
+						<p>status:</p>
+						<span class={feedStates[relayState].color}>{feedStates[relayState].state}</span>
+					</div>
 				</div>
 				{#if error.invalidJfRelayToken.state}
-					<div>{error.invalidJfRelayToken.msg}</div>
+					<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
 				{/if}
 			</Accordion>
 			<SetFundraisingEvent />
