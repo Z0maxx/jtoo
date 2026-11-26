@@ -179,12 +179,16 @@ export type Settings = {
 	fundraisingShowDonationSeconds: number;
 };
 
+// the tournament's standings so far, one round's results (its roundIndex), or the final podium
+export type LeaderboardView = 'standings' | 'final' | number;
+
 export type Overlay = {
 	bestOf: number;
 	players: Array<SteamID3 | undefined>;
 	map: MapFileName;
 	stage: string;
 	tournament: string; // console tournament id the leaderboard shows; '' follows the race
+	leaderboardView: LeaderboardView; // which board the leaderboard scene shows
 	bracket: string; // id of the bracket the bracket scene shows
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;

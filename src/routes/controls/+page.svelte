@@ -70,9 +70,19 @@
 	const rtdEnabled = $derived(settings.current.enableFundraisingRtd);
 
 	// the controls open their own race feed, to show whether the console is reachable and to
-	// order the player lists by the race's leaderboard
-	const live = new ConsoleLive();
+	// order the player lists by the race's leaderboard, and follow the overlay's tournament to
+	// list its rounds for the leaderboard scene
+	const live = new ConsoleLive({ tournament: true });
 	setContext('consoleLive', live);
+	$effect(() => {
+		live.pinTournament(overlay.current.tournament || null);
+	});
+	// only the rounds that count toward the standings: finalized and not voided
+	let leaderboardRounds = $derived(
+		(live.tournament?.rounds ?? [])
+			.filter((r) => r.finalized && !r.voided)
+			.sort((a, b) => a.roundIndex - b.roundIndex)
+	);
 
 	// the event's players and maps come from console pools, imported on every startup
 	let poolImport: PoolImportResult | 'importing' | undefined = $state();
@@ -253,6 +263,20 @@
 				) ?? [])
 			]}
 			bind:value={overlay.current.tournament}
+		/>
+
+		<span>leaderboard view</span>
+		<RadioInputs
+			opts={['standings', ...leaderboardRounds.map((r) => r.roundIndex), 'final']}
+			optlabels={[
+				'current standings',
+				...leaderboardRounds.map((r) => `${r.roundIndex + 1}: ${r.map || r.stage}`),
+				'final standings'
+			]}
+			bind:value={
+				() => overlay.current.leaderboardView ?? 'standings',
+				(view) => (overlay.current.leaderboardView = view)
+			}
 		/>
 
 		<span>bracket</span>

@@ -70,6 +70,7 @@ export const defaultOverlay: Overlay = {
 	map: '',
 	stage: '',
 	tournament: '',
+	leaderboardView: 'standings',
 	bracket: ''
 };
 
