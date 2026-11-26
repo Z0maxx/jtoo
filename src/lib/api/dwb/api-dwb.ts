@@ -1,10 +1,11 @@
 import { fundraisingState } from '$lib/storage.svelte';
 import type { DonationsOverview, Donation, DonationMilestone, Subscriber } from '$lib/types.svelte';
 import { deepCopy, sleep } from '$lib/util';
+import { Moderation } from '../moderation/api-moderation';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
-	//fundraisingState.current.donations = []
+	//fundraisingState.current.donations = [];
 	const participantEndpoint = () =>
 		'/participants/' + fundraisingState.current.eventUrl.split('/').at(-1);
 	const fetching = new Set<DwbModelName>();
@@ -123,7 +124,7 @@ export namespace Dwb {
 				`${participantEndpoint()}/donations?offset=${donations.length}&orderBy=createdDateUTC%20ASC`,
 			modelName: 'donations',
 			fetchUntil: () => donationsSubscribers.length > 0,
-			callback: (dwbDonations) => {
+			callback: async (dwbDonations) => {
 				const eTag = eTags.get('donations');
 				if (!eTag || eTag === lastETag) return;
 
@@ -139,7 +140,11 @@ export namespace Dwb {
 				if (newDonations.length === 0) return;
 
 				const newDonationIds = newDonations.map((d) => d.id);
-				donations = donations.filter((d) => !newDonationIds.includes(d.id)).concat(newDonations);
+				const moderatedDonations = await Moderation.moderateDonations(newDonations);
+				donations = donations
+					.filter((d) => !newDonationIds.includes(d.id))
+					.concat(moderatedDonations);
+
 				fundraisingState.current.donations = donations;
 				donationsSubscribers.forEach((s) => s.handler(donationsCopy()));
 				lastETag = eTag;
