@@ -2,6 +2,7 @@
 	import Accordion from '$lib/components/controls/Accordion.svelte';
 	import Checkbox from '$lib/components/controls/Checkbox.svelte';
 	import ConfirmButton from '$lib/components/controls/ConfirmButton.svelte';
+	import ConnectionPanel, { feedStates } from '$lib/components/controls/ConnectionPanel.svelte';
 	import ItemInput from '$lib/components/controls/ItemInput.svelte';
 	import RangeInput from '$lib/components/controls/RangeInput.svelte';
 	import RadioInputs from '$lib/components/controls/RadioInputs.svelte';
@@ -115,11 +116,6 @@
 		loadTournaments();
 	}
 
-	const feedStates: Record<FeedState, { state: string; color: string }> = {
-		connecting: { state: 'connecting...', color: 'text-yellow-200' },
-		open: { state: 'connected', color: 'text-green-300' },
-		closed: { state: 'not connected', color: 'text-red-300' }
-	};
 	// the relay reports a websocket readyState instead
 	const relayState = $derived<FeedState>(
 		jfRelayWs.wsState === WebSocket.OPEN
@@ -246,7 +242,7 @@
 
 	async function connectToJfRelay() {
 		error.invalidJfRelayToken.state = await new Promise<boolean>((res) => {
-			jfRelayWs?.connect(settings.current.jfRelayWebSocketToken);
+			jfRelayWs?.connect(settings.current.jfRelayWebSocketToken.trim());
 			jfRelayWs?.addEventListener('open', () => res(false));
 			jfRelayWs?.addEventListener('error', () => res(true));
 		});
@@ -297,159 +293,104 @@
 				transition:slide
 			>
 				{#if openStatus === 'obs'}
-					<div class="grid grid-cols-[auto_auto]">
-						<label for="input-websocket-obs">ip: </label>
-						<input
-							type="text"
-							class="input"
-							id="input-websocket-obs"
-							placeholder="localhost"
-							value={settings.current.obsWsIp}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.obsWsIp = target.value;
-							}}
-						/>
-						<label for="input-websocket-obs-port">port: </label>
-						<input
-							type="number"
-							class="input remove-arrow"
-							id="input-websocket-obs-port"
-							placeholder="4455"
-							value={settings.current.obsWsPort}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.obsWsPort = parseInt(target.value);
-							}}
-						/>
-						<label for="input-websocket-obs-pw">password: </label>
-						<input
-							type="password"
-							class="input"
-							id="input-websocket-obs-pw"
-							value={settings.current.obsWsPw}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.obsWsPw = target.value;
-							}}
-						/>
-						<button
-							class="button button-unselected hover:button-selected"
-							onclick={() => {
-								if (settings.current.obsWsPw) {
-									obsConnect(
-										settings.current.obsWsIp,
-										settings.current.obsWsPort,
-										settings.current.obsWsPw
-									);
-								}
-							}}>connect</button
-						>
-						<div class="flex gap-2">
-							<p>status:</p>
-							<span class={feedStates[obsStatus.state].color}>
-								{feedStates[obsStatus.state].state}
-							</span>
-						</div>
-						{#if obsStatus.error}
-							<span class="col-span-full text-red-300">{obsStatus.error}</span>
-						{/if}
-					</div>
+					<ConnectionPanel
+						label="password"
+						id="input-websocket-obs-pw"
+						bind:value={settings.current.obsWsPw}
+						onconnect={() => {
+							if (settings.current.obsWsPw) {
+								obsConnect(
+									settings.current.obsWsIp,
+									settings.current.obsWsPort,
+									settings.current.obsWsPw
+								);
+							}
+						}}
+						state={obsStatus.state}
+						error={obsStatus.error}
+					>
+						{#snippet advanced()}
+							<div class="grid grid-cols-[max-content_1fr] items-center gap-x-2 gap-y-1">
+								<label for="input-websocket-obs">ip:</label>
+								<input
+									type="text"
+									class="input"
+									id="input-websocket-obs"
+									placeholder="localhost"
+									bind:value={settings.current.obsWsIp}
+								/>
+								<label for="input-websocket-obs-port">port:</label>
+								<input
+									type="number"
+									class="input remove-arrow"
+									id="input-websocket-obs-port"
+									placeholder="4455"
+									bind:value={settings.current.obsWsPort}
+								/>
+							</div>
+						{/snippet}
+					</ConnectionPanel>
 				{:else if openStatus === 'console'}
-					<div class="flex gap-2">
-						<label for="input-websocket">token: </label>
-						<input
-							type="password"
-							class="input w-60"
-							id="input-websocket"
-							value={settings.current.ksnWebSocketToken}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.ksnWebSocketToken = target.value;
-							}}
-						/>
-					</div>
-					<div class="flex gap-2">
-						<button class="button button-unselected hover:button-selected" onclick={connectConsole}
-							>connect</button
-						>
-						<div class="flex gap-2">
-							<p>status:</p>
-							<span class={feedStates[live.raceState].color}>
-								{feedStates[live.raceState].state}
-							</span>
-							{#if live.dummy}
-								<span class="text-ctp-yellow">(showing dummy data)</span>
-							{/if}
-						</div>
-					</div>
-					<div class="flex justify-between gap-2">
-						{#if poolImport === 'importing'}
-							<span class="text-yellow-200">importing console pools...</span>
-						{:else if poolImport}
-							<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
-								imported {poolImport.players} players and {poolImport.maps} maps from the console
-							</span>
-						{:else}
-							<span></span>
+					<ConnectionPanel
+						label="token"
+						id="input-websocket"
+						bind:value={settings.current.ksnWebSocketToken}
+						onconnect={connectConsole}
+						state={live.raceState}
+						note={live.dummy ? 'showing dummy data' : undefined}
+					>
+						<!-- the pool import shares the console's dot, so its errors show here too -->
+						{#if poolImport && poolImport !== 'importing'}
+							{#each poolImport.errors as err, i (i)}
+								<span class="text-red-300">pool import failed: {err}</span>
+							{/each}
 						{/if}
-						<button
-							class="button-remove"
-							title="import the event's players and maps from the console pools again"
-							disabled={poolImport === 'importing'}
-							onclick={importPools}>re-import</button
-						>
-					</div>
-					{#if poolImport && poolImport !== 'importing'}
-						{#each poolImport.errors as err, i (i)}
-							<span class="text-red-300">{err}</span>
-						{/each}
-					{/if}
-					<div class="flex gap-2">
-						<label for="input-console-url">console url: </label>
-						<input
-							type="text"
-							class="input w-60"
-							id="input-console-url"
-							placeholder="https://console.jumpfortress.tf"
-							value={settings.current.consoleBaseUrl}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.consoleBaseUrl = target.value.trim();
-							}}
-						/>
-					</div>
-					<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
-					<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
-					<Checkbox setting="logWsMessages" desc="log websocket messages" />
+						{#snippet advanced()}
+							<div class="flex justify-between gap-2">
+								{#if poolImport === 'importing'}
+									<span class="text-yellow-200">importing console pools...</span>
+								{:else if poolImport}
+									<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
+										imported {poolImport.players} players and {poolImport.maps} maps
+									</span>
+								{:else}
+									<span></span>
+								{/if}
+								<button
+									class="button-remove"
+									title="import the event's players and maps from the console pools again"
+									disabled={poolImport === 'importing'}
+									onclick={importPools}>re-import</button
+								>
+							</div>
+							<div class="grid grid-cols-[max-content_1fr] items-center gap-x-2">
+								<label for="input-console-url">console url:</label>
+								<input
+									type="text"
+									class="input"
+									id="input-console-url"
+									placeholder="https://console.jumpfortress.tf"
+									value={settings.current.consoleBaseUrl}
+									onchange={(e) => {
+										let target = e.target as HTMLInputElement;
+										settings.current.consoleBaseUrl = target.value.trim();
+									}}
+								/>
+							</div>
+							<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
+							<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
+							<Checkbox setting="logWsMessages" desc="log websocket messages" />
+						{/snippet}
+					</ConnectionPanel>
 				{:else if openStatus === 'relay'}
-					<div class="flex gap-2">
-						<label for="input-websocket-jf">token: </label>
-						<input
-							type="password"
-							class="input w-60
-              {jfRelayWs?.wsState === WebSocket.OPEN ? 'border-b-green-700' : ''}"
-							id="input-websocket-jf"
-							value={settings.current.jfRelayWebSocketToken}
-							onchange={(e) => {
-								let target = e.target as HTMLInputElement;
-								settings.current.jfRelayWebSocketToken = target.value.trim();
-							}}
-						/>
-					</div>
-					<div class="flex gap-2">
-						<button
-							class="button button-unselected hover:button-selected"
-							onclick={connectToJfRelay}>connect</button
-						>
-						<div class="flex gap-2">
-							<p>status:</p>
-							<span class={feedStates[relayState].color}>{feedStates[relayState].state}</span>
-						</div>
-					</div>
-					{#if error.invalidJfRelayToken.state}
-						<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
-					{/if}
+					<ConnectionPanel
+						label="token"
+						id="input-websocket-jf"
+						bind:value={settings.current.jfRelayWebSocketToken}
+						onconnect={connectToJfRelay}
+						state={relayState}
+						error={error.invalidJfRelayToken.state ? error.invalidJfRelayToken.msg : undefined}
+					/>
 				{/if}
 			</div>
 		{/if}
