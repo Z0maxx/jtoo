@@ -1,6 +1,4 @@
 <script lang="ts">
-	import kofi_symbol from '$lib/assets/kofi_symbol.svg';
-
 	import Accordion from '$lib/components/controls/Accordion.svelte';
 	import Checkbox from '$lib/components/controls/Checkbox.svelte';
 	import ConfirmButton from '$lib/components/controls/ConfirmButton.svelte';
@@ -190,14 +188,12 @@
 
 <!-- links -->
 <div class="absolute right-4 flex flex-row-reverse gap-1">
-	<a class="opacity-50 hover:opacity-100" href="https://ko-fi.com/mkgzr" target="_blank">
-		<img class="size-8" src={kofi_symbol} alt="" />
-	</a>
-	<a class="opacity-50 hover:opacity-100" href="https://ko-fi.com/itsmmarc" target="_blank">
-		<img class="size-8" src={kofi_symbol} alt="" />
-	</a>
 	<!-- svelte-ignore a11y_consider_explicit_label -->
-	<a class="opacity-50 hover:opacity-100" href="https://github.com/itsmmarc/jtoo" target="_blank">
+	<a
+		class="opacity-50 hover:opacity-100"
+		href="https://github.com/jump-fortress/jtoo"
+		target="_blank"
+	>
 		<span class="icon-[mdi--github] size-8 text-white"></span>
 	</a>
 </div>
