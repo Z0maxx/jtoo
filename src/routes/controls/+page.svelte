@@ -40,7 +40,7 @@
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
 	import { getMap, consoleBaseUrl } from '$lib/util';
-	import { onMount, setContext, untrack } from 'svelte';
+	import { onMount, setContext, tick, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
@@ -135,6 +135,80 @@
 		} as Error
 	});
 
+	// MARK: status bar
+	// which sections are open, so the status bar can open the one behind a status
+	let panels = $state({ items: true, connections: true, obs: false, ksn: false, relay: false });
+	type Panel = keyof typeof panels;
+
+	// 'off' is a connection that isn't set up, which isn't worth a red dot
+	type Status = FeedState | 'off';
+	const statusDots: Record<Status, string> = {
+		connecting: 'bg-yellow-200',
+		open: 'bg-green-300',
+		closed: 'bg-red-300',
+		off: 'bg-ctp-text/30'
+	};
+	const statuses = $derived<
+		{ label: string; status: Status; detail: string; panels: Panel[]; target: string }[]
+	>([
+		{
+			label: 'obs',
+			status: settings.current.obsWsPw ? obsStatus.state : 'off',
+			detail: obsStatus.error || (settings.current.obsWsPw ? '' : 'no password set'),
+			panels: ['connections', 'obs'],
+			target: 'panel-obs'
+		},
+		{
+			label: 'console',
+			status: settings.current.ksnWebSocketToken ? live.raceState : 'off',
+			detail: live.dummy
+				? 'showing dummy data'
+				: settings.current.ksnWebSocketToken
+					? ''
+					: 'no token set',
+			panels: ['connections', 'ksn'],
+			target: 'panel-ksn'
+		},
+		{
+			label: 'relay',
+			status: settings.current.jfRelayWebSocketToken ? relayState : 'off',
+			detail: error.invalidJfRelayToken.state
+				? error.invalidJfRelayToken.msg
+				: settings.current.jfRelayWebSocketToken
+					? ''
+					: 'no token set',
+			panels: ['connections', 'relay'],
+			target: 'panel-relay'
+		},
+		{
+			label: 'pools',
+			status:
+				poolImport === undefined
+					? 'off'
+					: poolImport === 'importing'
+						? 'connecting'
+						: poolImport.errors.length
+							? 'closed'
+							: 'open',
+			detail:
+				poolImport && poolImport !== 'importing'
+					? poolImport.errors.join(', ') || `${poolImport.players} players, ${poolImport.maps} maps`
+					: '',
+			panels: ['items'],
+			target: 'panel-items'
+		}
+	]);
+	const statusText: Record<Status, string> = {
+		...Object.fromEntries(Object.entries(feedStates).map(([k, v]) => [k, v.state])),
+		off: 'not set up'
+	} as Record<Status, string>;
+
+	async function showPanel(open: Panel[], target: string) {
+		for (const p of open) panels[p] = true;
+		await tick();
+		document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
 	onMount(() => {
 		ksnWs = new KSNWebSocketController('ksnWs');
 		// settings saved before this option existed don't have it; it defaults to on
@@ -199,6 +273,24 @@
 </div>
 
 {#if ksnWs}
+	<!-- status bar: every connection at a glance, and a click away from its settings -->
+	<nav
+		class="sticky top-[env(safe-area-inset-top,0px)] z-10 -mx-4 flex w-[calc(100%+2rem)] flex-wrap justify-center gap-x-4 gap-y-1 self-center bg-obs-content px-4 py-1"
+		aria-label="connection status"
+	>
+		{#each statuses as s (s.label)}
+			<button
+				class="flex items-center gap-1.5 opacity-80 hover:opacity-100"
+				title="{s.label}: {statusText[s.status]}{s.detail ? ` (${s.detail})` : ''}"
+				onclick={() => showPanel(s.panels, s.target)}
+			>
+				<span class="size-2.5 rounded-full {statusDots[s.status]}" aria-hidden="true"></span>
+				<span>{s.label}</span>
+				<span class="sr-only">{statusText[s.status]}</span>
+			</button>
+		{/each}
+	</nav>
+
 	<!-- presets -->
 	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
 		<ConfirmButton
@@ -214,7 +306,7 @@
 	</div>
 
 	<!-- items -->
-	<Accordion title="items">
+	<Accordion title="items" id="panel-items" bind:open={panels.items}>
 		<div class="flex justify-between gap-2">
 			{#if poolImport === 'importing'}
 				<span class="text-yellow-200">importing console pools...</span>
@@ -346,9 +438,9 @@
 		{/if}
 	</Accordion>
 
-	<Accordion title="connections">
+	<Accordion title="connections" bind:open={panels.connections}>
 		<section class="ml-5 w-[calc(100%-1.25rem)]">
-			<Accordion title="obs websocket" defaultstate="closed">
+			<Accordion title="obs websocket" id="panel-obs" bind:open={panels.obs}>
 				<div class="grid grid-cols-[auto_auto]">
 					<label for="input-websocket-obs">ip: </label>
 					<input
@@ -408,7 +500,7 @@
 					{/if}
 				</div>
 			</Accordion>
-			<Accordion title="ksn server websocket" defaultstate="closed">
+			<Accordion title="ksn server websocket" id="panel-ksn" bind:open={panels.ksn}>
 				<div class="flex gap-2">
 					<label for="input-websocket">token: </label>
 					<input
@@ -454,7 +546,7 @@
 				<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
 				<Checkbox setting="logWsMessages" desc="log websocket messages" />
 			</Accordion>
-			<Accordion title="jf relay plugin websocket" defaultstate="closed">
+			<Accordion title="jf relay plugin websocket" id="panel-relay" bind:open={panels.relay}>
 				<div class="flex gap-2">
 					<label for="input-websocket-jf">token: </label>
 					<input
