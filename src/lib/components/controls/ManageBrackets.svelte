@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ConfirmButton from './ConfirmButton.svelte';
 	import { items, overlay } from '$lib/storage.svelte';
 	import type { SavedBracket } from '$lib/types.svelte';
 	import EditBracket from './EditBracket.svelte';
@@ -19,7 +20,7 @@
 			<div class="opacity-60">{bracket.size} players</div>
 			<div><EditBracket {bracket} /></div>
 			<div>
-				<button class="button-remove" onclick={() => deleteBracket(bracket)}>delete</button>
+				<ConfirmButton onconfirm={() => deleteBracket(bracket)}>delete</ConfirmButton>
 			</div>
 		{/each}
 	</div>

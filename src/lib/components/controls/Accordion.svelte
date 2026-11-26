@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 
 	type Props = {
@@ -10,21 +10,22 @@
 
 	let { title, children, defaultstate = 'open' }: Props = $props();
 
-	let show: boolean = $state(defaultstate == 'open' ? true : false);
+	let open = $state(untrack(() => defaultstate === 'open'));
 </script>
 
 <div class="relative w-full max-w-lg self-center">
 	<button
 		class="w-full text-left"
+		aria-expanded={open}
 		onclick={() => {
-			show = !show;
+			open = !open;
 		}}
 	>
-		<span class="align-middle {show ? 'icon-[mdi--chevron-down]' : 'icon-[mdi--chevron-right]'}"
+		<span class="align-middle {open ? 'icon-[mdi--chevron-down]' : 'icon-[mdi--chevron-right]'}"
 		></span>
 		<span>{title}</span></button
 	>
-	{#if show}
+	{#if open}
 		<div class="mb-2 flex flex-col gap-1" transition:slide>
 			{@render children()}
 		</div>

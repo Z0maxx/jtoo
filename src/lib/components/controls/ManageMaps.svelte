@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ConfirmButton from './ConfirmButton.svelte';
 	import { items } from '$lib/storage.svelte';
 	import { TFMap } from '$lib/types.svelte';
 	import PopOver from './PopOver.svelte';
@@ -27,7 +28,7 @@
 				</div>
 				<div>{map.fileName}</div>
 				<div><EditMap {map} /></div>
-				<div><button class="button-remove" onclick={() => deleteMap(map)}>delete</button></div>
+				<div><ConfirmButton onconfirm={() => deleteMap(map)}>delete</ConfirmButton></div>
 			{/if}
 		{/each}
 	</div>
