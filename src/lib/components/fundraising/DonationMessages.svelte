@@ -93,9 +93,7 @@
         {donation.id === replaced ? 'text-transparent' : ''}"
 		>
 			{#if donation.id !== ''}
-				<div class="flex items-center gap-1 text-xl">
-					<span>{donation.name ?? 'Anonymous'}</span>
-				</div>
+				<span class="max-w-full overflow-hidden truncate text-xl">{donation.name ?? 'Anonymous'}</span>
 				<div>${donation.amount}</div>
 				<div class="max-w-full truncate overflow-hidden text-wrap">
 					{donation.message}
