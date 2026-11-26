@@ -129,13 +129,10 @@
 			: { A: noPlayer, B: noPlayer }
 	);
 
-	// the round and series length belong to the match, so they only show once a session starts.
-	// the round name set on the console's picks and bans wins over the overlay's stage
+	// the stage and series length belong to the match, so they only show once a session starts
 	let matchTag = $derived(
 		session
-			? [session.roundName || overlay.current.stage, `Bo${session.config.seriesLength}`]
-					.filter(Boolean)
-					.join(' · ')
+			? [overlay.current.stage, `Bo${session.config.seriesLength}`].filter(Boolean).join(' · ')
 			: ''
 	);
 

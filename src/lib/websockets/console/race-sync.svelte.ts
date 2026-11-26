@@ -15,7 +15,7 @@ const STEAM_BATCH = 100;
  * map being played are fetched from Steam and Tempus when JTOO doesn't know them yet, for
  * anyone or anything outside the imported console pools. The stage and map labels follow the console too,
  * unless that's turned off in the controls, and a duel race selects its two racers as player A
- * and B.
+ * and B. The picks and bans' round name is added as a stage and selected as well.
  *
  * Call it once during component initialisation, on the one page that should do this work
  * (the overlay), so other pages don't repeat the requests.
@@ -45,6 +45,29 @@ export function syncWithRace(live: ConsoleLive, pickSession: () => PickSession |
 			selectedFor = syncDuelPlayers(race, pickSession(), selectedFor);
 		});
 	});
+
+	// the round name set on the console's picks and bans becomes a stage and is selected. Like the
+	// race's stage it's only selected when it changes, so picking another stage in the controls sticks
+	let appliedRound: string | null | undefined;
+	$effect(() => {
+		const roundName = pickSession()?.roundName || null;
+		if (live.dummy) return;
+
+		untrack(() => {
+			if (roundName === appliedRound) return;
+			appliedRound = roundName;
+			// undefined on settings saved before this option existed, which means on
+			if (roundName && settings.current.followConsoleStageMap !== false) selectStage(roundName);
+		});
+	});
+}
+
+// adds the stage to the controls' list when it isn't there yet, and shows it
+function selectStage(stage: string) {
+	if (!items.current.stages.includes(stage)) {
+		items.current.stages = [...items.current.stages, stage];
+	}
+	overlay.current.stage = stage;
 }
 
 function syncPlayers(race: RaceSnapshot, requested: Set<SteamID3>) {
@@ -94,12 +117,7 @@ function syncLabels(
 	// undefined on settings saved before this option existed, which means on
 	if (settings.current.followConsoleStageMap === false) return { stage, map };
 
-	if (stage && stage !== applied?.stage) {
-		if (!items.current.stages.includes(stage)) {
-			items.current.stages = [...items.current.stages, stage];
-		}
-		overlay.current.stage = stage;
-	}
+	if (stage && stage !== applied?.stage) selectStage(stage);
 	if (map && map !== applied?.map) {
 		overlay.current.map = map;
 	}
