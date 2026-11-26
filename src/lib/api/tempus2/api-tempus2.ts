@@ -3,20 +3,29 @@ import { Player, TFMap } from '$lib/types.svelte';
 import { Steam } from '../steam/api-steam';
 import _ from 'underscore';
 import { TempusPlaza } from '../tempusplaza/api-tempusplaza';
+import { createRateLimitedApi } from '../rate-limited-api';
 
-// TODO - rate limit using zomaxx's implementation on DWB branch
 export namespace Tempus2 {
 	// Tempus2 API Interfaces
 	// https://tempus2.xyz/apidocs/
 	// https://tempus2.xyz/api/v0
 	export const Endpoint = 'https://tempus2.xyz/api/v0';
 
+	// the docs say clients are safe from rate limits at 1 request a second, and 429s carry a
+	// Retry-After the queue waits out. a map's full records list is large, so requests get
+	// longer than the default to finish before they're retried
+	const fetchTempus = createRateLimitedApi({
+		baseUrl: Endpoint,
+		defaultTimeoutSeconds: 1,
+		requestTimeoutSeconds: 30
+	});
+
 	// MARK: Functions
 	export async function fetchPlayerByTempusID(id: number) {
 		let player = new Player();
 
-		const endpoint = `${Tempus2.Endpoint}/players/id/${id}/stats`;
-		const response = await fetch(endpoint);
+		const endpoint = `/players/id/${id}/stats`;
+		const response = await fetchTempus(endpoint);
 		let data: Tempus2.Error | Tempus2.PlayerStats = await response.json();
 
 		if ('code' in data && data.code == 404) {
@@ -90,8 +99,8 @@ export namespace Tempus2 {
 	export async function fetchMapByName(name: string) {
 		let map = new TFMap();
 
-		const endpoint = `${Tempus2.Endpoint}/maps/name/${name}/fullOverview2`;
-		const response = await fetch(endpoint);
+		const endpoint = `/maps/name/${name}/fullOverview2`;
+		const response = await fetchTempus(endpoint);
 		let data: Tempus2.Error | Tempus2.MapFullOverview2 = await response.json();
 
 		if ('code' in data && data.code == 404) {
@@ -121,8 +130,8 @@ export namespace Tempus2 {
 	}
 
 	export async function fetchMapPrs(map: TFMap) {
-		const endpoint = `${Tempus2.Endpoint}/zones/id/${map.mapZoneId}/records/list?limit=0`;
-		const response = await fetch(endpoint);
+		const endpoint = `/zones/id/${map.mapZoneId}/records/list?limit=0`;
+		const response = await fetchTempus(endpoint);
 		let data: Tempus2.Error | Tempus2.MapRecordList = await response.json();
 
 		if ('code' in data && data.code == 404) {
@@ -151,8 +160,8 @@ export namespace Tempus2 {
 	}
 
 	export async function searchPlayersAndMaps(query: string) {
-		const endpoint = `${Tempus2.Endpoint}/search/playersAndMaps/${query}`;
-		const response = await fetch(endpoint);
+		const endpoint = `/search/playersAndMaps/${query}`;
+		const response = await fetchTempus(endpoint);
 		let data: Tempus2.Error | Tempus2.SearchResults = await response.json();
 
 		data = data as Tempus2.SearchResults;

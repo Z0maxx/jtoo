@@ -13,6 +13,9 @@ type Config = {
 	baseUrl: string;
 	defaultTimeoutSeconds: number;
 	rateLimitedPerEndpoint?: boolean;
+	// how long one request may take before it's cancelled and retried; raise it for slow,
+	// large responses
+	requestTimeoutSeconds?: number;
 };
 
 const maxTimeout = 60 * 30 * 1000;
@@ -22,9 +25,11 @@ const maxRateLimitAttempts = 5;
 export function createRateLimitedApi({
 	baseUrl,
 	defaultTimeoutSeconds,
-	rateLimitedPerEndpoint = false
+	rateLimitedPerEndpoint = false,
+	requestTimeoutSeconds = 5
 }: Config) {
 	const defaultTimeout = defaultTimeoutSeconds * 1000;
+	const requestTimeout = requestTimeoutSeconds * 1000;
 	const queues = new Map<string, FetchQueueItem[]>();
 	const processing = new Set<string>();
 
@@ -68,7 +73,7 @@ export function createRateLimitedApi({
 					}
 
 					const res = await fetch(baseUrl + item.endpoint, {
-						signal: AbortSignal.timeout(5000),
+						signal: AbortSignal.timeout(requestTimeout),
 						headers
 					});
 

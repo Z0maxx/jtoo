@@ -31,6 +31,7 @@ export class Player {
 	rank: Record<TFClass, Rank> | undefined = undefined;
 	TTs: Record<TFClass, number> | undefined = undefined;
 	WRs: Record<TFClass, number> | undefined = undefined;
+	tempusFetchedAt: number = 0; // when rank, TTs and WRs were last fetched; 0 is never
 	bestRun: string = '';
 	note: string = '';
 	favouriteMap: string = '';
@@ -54,6 +55,9 @@ export class TFMap {
 		demoman: undefined
 	};
 	runs: Omit<Record<TFClass, MapRun[]>, 'overall'> = { soldier: [], demoman: [] };
+	// when the pool import last fetched runs, and the tempus ids it kept them for
+	runsFetchedAt: number = 0;
+	runsFetchedFor: TempusID[] = [];
 
 	imageURL?: string = '';
 

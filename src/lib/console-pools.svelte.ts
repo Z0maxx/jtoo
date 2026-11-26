@@ -1,6 +1,6 @@
 import { items, pool, settings } from './storage.svelte';
 import { consoleBaseUrl } from './util';
-import { Player, TFMap, type MapFileName, type SteamID3 } from './types.svelte';
+import { Player, TFMap, type MapFileName, type MapRun, type SteamID3 } from './types.svelte';
 import { Tempus2 } from './api/tempus2/api-tempus2';
 import jumpOdysseyRc3 from './assets/jump_odyssey_rc3.png';
 
@@ -51,8 +51,10 @@ async function getJson<T>(path: string): Promise<T> {
 export async function importConsolePools(): Promise<PoolImportResult> {
 	const result: PoolImportResult = { players: 0, maps: 0, errors: [] };
 
+	let poolPlayers: ConsolePlayer[] = [];
 	try {
-		result.players = await importPlayerPool(DEFAULT_PLAYER_POOL_ID);
+		poolPlayers = await importPlayerPool(DEFAULT_PLAYER_POOL_ID);
+		result.players = poolPlayers.length;
 	} catch (e) {
 		result.errors.push(`player pool: ${e instanceof Error ? e.message : e}`);
 	}
@@ -62,11 +64,15 @@ export async function importConsolePools(): Promise<PoolImportResult> {
 		result.errors.push(`map pool: ${e instanceof Error ? e.message : e}`);
 	}
 
+	// in the background, so the import isn't held up by Tempus lookups
+	fillTempusData(poolPlayers);
+
 	for (const error of result.errors) console.error('console pools:', error);
 	return result;
 }
 
-async function importPlayerPool(poolId: string): Promise<number> {
+/** The pool's players, added to JTOO or updated. */
+async function importPlayerPool(poolId: string): Promise<ConsolePlayer[]> {
 	const [{ groups }, { players }] = await Promise.all([
 		getJson<{ groups: ConsolePlayerGroup[] }>('/api/player-groups'),
 		getJson<{ players: ConsolePlayer[] }>('/api/players')
@@ -98,28 +104,42 @@ async function importPlayerPool(poolId: string): Promise<number> {
 
 	const ids = poolPlayers.map((p) => Number(p.steamAccountId));
 	pool.current = { ...pool.current, players: ids, playerPoolName: group.name };
-
-	// in the background, so the import isn't held up by a Tempus lookup per player
-	fillTempusStats(poolPlayers);
-	return ids.length;
+	return poolPlayers;
 }
 
 // bumped by each import, so a re-import stops the previous one's lookups instead of
 // running alongside them
 let tempusRun = 0;
 
+// player stats and map PRs fetched more recently than this are kept as they are, so reloading
+// the controls doesn't ask Tempus for everything again
+const TEMPUS_REFRESH_MS = 6 * 60 * 60 * 1000;
+const isFresh = (fetchedAt: number | undefined) =>
+	!!fetchedAt && Date.now() - fetchedAt < TEMPUS_REFRESH_MS;
+
 /**
- * Refreshes the pool players' Tempus ranks, WRs and TTs on every import. Players JTOO has a
- * Tempus ID for are fetched directly; the rest are found by Steam ID first. One player at a
- * time, to go easy on Tempus.
+ * Refreshes what JTOO keeps from Tempus on every import: the pool players' stats, then the
+ * pool maps' PRs. The PRs come second because they're matched to players by the Tempus IDs
+ * the stats lookup finds.
  */
-async function fillTempusStats(poolPlayers: ConsolePlayer[]) {
+async function fillTempusData(poolPlayers: ConsolePlayer[]) {
 	const run = ++tempusRun;
+	await fillTempusStats(poolPlayers, run);
+	if (run === tempusRun) await fillMapPrs(run);
+}
+
+/**
+ * The pool players' Tempus ranks, WRs and TTs, unless fetched recently. Players JTOO has a
+ * Tempus ID for are fetched directly; the rest are found by Steam ID first. The Tempus calls
+ * are queued and paced by the API clients.
+ */
+async function fillTempusStats(poolPlayers: ConsolePlayer[], run: number) {
 	for (const cp of poolPlayers) {
 		if (run !== tempusRun) return;
 		const steamID3: SteamID3 = Number(cp.steamAccountId);
 		const existing = items.current.players.find((p) => p.steamID3 == steamID3);
 		if (!existing) continue;
+		if (existing.tempusID && isFresh(existing.tempusFetchedAt)) continue;
 
 		let stats: Player | null = null;
 		try {
@@ -150,9 +170,57 @@ async function fillTempusStats(poolPlayers: ConsolePlayer[]) {
 			tempusID: stats.tempusID,
 			rank: stats.rank,
 			WRs: stats.WRs,
-			TTs: stats.TTs
+			TTs: stats.TTs,
+			tempusFetchedAt: Date.now()
 		};
 		items.current.players = updated;
+	}
+}
+
+/**
+ * Each pool map's PRs for the player card scene's comparisons. Tempus lists every record on
+ * a map, so only the pool players' runs are kept, to keep the saved maps small. A map fetched
+ * recently is skipped, unless a pool player has a Tempus ID it wasn't fetched for.
+ */
+async function fillMapPrs(run: number) {
+	const tempusIDs = new Set(
+		items.current.players
+			.filter((p) => pool.current.players?.includes(p.steamID3))
+			.map((p) => p.tempusID)
+			.filter((id): id is number => !!id)
+	);
+	if (!tempusIDs.size) return;
+
+	for (const name of pool.current.maps ?? []) {
+		if (run !== tempusRun) return;
+		const map = items.current.maps.find((m) => m.fileName == name);
+		// a map Tempus doesn't know has no zone to list records for
+		if (!map?.mapZoneId) continue;
+		const fetchedFor = new Set(map.runsFetchedFor ?? []);
+		const covered = [...tempusIDs].every((id) => fetchedFor.has(id));
+		if (covered && isFresh(map.runsFetchedAt)) continue;
+
+		// fetched into a fresh list, since fetchMapPrs adds to the map's runs
+		const fetched = { ...map, runs: { soldier: [], demoman: [] } } as TFMap;
+		try {
+			await Tempus2.fetchMapPrs(fetched);
+		} catch (e) {
+			console.error(`console pools: tempus PRs for ${name} failed`, e);
+			continue;
+		}
+		if (run !== tempusRun) return;
+
+		const keep = (runs: MapRun[]) => runs.filter((r) => tempusIDs.has(r.tempusID));
+		items.current.maps = items.current.maps.map((m) =>
+			m.fileName == name
+				? {
+						...m,
+						runs: { soldier: keep(fetched.runs.soldier), demoman: keep(fetched.runs.demoman) },
+						runsFetchedAt: Date.now(),
+						runsFetchedFor: [...tempusIDs]
+					}
+				: m
+		);
 	}
 }
 

@@ -504,7 +504,7 @@
 			<input
 				type="number"
 				min="0"
-				class="input w-7 accent-ctp-lavender"
+				class="input remove-arrow w-7 accent-ctp-lavender"
 				bind:value={settings.current.fundraisingShowDonationSeconds}
 			/>
 			<span>seconds to show each donation for</span>
