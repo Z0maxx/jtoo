@@ -3,6 +3,7 @@
 
 	import Accordion from '$lib/components/controls/Accordion.svelte';
 	import Checkbox from '$lib/components/controls/Checkbox.svelte';
+	import ConfirmButton from '$lib/components/controls/ConfirmButton.svelte';
 	import ItemInput from '$lib/components/controls/ItemInput.svelte';
 	import RangeInput from '$lib/components/controls/RangeInput.svelte';
 	import RadioInputs from '$lib/components/controls/RadioInputs.svelte';
@@ -196,17 +197,16 @@
 {#if ksnWs}
 	<!-- presets -->
 	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
-		<button
-			class="button-remove"
-			onclick={() => {
+		<ConfirmButton
+			onconfirm={() => {
 				// in console time, so it compares with the race's own timestamps
 				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
-			}}>clear timers</button
+			}}>clear timers</ConfirmButton
 		>
-		<button class="button-remove" onclick={() => ksnWs!.clearPicksAndBans()}
-			>clear map picks and bans</button
+		<ConfirmButton onconfirm={() => ksnWs!.clearPicksAndBans()}
+			>clear map picks and bans</ConfirmButton
 		>
-		<button class="button-remove" onclick={resetVisualSettings}>reset visual settings</button>
+		<ConfirmButton onconfirm={resetVisualSettings}>reset visual settings</ConfirmButton>
 	</div>
 
 	<!-- items -->
