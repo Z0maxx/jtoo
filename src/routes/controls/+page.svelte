@@ -487,12 +487,6 @@
 	</Accordion>
 	<!-- settings -->
 	<Accordion title="settings" defaultstate="closed">
-		<button
-			class="button-remove absolute top-0 right-0"
-			onclick={() => {
-				settings.current = defaultSettings;
-			}}>reset to default</button
-		>
 		<span>font</span>
 		<RadioInputs opts={[...Fonts]} bind:value={settings.current.font} />
 		<span>mono font</span>
