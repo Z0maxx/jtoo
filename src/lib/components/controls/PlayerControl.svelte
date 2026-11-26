@@ -6,8 +6,11 @@
 	import { getContext, untrack } from 'svelte';
 	import RadioInputs from './RadioInputs.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
+	import { progressOrder, type JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 
 	let live: ConsoleLive = getContext('consoleLive');
+	let jfRelayWs: JFRelayWebSocket = getContext('jfRelayWs');
 
 	type Props = {
 		player: SteamID3 | undefined;
@@ -25,24 +28,54 @@
 	let { player, playerNum }: Props = $props();
 
 	// MARK: player list
-	// the race's players in leaderboard order, or the pool's players when there's no race or
-	// 'only list the race's players' is off.
+	// the race's players, or the pool's players when there's no race or 'only list the race's
+	// players' is off. How the race's players are ordered depends on its mode, see raceOrder.
 	// the order only refreshes every 10 seconds, and not while the pointer is over the list,
 	// so buttons don't move out from under a click
 	const REFRESH_MS = 10_000;
 
+	const byPosition = (board: LeaderboardEntry[]) =>
+		[...board].sort((a, b) => a.position - b.position).map((e) => e.steamId3);
+
+	function raceOrder(board: LeaderboardEntry[]): SteamID3[] {
+		switch (live.currentRace?.mode) {
+			// a duel's two players stay where they are
+			case 'duel': {
+				const onBoard = board.map((e) => e.steamId3);
+				const kept = players.filter((id) => onBoard.includes(id));
+				return [...kept, ...onBoard.filter((id) => !kept.includes(id))];
+			}
+			// finished players by position, then the running players by how far through the map
+			// they are, per the game servers' progress, which updates more often than positions do.
+			// anyone left follows by position
+			case 'mass-single': {
+				const ordered = byPosition(board);
+				const finished = board
+					.filter((e) => e.status === 'finished')
+					.sort((a, b) => a.position - b.position)
+					.map((e) => e.steamId3);
+				const running = progressOrder(jfRelayWs.progress).filter(
+					(id) => ordered.includes(id) && !finished.includes(id)
+				);
+				const rest = ordered.filter((id) => !finished.includes(id) && !running.includes(id));
+				return [...finished, ...running, ...rest];
+			}
+			default:
+				return byPosition(board);
+		}
+	}
+
 	function listOrder(): SteamID3[] {
 		const board = settings.current.followRacePlayers ? live.currentRace?.leaderboard : undefined;
-		const list = board?.length
-			? [...board].sort((a, b) => a.position - b.position).map((e) => e.steamId3)
-			: [...poolPlayers()];
+		const list = board?.length ? raceOrder(board) : [...poolPlayers()];
 		// keep the selected player visible even when they're not in the race
 		const selected = overlay.current.players[playerNum];
 		if (selected && !list.includes(selected)) list.push(selected);
 		return list;
 	}
 
-	let players: SteamID3[] = $state(untrack(listOrder));
+	let players: SteamID3[] = $state([]);
+	players = untrack(listOrder);
 	let hovered = $state(false);
 	let refreshMissed = false; // a refresh came due while hovered
 

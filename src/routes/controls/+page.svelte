@@ -49,7 +49,10 @@
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
 
 	let ksnWs: KSNWebSocketController | undefined = $state();
-	let jfRelayWs: JFRelayWebSocket | undefined = $state();
+	// the console's progress channel: the RTD relay, and the progress that sorts mass-single races'
+	// player lists. Created here, not on mount, so the player controls can get it from context
+	const jfRelayWs = new JFRelayWebSocket();
+	setContext('jfRelayWs', jfRelayWs);
 
 	// tell the relay who player A and B are whenever they change, whether picked here or selected
 	// by the overlay when a duel race starts; not on load, only on a change
@@ -144,11 +147,8 @@
 		importPools();
 		loadTournaments();
 
-		jfRelayWs = new JFRelayWebSocket();
-
 		if (settings.current.jfRelayWebSocketToken)
 			jfRelayWs.connect(settings.current.jfRelayWebSocketToken);
-		setContext('jfRelayWs', jfRelayWs);
 
 		if (settings.current.obsWsPw) {
 			obsConnect(settings.current.obsWsIp, settings.current.obsWsPort, settings.current.obsWsPw);
@@ -510,7 +510,10 @@
 			<span>seconds to show each donation for</span>
 		</label>
 		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
-		<Checkbox setting="selectDuelPlayers" desc="automatically select players on 1v1 race and map picks start" />
+		<Checkbox
+			setting="selectDuelPlayers"
+			desc="automatically select players on 1v1 race and map picks start"
+		/>
 	</Accordion>
 
 	<!-- overlay -->
