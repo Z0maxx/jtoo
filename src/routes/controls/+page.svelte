@@ -138,7 +138,7 @@
 
 	// MARK: status bar
 	// each status opens its connection's settings right below the bar, one at a time
-	type StatusId = 'obs' | 'console' | 'relay' | 'pools';
+	type StatusId = 'obs' | 'console' | 'relay';
 	let openStatus: StatusId | null = $state(null);
 
 	// 'off' is a connection that isn't set up, which isn't worth a red dot
@@ -149,6 +149,22 @@
 		closed: 'bg-red-300',
 		off: 'bg-ctp-text/30'
 	};
+	// the console is two things: the live race feed (needs the token) and the startup import of
+	// the event's player and map pools (public). its dot shows whichever is worse
+	const poolStatus = $derived<Status>(
+		poolImport === undefined
+			? 'off'
+			: poolImport === 'importing'
+				? 'connecting'
+				: poolImport.errors.length
+					? 'closed'
+					: 'open'
+	);
+	const statusRank: Record<Status, number> = { open: 0, off: 1, connecting: 2, closed: 3 };
+	const consoleStatus = $derived.by<Status>(() => {
+		const feed: Status = settings.current.ksnWebSocketToken ? live.raceState : 'off';
+		return statusRank[poolStatus] > statusRank[feed] ? poolStatus : feed;
+	});
 	const statuses = $derived<{ id: StatusId; status: Status; detail: string }[]>([
 		{
 			id: 'obs',
@@ -157,12 +173,21 @@
 		},
 		{
 			id: 'console',
-			status: settings.current.ksnWebSocketToken ? live.raceState : 'off',
-			detail: live.dummy
-				? 'showing dummy data'
-				: settings.current.ksnWebSocketToken
-					? ''
-					: 'no token set'
+			status: consoleStatus,
+			detail: [
+				live.dummy
+					? 'showing dummy data'
+					: settings.current.ksnWebSocketToken
+						? ''
+						: 'no token set',
+				poolStatus === 'closed' && poolImport && poolImport !== 'importing'
+					? `pool import failed: ${poolImport.errors.join(', ')}`
+					: poolStatus === 'connecting'
+						? 'importing pools'
+						: ''
+			]
+				.filter(Boolean)
+				.join('; ')
 		},
 		{
 			id: 'relay',
@@ -172,21 +197,6 @@
 				: settings.current.jfRelayWebSocketToken
 					? ''
 					: 'no token set'
-		},
-		{
-			id: 'pools',
-			status:
-				poolImport === undefined
-					? 'off'
-					: poolImport === 'importing'
-						? 'connecting'
-						: poolImport.errors.length
-							? 'closed'
-							: 'open',
-			detail:
-				poolImport && poolImport !== 'importing'
-					? poolImport.errors.join(', ') || `${poolImport.players} players, ${poolImport.maps} maps`
-					: ''
 		}
 	]);
 	const statusText: Record<Status, string> = {
@@ -373,6 +383,28 @@
 							{/if}
 						</div>
 					</div>
+					<div class="flex justify-between gap-2">
+						{#if poolImport === 'importing'}
+							<span class="text-yellow-200">importing console pools...</span>
+						{:else if poolImport}
+							<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
+								imported {poolImport.players} players and {poolImport.maps} maps from the console
+							</span>
+						{:else}
+							<span></span>
+						{/if}
+						<button
+							class="button-remove"
+							title="import the event's players and maps from the console pools again"
+							disabled={poolImport === 'importing'}
+							onclick={importPools}>re-import</button
+						>
+					</div>
+					{#if poolImport && poolImport !== 'importing'}
+						{#each poolImport.errors as err, i (i)}
+							<span class="text-red-300">{err}</span>
+						{/each}
+					{/if}
 					<div class="flex gap-2">
 						<label for="input-console-url">console url: </label>
 						<input
@@ -417,29 +449,6 @@
 					</div>
 					{#if error.invalidJfRelayToken.state}
 						<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
-					{/if}
-				{:else if openStatus === 'pools'}
-					<div class="flex justify-between gap-2">
-						{#if poolImport === 'importing'}
-							<span class="text-yellow-200">importing console pools...</span>
-						{:else if poolImport}
-							<span class={poolImport.errors.length ? 'text-red-300' : 'opacity-60'}>
-								imported {poolImport.players} players and {poolImport.maps} maps from the console
-							</span>
-						{:else}
-							<span></span>
-						{/if}
-						<button
-							class="button-remove"
-							title="import the event's players and maps from the console pools again"
-							disabled={poolImport === 'importing'}
-							onclick={importPools}>re-import</button
-						>
-					</div>
-					{#if poolImport && poolImport !== 'importing'}
-						{#each poolImport.errors as err, i (i)}
-							<span class="text-red-300">{err}</span>
-						{/each}
 					{/if}
 				{/if}
 			</div>
