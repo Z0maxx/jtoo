@@ -7,6 +7,7 @@
 	import { fade } from 'svelte/transition';
 	import { getContext } from 'svelte';
 	import { fitText } from '$lib/fit-text';
+	import type { Attachment } from 'svelte/attachments';
 	import { getMap, getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type {
@@ -16,8 +17,15 @@
 	} from '$lib/websockets/console/live-types';
 
 	const EVENT_NAME = 'Jump4Charity';
-	// as many rows as fit under the header at 1080p
-	const MAX_ROWS = 8;
+	const MAX_ROWS = 20;
+	// past this many rows the tables tighten their padding, so the text can stay bigger
+	const COMPACT_ROWS = 10;
+	// the tables are sized in em off their font size (px), which steps down from the max until
+	// every row fits
+	const TABLE_SIZE = { max: 16, min: 8 };
+	// the rounds list is sized to fit this many rounds (the RJR qualifier's 7), and only shrinks
+	// below that size when there are more
+	const ROUNDS_TO_FIT = 7;
 	const TOP_STANDINGS = 5;
 	// the console's points by placement (jf-console backend/live/standings.ts): 1st gets 40,
 	// 20th gets 1, 21st and below get 0. every result scores by its placement, DQs included
@@ -98,6 +106,40 @@
 			.map((s, i) => ({ position: i + 1, ...s }));
 	}
 
+	// steps the element's font size down from TABLE_SIZE.max until its content fits its height.
+	// with minRows, the size is instead the one that fits that many rows (or all of them, when
+	// there are more), so fewer rows keep that size rather than growing. its rows are its
+	// children, all the same height. anything else passed is only there to refit when it
+	// changes, eg: the rows or the font
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- only read by svelte, to refit
+	function fitRows(minRows: number, ..._refitOn: unknown[]): Attachment<HTMLElement> {
+		return (el) => {
+			const fit = () => {
+				let size = TABLE_SIZE.max;
+				el.style.fontSize = `${size}px`;
+				const row = el.firstElementChild as HTMLElement | null;
+				if (minRows && row && el.clientHeight) {
+					// rows and gaps scale with the font size, so measure them once and scale to fit
+					const rows = Math.max(minRows, el.children.length);
+					const gap = parseFloat(getComputedStyle(el).rowGap) || 0;
+					const needed = rows * row.offsetHeight + (rows - 1) * gap;
+					size = Math.max(TABLE_SIZE.min, Math.floor(((size * el.clientHeight) / needed) * 2) / 2);
+					el.style.fontSize = `${size}px`;
+				}
+				// borders and outlines don't scale, so step down any overflow they leave
+				while (el.scrollHeight > el.clientHeight && size > TABLE_SIZE.min) {
+					size -= 0.5;
+					el.style.fontSize = `${size}px`;
+				}
+			};
+			fit();
+			// its height comes from the scene, not its content, so refitting can't loop
+			const resize = new ResizeObserver(fit);
+			resize.observe(el);
+			return () => resize.disconnect();
+		};
+	}
+
 	// MARK: header
 	let title = $derived(
 		board === 'round' && round
@@ -116,28 +158,32 @@
 	// MARK: standings (A)
 	// the placement columns are the counted rounds; placements line up with tournament.rounds
 	let playedColumns = $derived(played.map((r) => rounds.indexOf(r)));
+	let standingsRows = $derived(tournament?.standings.slice(0, MAX_ROWS) ?? []);
+	let standingsCompact = $derived(standingsRows.length > COMPACT_ROWS);
+	// every column but the name is only as wide as its widest value, so names get the rest
 	let standingsColumns = $derived(
 		[
-			'4rem',
-			settings.current.enableAvatars ? '3.5rem' : '',
+			'3em',
+			avatarColumn(standingsCompact),
 			'minmax(0, 1fr)',
-			`repeat(${played.length}, 4.75rem)`,
-			'9.5rem'
+			`repeat(${played.length}, 3.25em)`,
+			isRjr ? '6em' : '8.5em'
 		]
 			.filter(Boolean)
 			.join(' ')
 	);
 
+	function avatarColumn(compact: boolean) {
+		if (!settings.current.enableAvatars) return '';
+		return compact ? '2.75em' : '3.5em';
+	}
+
 	// MARK: round results (B)
+	let resultRows = $derived(round?.results.slice(0, MAX_ROWS) ?? []);
+	let resultsCompact = $derived(resultRows.length > COMPACT_ROWS);
+	// the name takes what's left, so the wider time and gap columns narrow it here only
 	let resultColumns = $derived(
-		[
-			'4rem',
-			settings.current.enableAvatars ? '3.5rem' : '',
-			'minmax(0, 1fr)',
-			'15rem',
-			'12.5rem',
-			isRjr ? '7rem' : ''
-		]
+		['3em', avatarColumn(resultsCompact), 'minmax(0, 1fr)', '15em', '11em', isRjr ? '5.5em' : '']
 			.filter(Boolean)
 			.join(' ')
 	);
@@ -168,7 +214,6 @@
 			.map((s) => ({ ...s, rank: s.position as 1 | 2 | 3 }))
 	);
 	const podiumBlock = { 1: 'h-75', 2: 'h-55', 3: 'h-40' };
-	const podiumLabel = { 1: 'Champion', 2: 'Runner-up', 3: 'Third' };
 </script>
 
 <SceneFrame class="gap-10">
@@ -215,9 +260,13 @@
 
 <!-- MARK: A: standings -->
 {#snippet StandingsBoard()}
-	<div class="flex min-w-0 flex-1 flex-col gap-3">
+	{@const compact = standingsCompact}
+	<div
+		class="flex min-h-0 min-w-0 flex-1 flex-col gap-[0.75em] overflow-hidden"
+		{@attach fitRows(0, standingsRows, standingsColumns, settings.current.font)}
+	>
 		<div
-			class="grid items-center gap-x-5 px-6 text-[1.375rem] tracking-[0.16em] text-ctp-subtext0 uppercase"
+			class="grid items-center gap-x-[1em] px-[1.5em] text-ctp-subtext0 uppercase *:text-[1.375em] *:tracking-[0.16em]"
 			style:grid-template-columns={standingsColumns}
 		>
 			<span></span>
@@ -228,21 +277,23 @@
 			{/each}
 			<span class="text-right">{isRjr ? 'Points' : 'Avg'}</span>
 		</div>
-		<ul class="flex flex-col gap-1.5">
-			{#each tournament!.standings.slice(0, MAX_ROWS) as s (s.steamId3)}
+		<ul class="flex flex-col {compact ? 'gap-[0.125em]' : 'gap-[0.375em]'}">
+			{#each standingsRows as s (s.steamId3)}
 				<li
-					class="grid items-center gap-x-5 rounded-2xl px-6 py-2.5"
+					class="grid items-center gap-x-[1em] rounded-[1em] px-[1.5em] leading-tight
+                                        {compact ? 'py-[0.2em]' : 'py-[0.625em]'}"
 					style:grid-template-columns={standingsColumns}
 				>
-					{@render Position(s.position, 'text-[2.5rem]')}
-					{@render Avatar(s.steamId3, 'size-14 rounded-xl text-[1.75rem]')}
-					<span class="truncate text-[2.375rem] text-white">{playerLabel(s.steamId3)}</span>
+					{@render Position(s.position, 'text-[2.5em]')}
+					{@render Avatar(s.steamId3, compact)}
+					<span class="truncate text-[2.375em] text-white">{playerLabel(s.steamId3)}</span>
 					{#each playedColumns as column (column)}
 						{@const p = s.placements[column]}
 						<span class="flex justify-center">
 							<span
-								class="inline-flex h-11 min-w-12 items-center justify-center rounded-[0.625rem] px-1 text-[1.625rem] font-semibold {settings
-									.current.monoFont} {p === 1
+								class="inline-flex min-w-[1.85em] items-center justify-center rounded-[0.385em] px-[0.15em] text-[1.625em] leading-none font-semibold {compact
+									? 'h-[1.4em]'
+									: 'h-[1.7em]'} {settings.current.monoFont} {p === 1
 									? 'bg-ctp-lavender text-ctp-crust'
 									: p === null
 										? 'text-ctp-overlay0'
@@ -254,7 +305,7 @@
 						</span>
 					{/each}
 					<span
-						class="text-right text-[2.5rem] font-semibold text-ctp-lavender tabular-nums {settings
+						class="text-right text-[2.5em] font-semibold text-ctp-lavender tabular-nums {settings
 							.current.monoFont}"
 						style:filter={getFiltersStyle()}
 					>
@@ -265,26 +316,71 @@
 		</ul>
 	</div>
 
-	<!-- the rounds played so far, styled like the donations milestones -->
-	<div class="flex w-[33.75rem] shrink-0 flex-col gap-4">
+	{@render RoundsList()}
+{/snippet}
+
+<!-- the rounds played so far and who won them, as tiles styled like the map scene's cards -->
+{#snippet RoundsList()}
+	<div class="flex w-[28rem] shrink-0 flex-col gap-4">
 		<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Rounds</span>
-		<ul class="flex min-h-0 flex-col gap-1.5 overflow-hidden">
+		<!-- sized in em, shrinking from full size until every round fits -->
+		<ul
+			class="flex min-h-0 flex-1 flex-col gap-[0.75em] overflow-hidden"
+			{@attach fitRows(
+				ROUNDS_TO_FIT,
+				played,
+				settings.current.font,
+				settings.current.enableAvatars
+			)}
+		>
 			{#each played as r (r.roundIndex)}
 				{@const winner = winnerOf(r)}
-				<li class="flex items-center gap-5 px-4.5 py-2.5">
+				{@const image = getMap(r.map).imageURL}
+				{@const avatar = winner !== undefined ? getPlayer(winner).avatarURL : ''}
+				<!-- the outline is drawn inside, so the list's overflow doesn't clip it -->
+				<li
+					class="relative isolate flex shrink-0 items-center gap-[1em] overflow-hidden rounded-[1em] px-[1em] py-[0.75em] outline-2 -outline-offset-2 outline-ctp-lavender/25"
+				>
+					{#if image}
+						<img
+							in:fade
+							src={image}
+							alt=""
+							class="absolute inset-0 -z-10 size-full object-cover"
+							draggable="false"
+						/>
+					{/if}
+					<!-- dark under the text, fading out so the map shows on the right -->
+					<div
+						class="absolute inset-0 -z-10 bg-linear-to-r from-ctp-crust/90 via-ctp-crust/60 to-ctp-crust/10"
+					></div>
+					<!-- widths and gaps in each span's own em, so they follow its text size -->
 					<span
-						class="w-11 shrink-0 text-3xl font-semibold text-ctp-lavender {settings.current
-							.monoFont}"
+						class="w-[1.5em] shrink-0 text-center text-[1.875em] font-bold text-ctp-lavender
+                                                {settings.current.monoFont}"
 						style:filter={getFiltersStyle()}
 					>
 						{roundNo(r)}
 					</span>
-					<span class="flex min-w-0 flex-1 flex-col">
-						<span class="truncate text-3xl leading-tight text-white">{roundMap(r)}</span>
+					<span class="flex min-w-0 flex-1 flex-col items-start gap-[0.375em]">
+						<span class="w-full truncate text-[1.5em] leading-tight font-bold text-white uppercase">
+							{roundMap(r)}
+						</span>
+						<!-- the winner, in the map cards' pick badge -->
 						{#if winner !== undefined}
-							<span class="flex items-center gap-2 text-[1.375rem] leading-tight text-ctp-subtext0">
-								<span class="icon-[mdi--crown] shrink-0" aria-hidden="true"></span>
-								<span class="truncate">{playerLabel(winner)}</span>
+							<span
+								class="flex max-w-full items-center gap-[0.5em] rounded-[0.6em] bg-ctp-crust/85 py-[0.2em] pr-[0.7em] pl-[0.6em] text-[1.6em]"
+							>
+								<span class="icon-[mdi--crown] shrink-0 text-ctp-yellow" aria-hidden="true"></span>
+								{#if settings.current.enableAvatars && avatar}
+									<img
+										src={avatar}
+										alt=""
+										class="size-[1.6em] shrink-0 rounded-[0.4em] object-cover"
+										draggable="false"
+									/>
+								{/if}
+								<span class="truncate font-semibold text-white">{playerLabel(winner)}</span>
 							</span>
 						{/if}
 					</span>
@@ -298,9 +394,13 @@
 {#snippet RoundBoard(round: TournamentRound)}
 	{@const image = getMap(round.map).imageURL}
 	{@const standings = standingsThrough(round).slice(0, TOP_STANDINGS)}
-	<div class="flex min-w-0 flex-1 flex-col gap-3">
+	{@const compact = resultsCompact}
+	<div
+		class="flex min-h-0 min-w-0 flex-1 flex-col gap-[0.75em] overflow-hidden"
+		{@attach fitRows(0, resultRows, resultColumns, settings.current.font)}
+	>
 		<div
-			class="grid items-center gap-x-6 px-6 text-[1.375rem] tracking-[0.16em] text-ctp-subtext0 uppercase"
+			class="grid items-center gap-x-[1.25em] px-[1.5em] text-ctp-subtext0 uppercase *:text-[1.375em] *:tracking-[0.16em]"
 			style:grid-template-columns={resultColumns}
 		>
 			<span></span>
@@ -310,38 +410,40 @@
 			<span class="text-right">Gap</span>
 			{#if isRjr}<span class="text-right">Pts</span>{/if}
 		</div>
-		<ul class="flex flex-col gap-1.5">
-			{#each round.results.slice(0, MAX_ROWS) as entry, i (entry.steamId3)}
+		<ul class="flex flex-col {compact ? 'gap-[0.125em]' : 'gap-[0.375em]'}">
+			{#each resultRows as entry, i (entry.steamId3)}
 				{@const mono = settings.current.monoFont}
 				<li
-					class="relative isolate grid items-center gap-x-6 rounded-2xl px-6 py-2.5"
+					class="relative isolate grid items-center gap-x-[1.25em] rounded-[1em] px-[1.5em] leading-tight {compact
+						? 'py-[0.2em]'
+						: 'py-[0.625em]'}"
 					style:grid-template-columns={resultColumns}
 				>
 					{#if i === 0}
 						<!-- absolute, so it takes no grid cell -->
 						<div
-							class="absolute inset-0 -z-10 rounded-2xl bg-ctp-lavender/15 ring-2 ring-ctp-lavender/45 ring-inset"
+							class="absolute inset-0 -z-10 rounded-[1em] bg-ctp-lavender/15 ring-2 ring-ctp-lavender/45 ring-inset"
 							style:filter={getFiltersStyle()}
 						></div>
 					{/if}
-					{@render Position(entry.placement, 'text-[2.5rem]')}
-					{@render Avatar(entry.steamId3, 'size-14 rounded-xl text-[1.75rem]')}
-					<span class="truncate text-[2.375rem] text-white" class:font-bold={i === 0}>
+					{@render Position(entry.placement, 'text-[2.5em]')}
+					{@render Avatar(entry.steamId3, compact)}
+					<span class="truncate text-[2.375em] text-white" class:font-bold={i === 0}>
 						{playerLabel(entry.steamId3)}
 					</span>
 					<span
-						class="text-right text-[2.375rem] font-semibold tabular-nums {mono} {entry.prMs === null
+						class="text-right text-[2.375em] font-semibold tabular-nums {mono} {entry.prMs === null
 							? 'text-ctp-overlay0'
 							: 'text-white'}"
 					>
 						{entry.prMs === null ? 'DNF' : msToFormattedTime(entry.prMs)}
 					</span>
-					<span class="text-right text-3xl font-medium text-ctp-subtext0 tabular-nums {mono}">
+					<span class="text-right text-[1.875em] font-medium text-ctp-subtext0 tabular-nums {mono}">
 						{gap(entry, i)}
 					</span>
 					{#if isRjr}
 						<span
-							class="text-right text-[2.125rem] font-bold text-ctp-lavender tabular-nums {mono}"
+							class="text-right text-[2.125em] font-bold text-ctp-lavender tabular-nums {mono}"
 							style:filter={getFiltersStyle()}
 						>
 							{pointsFor(entry.placement) ? `+${pointsFor(entry.placement)}` : '0'}
@@ -353,7 +455,7 @@
 	</div>
 
 	<!-- the map, and the standings after this round -->
-	<div class="flex w-[33.75rem] shrink-0 flex-col gap-8">
+	<div class="flex w-[28rem] shrink-0 flex-col gap-8">
 		<div
 			class="relative h-75 shrink-0 overflow-hidden rounded-3xl bg-ctp-surface0 outline-4 outline-ctp-lavender"
 		>
@@ -450,40 +552,12 @@
 					>
 						{p.rank}
 					</span>
-					<span class="text-[1.375rem] font-bold tracking-[0.16em] text-white uppercase opacity-85">
-						{podiumLabel[p.rank]}
-					</span>
 				</div>
 			</div>
 		{/each}
 	</div>
 
-	<!-- who won each round -->
-	<div class="flex w-[35rem] shrink-0 flex-col justify-end gap-3">
-		<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Round winners</span>
-		<ol class="flex flex-col gap-0.5">
-			{#each played as r (r.roundIndex)}
-				{@const winner = winnerOf(r)}
-				<li class="flex items-baseline gap-4.5 px-4 py-1">
-					<span
-						class="w-10 shrink-0 text-2xl font-semibold text-ctp-lavender {settings.current
-							.monoFont}"
-						style:filter={getFiltersStyle()}
-					>
-						{roundNo(r)}
-					</span>
-					<span class="min-w-0 flex-1 truncate text-[1.625rem] text-ctp-subtext1">
-						{roundMap(r)}
-					</span>
-					{#if winner !== undefined}
-						<span class="shrink-0 text-[1.625rem] font-semibold text-white">
-							{playerLabel(winner)}
-						</span>
-					{/if}
-				</li>
-			{/each}
-		</ol>
-	</div>
+	{@render RoundsList()}
 {/snippet}
 
 <!-- MARK: shared -->
@@ -493,10 +567,12 @@
 	</span>
 {/snippet}
 
-<!-- a player's avatar, or their initial when JTOO has none -->
-{#snippet Avatar(steamId3: SteamID3, className: string)}
+<!-- a table row's avatar, or the player's initial when JTOO has none -->
+{#snippet Avatar(steamId3: SteamID3, compact: boolean)}
 	{#if settings.current.enableAvatars}
 		{@const player = getPlayer(steamId3)}
+		<!-- 2em of its own text: the avatar column's 2.75em or 3.5em of the table's -->
+		{@const className = `size-[2em] rounded-[0.43em] ${compact ? 'text-[1.375em]' : 'text-[1.75em]'}`}
 		{#if player.avatarURL}
 			<img
 				in:fade
