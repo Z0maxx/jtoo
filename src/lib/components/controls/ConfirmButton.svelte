@@ -36,16 +36,17 @@
 	$effect(() => disarm);
 </script>
 
+<!-- both labels share one grid cell, so the button is always as wide as the longer one and
+     doesn't resize (and move out from under the pointer) when it arms or disarms -->
 <button
-	class="{className} {armed ? 'text-ctp-red! underline' : ''}"
+	class="{className} inline-grid whitespace-nowrap {armed ? 'text-ctp-red! underline' : ''}"
 	{title}
 	{onclick}
 	onblur={disarm}
 	aria-live="polite"
 >
-	{#if armed}
-		click again to confirm
-	{:else}
+	<span class="[grid-area:1/1] {armed ? 'invisible' : ''}" aria-hidden={armed}>
 		{@render children()}
-	{/if}
+	</span>
+	<span class="[grid-area:1/1] {armed ? '' : 'invisible'}" aria-hidden={!armed}>confirm?</span>
 </button>
