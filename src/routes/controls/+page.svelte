@@ -62,11 +62,13 @@
 	setContext('jfRelayWs', jfRelayWs);
 
 	// tell the relay who player A and B are whenever they change, whether picked here or selected
-	// by the overlay when a duel race starts; not on load, only on a change
+	// by the overlay when a duel race or picks and bans starts. A new automatic selection is sent
+	// even when it's the players already selected, eg: the next game of a series, as someone may
+	// have spectated someone else in-game since. Not on load, only on a change
 	let relayedPlayers: string | undefined;
 	$effect(() => {
 		const players = [overlay.current.players[0], overlay.current.players[1]];
-		const key = JSON.stringify(players);
+		const key = JSON.stringify([players, overlay.current.autoSelectedBy]);
 		if (relayedPlayers !== undefined && key !== relayedPlayers) {
 			untrack(() => jfRelayWs?.broadcastSelectedPlayers(players));
 		}

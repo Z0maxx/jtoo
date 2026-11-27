@@ -5,6 +5,7 @@
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { DelayedPlayers } from '$lib/delayed-players.svelte';
+	import { isSingleRun } from './mini-leaderboard';
 
 	let live: ConsoleLive = getContext('consoleLive');
 	// the selected players, switched as late as the in-game spectator switches
@@ -29,10 +30,7 @@
 	// a single run race's players all start together and get one run each, so their timers always
 	// match: it shows one shared timer instead of each player's. It runs while anyone is running,
 	// then holds the longest run. A duel with no time limit is a single run duel
-	let singleRun = $derived.by(() => {
-		const race = live.currentRace;
-		return race?.mode === 'mass-single' || (race?.mode === 'duel' && race.window.endsAt === null);
-	});
+	let singleRun = $derived(isSingleRun(live.currentRace));
 	let sharedRun = $derived.by(() => {
 		const runs = (live.currentRace?.leaderboard ?? []).filter(
 			(e) => e.runStartedAt !== null && e.runStartedAt >= clearedAt

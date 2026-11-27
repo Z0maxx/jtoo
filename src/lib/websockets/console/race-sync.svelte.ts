@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import { items, overlay, settings } from '$lib/storage.svelte';
+import { autoSelectPlayers, items, overlay, settings } from '$lib/storage.svelte';
 import { Steam } from '$lib/api/steam/api-steam';
 import { Tempus2 } from '$lib/api/tempus2/api-tempus2';
 import type { MapFileName, SteamID3 } from '$lib/types.svelte';
@@ -33,6 +33,8 @@ export function syncWithRace(live: ConsoleLive, pickSession: () => PickSession |
 	// the duel race whose players were last selected, so they're only selected once per race and
 	// picking someone else in the controls sticks
 	let selectedFor: number | undefined;
+	// the duel race whose selection was sent to the relay again once it started racing
+	let resentFor: number | undefined;
 
 	$effect(() => {
 		// dummy data never changes JTOO's own state
@@ -43,7 +45,11 @@ export function syncWithRace(live: ConsoleLive, pickSession: () => PickSession |
 			syncPlayers(race, requestedPlayers);
 			syncMap(race, requestedMaps);
 			applied = syncLabels(race, applied);
+			const selectedBefore = selectedFor;
 			selectedFor = syncDuelPlayers(race, pickSession(), selectedFor);
+			// selected once already racing: in time for the spectator, so not sent again
+			if (selectedFor !== selectedBefore && racing(race)) resentFor = selectedFor;
+			resentFor = resendAtStart(race, selectedFor, resentFor);
 		});
 	});
 
@@ -77,8 +83,7 @@ export function syncWithRace(live: ConsoleLive, pickSession: () => PickSession |
 			const a = Steam.convertSteamId(session.playerA.steamId3, 'SteamID3') as SteamID3;
 			const b = Steam.convertSteamId(session.playerB.steamId3, 'SteamID3') as SteamID3;
 			requestPlayers([a, b], requestedPlayers);
-			overlay.current.players[0] = a;
-			overlay.current.players[1] = b;
+			autoSelectPlayers(a, b, `picks ${session.id}`);
 		});
 	});
 }
@@ -175,8 +180,35 @@ function syncDuelPlayers(
 		if (racers.includes(sessionA) && racers.includes(sessionB)) [a, b] = [sessionA, sessionB];
 	}
 
-	overlay.current.players[0] = a;
-	overlay.current.players[1] = b;
+	autoSelectPlayers(a, b, `race ${race.sessionId}`);
+	return race.sessionId;
+}
+
+const racing = (race: RaceSnapshot) =>
+	race.window.state === 'racing' || race.window.state === 'overtime';
+
+/**
+ * A duel's players are selected as soon as both are on the board, which can be before the race
+ * starts and they've spawned, too soon for the in-game spectator to follow them. So once the
+ * race is racing, the selection is made again, which sends it to the relay again; unless someone
+ * else has been picked in the controls since.
+ */
+function resendAtStart(
+	race: RaceSnapshot,
+	selectedFor: number | undefined,
+	resentFor: number | undefined
+) {
+	if (race.mode !== 'duel' || race.sessionId !== selectedFor || race.sessionId === resentFor) {
+		return resentFor;
+	}
+	if (!racing(race)) return resentFor;
+
+	// still the race's two racers, either way round, so nobody else has been picked since
+	const racers = race.leaderboard.map((e) => e.steamId3);
+	const [a, b] = overlay.current.players;
+	if (a !== undefined && b !== undefined && a !== b && racers.includes(a) && racers.includes(b)) {
+		autoSelectPlayers(a, b, `race ${race.sessionId} started`);
+	}
 	return race.sessionId;
 }
 

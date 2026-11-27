@@ -16,6 +16,7 @@
 	import { bracketMatchBetween } from '$lib/bracket-live.svelte';
 	import { bestOfOf, gameWins, playersOf, winsNeeded } from '$lib/Bracket.svelte';
 	import type { SteamID3 } from '$lib/types.svelte';
+	import { prSinceClear } from '$lib/components/match/timers-cleared';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -27,10 +28,12 @@
 	let shown: DelayedPlayers = getContext('overlayPlayers');
 
 	// the shown players' bracket match, for their games won: only longer than a best of 1, as
-	// that one's score would only ever be its winner
+	// that one's score would only ever be its winner, and not during a mass race, which isn't
+	// part of a match
 	const match = $derived(bracketMatchBetween(shown.players[0], shown.players[1]));
+	const massRace = $derived(!!live.currentRace && live.currentRace.mode !== 'duel');
 	const series = $derived.by(() => {
-		if (!match || bestOfOf(match.bracket, match.id) < 2) return undefined;
+		if (!match || massRace || bestOfOf(match.bracket, match.id) < 2) return undefined;
 		const [A, B] = playersOf(match.bracket, match.id);
 		const wins = gameWins(match.bracket, match.id);
 		return {
@@ -155,7 +158,8 @@
 	{@const avatarURL = player.avatarURL}
 	{@const tag = player.tag}
 	{@const name = player.name}
-	{@const entry = live.entryFor(steamID3)}
+	<!-- blank once 'clear timers' is pressed, until a new PR -->
+	{@const pr = prSinceClear(live.entryFor(steamID3), live.currentRace)}
 	<div class="relative z-10 flex h-full gap-4 {playerNum === 1 ? 'flex-row-reverse' : ''}">
 		<!-- flag -->
 		{#if settings.current.enableFlags && flag}
@@ -222,10 +226,10 @@
 				>
 					{#if settings.current.enablePRs}
 						<div class="flex gap-2">
-							{#if entry && entry.prMs !== null}
+							{#if pr !== null}
 								<span class="text-xl opacity-80 {settings.current.font}">pr</span>
 								<span class="text-3xl">
-									{msToFormattedTime(entry.prMs)}
+									{msToFormattedTime(pr)}
 								</span>
 							{/if}
 						</div>

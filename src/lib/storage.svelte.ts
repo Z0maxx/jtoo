@@ -117,6 +117,19 @@ export const settings = new PersistentState('settings', defaultSettings, 'localS
 // overlay state
 export const overlay = new PersistentState('overlay', defaultOverlay);
 
+/**
+ * Selects player A and B automatically (eg: at the start of a duel race), noting what selected
+ * them so the controls tell the relay even when they're already selected. One write, so the
+ * controls see the players and what selected them together, and send the relay one message.
+ */
+export function autoSelectPlayers(a: SteamID3, b: SteamID3, by: string) {
+	const current = overlay.current;
+	const players = [...current.players];
+	players[0] = a;
+	players[1] = b;
+	overlay.current = { ...current, players, autoSelectedBy: by };
+}
+
 // overlay items
 export const items = new PersistentState('items', defaultItems);
 

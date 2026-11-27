@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
 	import { settings } from '$lib/storage.svelte';
-	import { miniLeaderboardCleared } from './mini-leaderboard';
+	import { isSingleRun, showsMiniLeaderboard } from './mini-leaderboard';
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { LeaderboardEntry, RaceSnapshot } from '$lib/websockets/console/live-types';
@@ -40,10 +40,9 @@
 	const reached = (splits: (number | null)[]) => splits.filter((s) => s !== null).length;
 
 	let race = $derived(live.currentRace);
-	let cleared = $derived(miniLeaderboardCleared(race));
-	let singleRun = $derived(race?.mode === 'mass-single');
+	let singleRun = $derived(isSingleRun(race));
 
-	// single run races: finished players by position, then the running players by map progress,
+	// single run races (and single run duels): finished players by position, then the running players by map progress,
 	// then DNF. Players who haven't started are left out
 	function singleRunRows(race: RaceSnapshot): Row[] {
 		const board = race.leaderboard;
@@ -84,7 +83,7 @@
 		});
 	}
 
-	// time attack races (and duels): only players with a completed run, by position
+	// time attack races: only players with a completed run, by position
 	function timeAttackRows(race: RaceSnapshot): Row[] {
 		return race.leaderboard
 			.filter((e) => !isOut(e) && e.prMs !== null)
@@ -100,6 +99,9 @@
 	}
 
 	let rows = $derived(!race ? [] : singleRun ? singleRunRows(race) : timeAttackRows(race));
+	// a single run race has no times or gaps until someone finishes, so until then the progress
+	// bars take the column's space. A DNF shows as struck through, so it needs no column either
+	let showValues = $derived(!singleRun || rows.some((r) => r.entry.status === 'finished'));
 
 	function barColor(row: Row): string {
 		if (row.out) return 'bg-ctp-overlay0';
@@ -108,8 +110,8 @@
 	}
 </script>
 
-<!-- duels don't need a leaderboard -->
-{#if race && race.mode !== 'duel' && !cleared}
+<!-- not for time attack duels, see showsMiniLeaderboard -->
+{#if showsMiniLeaderboard(race)}
 	<section class="{styleClass} relative isolate flex flex-col px-4 pt-3 pb-3.5" transition:fade>
 		<!-- background -->
 		<div
@@ -123,7 +125,9 @@
 			style:filter={getFiltersStyle()}
 		>
 			<span>Leaderboard</span>
-			<span>{singleRun ? 'run / gap' : 'pr / gap'}</span>
+			{#if showValues}
+				<span transition:fade>{singleRun ? 'run / gap' : 'pr / gap'}</span>
+			{/if}
 		</div>
 		<div class="grid min-h-0 flex-1 grid-rows-8">
 			{#each rows as row, i (row.entry.steamId3)}
@@ -191,9 +195,11 @@
 				></div>
 			</div>
 		{/if}
-		<!-- time, gap or DNF -->
+		<!-- time, gap or DNF: shrinks away while there's none, so the bar grows into its space.
+             its gap stays, so the bar ends as far from the edge as the position starts -->
 		<span
-			class="w-27 shrink-0 text-right text-xl {settings.current.monoFont}"
+			class="shrink-0 overflow-hidden text-right text-xl whitespace-nowrap transition-[width,opacity] duration-500
+            {showValues ? 'w-27 opacity-100' : 'w-0 opacity-0'} {settings.current.monoFont}"
 			style:filter={getFiltersStyle()}
 		>
 			{row.value}

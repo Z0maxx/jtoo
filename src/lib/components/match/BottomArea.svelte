@@ -6,19 +6,17 @@
 	import FundraisingPanel from '$lib/components/fundraising/FundraisingPanel.svelte';
 	import MatchMapPicks from './MatchMapPicks.svelte';
 	import MiniLeaderboard from './MiniLeaderboard.svelte';
-	import { miniLeaderboardCleared } from './mini-leaderboard';
+	import { showsMiniLeaderboard } from './mini-leaderboard';
 
 	// the dual pov match scene's area under the povs: space for chat, the mini leaderboard, then
 	// donation messages, the fundraising totals and the map picks
 	// the fundraising side shows whenever an event is set
 	let eventSet = $derived(!!fundraisingState.current.eventUrl);
 
-	// duels don't show the leaderboard, and nor does a cleared one, so the fundraising side
-	// takes its space
+	// time attack duels don't show the leaderboard, and nor does a cleared one, so the
+	// fundraising side takes its space
 	let live: ConsoleLive = getContext('consoleLive');
-	let hideLeaderboard = $derived(
-		live.currentRace?.mode === 'duel' || miniLeaderboardCleared(live.currentRace)
-	);
+	let hideLeaderboard = $derived(!!live.currentRace && !showsMiniLeaderboard(live.currentRace));
 </script>
 
 <div class="flex min-h-0 w-full flex-1 gap-6 px-4 py-2">

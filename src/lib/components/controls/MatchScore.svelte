@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { overlay } from '$lib/storage.svelte';
 	import { BestOfs } from '$lib/types.svelte';
-	import { bracketMatchBetween } from '$lib/bracket-live.svelte';
+	import { bracketMatchBetween, deselectMatch } from '$lib/bracket-live.svelte';
 	import {
 		bestOfOf,
 		gameWins,
@@ -39,9 +39,17 @@
 		role="group"
 		aria-label="match score"
 	>
-		<span class="text-sm text-ctp-subtext0">
-			{[roundNameOf(match.bracket, match.id), match.bracket.name].filter(Boolean).join(' · ')}
-		</span>
+		<!-- the title centred, with deselect at the end of its row -->
+		<div class="relative flex w-full justify-center">
+			<span class="text-sm text-ctp-subtext0">
+				{[roundNameOf(match.bracket, match.id), match.bracket.name].filter(Boolean).join(' · ')}
+			</span>
+			<button
+				class="absolute top-0 right-0 button-link text-sm"
+				title="stop showing this match's score and live status, until it's made live again or its next race starts"
+				onclick={() => deselectMatch(match.bracket, match.id)}>deselect</button
+			>
+		</div>
 		<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
 			{@render Pips(sides[0], 'A', false)}
 			<div class="flex items-center gap-2">

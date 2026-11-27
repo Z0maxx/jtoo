@@ -215,6 +215,12 @@ export type Overlay = {
 	// a match picked as live by middle clicking it on the bracket scene (null: none is live),
 	// in place of the one the console's race is for. Cleared when the next bracket race starts
 	bracketLive?: { bracket: string; match: string | null };
+	// a match deselected in the controls: its score isn't shown for its players, until it's made
+	// live again or the next race for it starts
+	bracketDeselected?: { bracket: string; match: string };
+	// what last selected player A and B automatically, eg: 'race 12' or 'picks <id>', so the
+	// controls tell the relay again even when it selected the players already selected
+	autoSelectedBy?: string;
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
 	// console time of the last 'clear mini leaderboard'; a race that started earlier isn't listed

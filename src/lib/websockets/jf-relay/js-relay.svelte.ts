@@ -100,6 +100,12 @@ export function massSingleOrder(board: LeaderboardEntry[], progress: RelayProgre
 	return [...finished, ...running, ...rest];
 }
 
+export type LastSpectatorSelect = {
+	players: [SteamID3 | null, SteamID3 | null];
+	at: number; // epoch ms
+	sent: boolean; // false when the socket wasn't open, so it was dropped
+};
+
 export class JFRelayWebSocket {
 	private _ws: ProxyWebSocket | undefined;
 	private _unsubscribeState: (() => void) | undefined;
@@ -109,11 +115,14 @@ export class JFRelayWebSocket {
 	private _wsState: number;
 	// each game server's latest progress, by server code
 	private _progress: Record<string, RelayProgress>;
+	// the last players asked to be spectated, when, and whether it went out, for the controls
+	private _lastSelect: LastSpectatorSelect | undefined;
 
 	constructor() {
 		this._ws = undefined;
 		this._wsState = $state(WebSocket.CLOSED);
 		this._progress = $state({});
+		this._lastSelect = $state(undefined);
 	}
 
 	private onWsMessage(event: MessageEvent) {
@@ -220,17 +229,24 @@ export class JFRelayWebSocket {
 			type: 'spectator_select',
 			value: { playerA: playerA, playerB: playerB }
 		};
-		this.send(msg);
+		const sent = this.send(msg);
+		this._lastSelect = { players: [playerA, playerB], at: Date.now(), sent };
 	}
 
-	send(msg: JFRelayEvents) {
+	get lastSelect() {
+		return this._lastSelect;
+	}
+
+	/** Sends a message when the socket is open, and says whether it did. */
+	send(msg: JFRelayEvents): boolean {
 		const msgString = JSON.stringify(msg);
 
 		if (this._ws?.readyState === WebSocket.OPEN) {
 			this._ws.send(msgString);
-		} else {
-			console.warn('socket not open, dropping', msgString);
+			return true;
 		}
+		console.warn('socket not open, dropping', msgString);
+		return false;
 	}
 
 	addEventListener(

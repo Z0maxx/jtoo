@@ -11,6 +11,7 @@
 	import type { PoolImportResult } from '$lib/console-pools.svelte';
 	import type { ConsoleLive, FeedState } from '$lib/websockets/console/console-live.svelte';
 	import type { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import { playerLabel } from '$lib/util';
 
 	// the controls' sticky top bar: the title, every connection's status, and each connection's
 	// settings in a panel under it
@@ -283,6 +284,16 @@
 					state={relayState}
 					error={relayError}
 				>
+					<!-- the last players the relay was asked to spectate, to tell whether a pick reached it -->
+					{#if jfRelayWs.lastSelect}
+						{@const last = jfRelayWs.lastSelect}
+						<span class={last.sent ? 'opacity-60' : 'text-red-300'}>
+							last spectate: {last.players.map((p) => (p ? playerLabel(p) : 'none')).join(' vs ')}
+							at {new Date(last.at).toLocaleTimeString()}{last.sent
+								? ''
+								: ' (not sent: relay not connected)'}
+						</span>
+					{/if}
 					{#snippet advanced()}
 						<!-- the relay tells the game to spectate the picked players, which takes a moment -->
 						<RangeInput
