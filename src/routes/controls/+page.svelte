@@ -46,6 +46,7 @@
 	import { mapName } from '$lib/map-picks';
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
+	import { watchRtdDonations } from '$lib/fundraising-rtd';
 
 	type Error = { state: boolean; msg: string };
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
@@ -177,6 +178,12 @@
 
 		$effect(() => {
 			if (rtdEnabled) untrack(connectToJfRelay);
+		});
+
+		// donations roll RTD effects only from here, as there's only ever one controls page: run
+		// anywhere else as well, a donation could fire twice
+		$effect(() => {
+			if (rtdEnabled) return untrack(watchRtdDonations);
 		});
 
 		return () => live.close();
