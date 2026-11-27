@@ -69,7 +69,6 @@ export const defaultSettings: Settings = {
 };
 
 export const defaultOverlay: Overlay = {
-	bestOf: 3,
 	players: [undefined, undefined, undefined, undefined],
 	map: '',
 	stage: '',

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { overlay, items, settings } from '$lib/storage.svelte';
-	import { Player, type SteamID3 } from '$lib/types.svelte';
+	import type { SteamID3 } from '$lib/types.svelte';
 	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext, untrack } from 'svelte';
 	import PlayerList from './PlayerList.svelte';
@@ -12,7 +12,6 @@
 	let jfRelayWs: JFRelayWebSocket = getContext('jfRelayWs');
 
 	type Props = {
-		player: SteamID3 | undefined;
 		playerNum: 0 | 1 | 2 | 3;
 	};
 
@@ -24,7 +23,7 @@
 		return slotLabel[slot];
 	}
 
-	let { player, playerNum }: Props = $props();
+	let { playerNum }: Props = $props();
 
 	// MARK: player list
 	// the race's players, or the pool's players when there's no race or 'only list the race's
@@ -70,9 +69,7 @@
 	let nameFilter = $state('');
 	// every items.current read parses all of items (maps' PRs included) from storage, so the
 	// names are read once per change, not once per row, or rebuilding the lists takes seconds
-	const names = $derived(
-		new Map(items.current.players.map((p) => [p.steamID3, p.name] as const))
-	);
+	const names = $derived(new Map(items.current.players.map((p) => [p.steamID3, p.name] as const)));
 	const playerLabel = (sId3: SteamID3) => names.get(sId3) || `[U:1:${sId3}]`;
 	let shownPlayers = $derived.by(() => {
 		const query = nameFilter.trim().toLowerCase();

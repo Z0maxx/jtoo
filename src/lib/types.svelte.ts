@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { type Results } from './Bracket.svelte';
+import { type Games, type MatchBestOfs, type Results } from './Bracket.svelte';
 import type { Tempus2 } from './api/tempus2/api-tempus2';
 
 // MARK: Types
@@ -20,7 +20,6 @@ export type MapFileName = string;
 export class Player {
 	name: string = '';
 	division: Division | null = null;
-	score: number = 0;
 	tempusID: number | undefined = undefined;
 	steamID3: number = 0;
 	steamID: string = '';
@@ -84,17 +83,32 @@ export type BracketSize = (typeof BracketSizes)[number];
 export const Eliminations = ['double', 'single'] as const;
 export type Elimination = (typeof Eliminations)[number];
 
+// how many games each match is played over; the first to win most of them wins the match
+export const BestOfs = [1, 3, 5] as const;
+export type BestOf = (typeof BestOfs)[number];
+
 export type SavedBracket = {
 	id: string;
 	name: string;
 	size: BracketSize;
 	elimination?: Elimination; // double when missing, as brackets saved before it were
+	// matches changed from their format's best of (see Bracket.svelte.ts), eg: a best of 5 semi
+	bestOfs?: MatchBestOfs;
 	players: SteamID3[]; // seeding order: seed 1 first
 	results: Results;
+	games?: Games;
 };
 
 export function newBracket(): SavedBracket {
-	return { id: uuidv4(), name: '', size: 8, elimination: 'double', players: [], results: {} };
+	return {
+		id: uuidv4(),
+		name: '',
+		size: 8,
+		elimination: 'double',
+		players: [],
+		results: {},
+		games: {}
+	};
 }
 
 // MARK: Settings
@@ -192,7 +206,6 @@ export type Settings = {
 export type LeaderboardView = 'standings' | 'final' | number;
 
 export type Overlay = {
-	bestOf: number;
 	players: Array<SteamID3 | undefined>;
 	map: MapFileName;
 	stage: string;

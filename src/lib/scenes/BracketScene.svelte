@@ -1,7 +1,10 @@
 <script lang="ts">
 	import {
+		bestOfOf,
+		FORMAT_BEST_OF,
 		clearWinner,
 		formatOf,
+		gameWins,
 		playersOf,
 		setWinner,
 		winnerOf,
@@ -191,7 +194,7 @@
 			{#if saved}
 				<div in:fade>
 					<SceneTag class="px-6 text-3xl uppercase">
-						{saved.elimination ?? 'double'} Elim
+						{saved.elimination ?? 'double'} Elim · Bo{FORMAT_BEST_OF}
 					</SceneTag>
 				</div>
 			{/if}
@@ -294,10 +297,17 @@
 	{@const winner = winnerOf(saved!, match.id)}
 	{@const won: Slot | '' = !winner ? '' : winner == A ? 'A' : 'B'}
 	{@const isLive = liveId === match.id}
+	{@const wins = gameWins(saved!, match.id)}
+	<!-- a best of 1's score is just its winner, so it only shows for longer matches, once
+         they've started. A winner picked by hand, with no games played, shows no score -->
+	{@const showScore = bestOfOf(saved!, match.id) > 1 && (isLive || wins.A + wins.B > 0)}
+	<!-- the usual best of is in the header, so only matches played over another are tagged,
+         eg: the grand final -->
+	{@const ownBestOf = bestOfOf(saved!, match.id) != FORMAT_BEST_OF ? bestOfOf(saved!, match.id) : 0}
 	<div class="relative" {@attach watchMatch(match.id)}>
 		<div class="flex flex-col overflow-hidden rounded-2xl bg-ctp-crust/70">
-			{@render MatchPlayer(match.id, A, 'A', won)}
-			{@render MatchPlayer(match.id, B, 'B', won)}
+			{@render MatchPlayer(match.id, A, 'A', won, showScore ? wins.A : undefined)}
+			{@render MatchPlayer(match.id, B, 'B', won, showScore ? wins.B : undefined)}
 		</div>
 		<!-- the outline is its own layer, so the filters tint it without tinting the avatars -->
 		<div
@@ -305,6 +315,15 @@
                         {isLive ? 'outline-ctp-lavender' : 'outline-ctp-lavender/25'}"
 			style:filter={getFiltersStyle()}
 		></div>
+		{#if ownBestOf}
+			<span
+				transition:fade
+				class="absolute -top-3 left-4 rounded-md border-2 border-ctp-lavender bg-ctp-crust px-2 text-[0.9375rem] font-bold tracking-[0.14em] text-ctp-lavender"
+				style:filter={getFiltersStyle()}
+			>
+				BO{ownBestOf}
+			</span>
+		{/if}
 		{#if isLive}
 			<span
 				transition:fade
@@ -317,8 +336,15 @@
 	</div>
 {/snippet}
 
-<!-- click to set the winner, right click to clear it, middle click to make the match live -->
-{#snippet MatchPlayer(id: string, steamID3: SteamID3 | undefined, player: Slot, won: Slot | '')}
+<!-- click to set the winner, right click to start the match over (no winner or games), middle
+     click to make the match live -->
+{#snippet MatchPlayer(
+	id: string,
+	steamID3: SteamID3 | undefined,
+	player: Slot,
+	won: Slot | '',
+	score: number | undefined
+)}
 	{@const isWinner = won == player}
 	{@const isLoser = !!won && !isWinner}
 	{@const avatarURL = steamID3 ? getPlayer(steamID3).avatarURL : ''}
@@ -378,12 +404,26 @@
 			>
 				{playerLabel(steamID3)}
 			</span>
-			{#if isWinner}
+			<!-- {#if isWinner}
 				<span
 					in:fade={{ duration: 300 }}
 					class="icon-[mdi--crown] shrink-0 {size.crown} text-ctp-yellow"
 					aria-hidden="true"
 				></span>
+			{/if} -->
+			{#if score !== undefined}
+				<span
+					in:fade={{ duration: 300 }}
+					class="shrink-0 text-center {size.seed} font-bold {settings.current.monoFont}
+                                {isWinner
+						? 'text-ctp-lavender'
+						: isLoser
+							? 'text-ctp-overlay0'
+							: 'text-white'}"
+					style:filter={getFiltersStyle()}
+				>
+					{score}
+				</span>
 			{/if}
 		{:else}
 			<!-- waiting on an earlier match -->

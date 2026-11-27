@@ -40,8 +40,15 @@
 
 	// the players' order is the seeding, so any change to it starts the results over
 	function setPlayers(players: SteamID3[]) {
-		bracket = { ...bracket, players, results: {} };
+		bracket = { ...bracket, players, results: {}, games: {}, bestOfs: {} };
 		error = '';
+	}
+
+	// matches' own best ofs go too, as a new format or seeding can mean different matches
+	function clearResults() {
+		bracket.results = {};
+		bracket.games = {};
+		bracket.bestOfs = {};
 	}
 
 	function addPlayer(id: SteamID3) {
@@ -80,7 +87,7 @@
 	<section class="grid grid-cols-12 gap-2">
 		<label for="bracket-name" class="col-span-4">name</label>
 		<input
-			class="input col-span-8"
+			class="col-span-8 input"
 			type="text"
 			id="bracket-name"
 			placeholder="name"
@@ -103,7 +110,7 @@
 			<RadioInputs
 				opts={[...Eliminations]}
 				bind:value={() => bracket.elimination ?? 'double', (e) => (bracket.elimination = e)}
-				onchange={() => (bracket.results = {})}
+				onchange={clearResults}
 			/>
 		</div>
 
@@ -112,9 +119,9 @@
 		<DraggablePlayerList
 			bind:players={bracket.players}
 			class="col-span-full"
-			onchange={() => (bracket.results = {})}
+			onchange={clearResults}
 			onremove={() => {
-				bracket.results = {};
+				clearResults();
 				error = '';
 			}}
 		/>
@@ -123,7 +130,7 @@
 		{#if bracket.players.length < bracket.size}
 			<label for="bracket-search" class="col-span-4">search players</label>
 			<input
-				class="input col-span-8"
+				class="col-span-8 input"
 				type="text"
 				id="bracket-search"
 				placeholder="name"
@@ -141,7 +148,7 @@
 					{/if}
 				</div>
 				<div class="col-span-7">{player.name}</div>
-				<button class="button col-span-3" onclick={() => addPlayer(player.steamID3)}>add</button>
+				<button class="col-span-3 button" onclick={() => addPlayer(player.steamID3)}>add</button>
 			{/each}
 		{/if}
 
@@ -154,14 +161,14 @@
 				size={bracket.size}
 				elimination={bracket.elimination}
 				bind:players={bracket.players}
-				onchange={() => (bracket.results = {})}
+				onchange={clearResults}
 				class="col-span-full"
 			/>
 		{/if}
 
 		<hr class="hr" />
 
-		<button class="button col-span-6" onclick={save}>{mode} bracket</button>
+		<button class="col-span-6 button" onclick={save}>{mode} bracket</button>
 		<div class="col-span-6">{error}</div>
 	</section>
 </PopOver>

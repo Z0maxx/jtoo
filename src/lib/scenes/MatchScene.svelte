@@ -13,6 +13,9 @@
 	import MiniLeaderboard from '$lib/components/match/MiniLeaderboard.svelte';
 	import RoundTab from '$lib/components/match/RoundTab.svelte';
 	import BottomArea from '$lib/components/match/BottomArea.svelte';
+	import { bracketMatchBetween } from '$lib/bracket-live.svelte';
+	import { bestOfOf, gameWins, playersOf, winsNeeded } from '$lib/Bracket.svelte';
+	import type { SteamID3 } from '$lib/types.svelte';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -22,6 +25,20 @@
 	let live: ConsoleLive = getContext('consoleLive');
 	// the selected players, switched as late as the in-game spectator switches
 	let shown: DelayedPlayers = getContext('overlayPlayers');
+
+	// the shown players' bracket match, for their games won: only longer than a best of 1, as
+	// that one's score would only ever be its winner
+	const match = $derived(bracketMatchBetween(shown.players[0], shown.players[1]));
+	const series = $derived.by(() => {
+		if (!match || bestOfOf(match.bracket, match.id) < 2) return undefined;
+		const [A, B] = playersOf(match.bracket, match.id);
+		const wins = gameWins(match.bracket, match.id);
+		return {
+			needed: winsNeeded(match.bracket, match.id),
+			winsOf: (steamID3: SteamID3 | undefined) =>
+				steamID3 == A ? wins.A : steamID3 == B ? wins.B : 0
+		};
+	});
 </script>
 
 <!-- MARK: top bar -->
@@ -175,11 +192,29 @@
 					>
 				{/key}
 			</div>
-			<!-- PRs -->
+			<!-- games won, then PRs -->
 			<div
 				class="flex gap-2 text-ctp-text/75
                                 {playerNum === 1 ? 'flex-row-reverse' : ''}"
 			>
+				{#if series}
+					{@const wins = series.winsOf(steamID3)}
+					<!-- one box per game needed to win, filled from the outside in -->
+					<div
+						transition:fade
+						class="flex h-8 gap-2 {playerNum === 1 ? 'flex-row-reverse' : ''}"
+						aria-label="{wins} of {series.needed} games won"
+					>
+						{#each { length: series.needed }, i (i)}
+							<span
+								class="size-7 rounded-md border-4 transition-colors duration-500
+                                    {i < wins
+									? 'border-ctp-text bg-ctp-lavender'
+									: 'border-ctp-text/50 bg-transparent'}"
+							></span>
+						{/each}
+					</div>
+				{/if}
 				<div
 					class="-mt-4 mr-2 ml-2 flex h-16 max-w-55 flex-wrap items-center
                                         {playerNum === 1 ? 'flex-row-reverse' : ''}

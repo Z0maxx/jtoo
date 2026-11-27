@@ -49,6 +49,8 @@
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import { watchRtdDonations } from '$lib/fundraising-rtd';
 	import { connectGameServer } from '$lib/game-server.svelte';
+	import { syncBracketResults } from '$lib/bracket-live.svelte';
+	import MatchScore from '$lib/components/controls/MatchScore.svelte';
 
 	type Error = { state: boolean; msg: string };
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
@@ -85,6 +87,10 @@
 	$effect(() => {
 		live.pinTournament(overlay.current.tournament || null);
 	});
+	// a duel race for a bracket match gives that match's game to its winner when it ends. Run
+	// from here, not the overlay, as there's only ever one controls page, while there can be
+	// several overlay sources (eg: on the Idle scene), and each would count the game again
+	syncBracketResults(live);
 	// only the rounds that count toward the standings: finalized and not voided
 	let leaderboardRounds = $derived(
 		(live.tournament?.rounds ?? [])
@@ -272,18 +278,12 @@
 						ontoggle={() => playerControls.forEach((c) => c?.refresh(true))}
 					/>
 				{/snippet}
+				<!-- their bracket match's score and best of, over the two lists -->
+				<MatchScore />
 				<!-- two equal columns, so both lists' rows are the same width -->
 				<div class="grid grid-cols-2 gap-x-6">
-					<PlayerControl
-						bind:this={playerControls[0]}
-						player={overlay.current.players[0]}
-						playerNum={0}
-					/>
-					<PlayerControl
-						bind:this={playerControls[1]}
-						player={overlay.current.players[1]}
-						playerNum={1}
-					/>
+					<PlayerControl bind:this={playerControls[0]} playerNum={0} />
+					<PlayerControl bind:this={playerControls[1]} playerNum={1} />
 					<!-- disabled since 4 player POV is not implemented yet -->
 					<!-- <PlayerControl player={overlay.current.players[2]} playerNum={2} />
 					<PlayerControl player={overlay.current.players[3]} playerNum={3} /> -->
