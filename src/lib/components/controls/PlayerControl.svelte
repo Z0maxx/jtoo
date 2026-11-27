@@ -4,7 +4,7 @@
 	import { getPlayer, getPlayerIndex } from '$lib/util';
 	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext, untrack } from 'svelte';
-	import RadioInputs from './RadioInputs.svelte';
+	import PlayerList from './PlayerList.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { LeaderboardEntry } from '$lib/websockets/console/live-types';
 	import { massSingleOrder, type JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
@@ -76,6 +76,16 @@
 		return players.filter((sId3) => playerLabel(sId3).toLowerCase().includes(query));
 	});
 
+	// MARK: race status
+	// in a mass-single race the list runs finished players, then running ones by progress, so
+	// marking who's finished (see PlayerList) shows where the running players start: the first
+	// unmarked player is the one leading among those still running. read live, not from the
+	// list's 10 second refresh, so a finish shows straight away
+	const raceEntries = $derived(
+		live.currentRace?.mode === 'mass-single'
+			? new Map(live.currentRace.leaderboard.map((e) => [e.steamId3, e]))
+			: new Map<SteamID3, LeaderboardEntry>()
+	);
 	function refresh() {
 		if (hovered) {
 			refreshMissed = true;
@@ -137,7 +147,7 @@
 			> -->
 		</div>
 
-		<div class="flex flex-col">
+		<div class="flex w-full flex-col">
 			<!-- name -->
 			<span>player</span>
 			{#if items.current.players.length === 0}
@@ -161,11 +171,11 @@
 						if (refreshMissed) refresh();
 					}}
 				>
-					<RadioInputs
-						optlabels={shownPlayers.map(playerLabel)}
-						opts={shownPlayers}
+					<PlayerList
+						players={shownPlayers}
 						bind:value={overlay.current.players[playerNum]}
-						undefinedOption={true}
+						label={playerLabel}
+						entries={raceEntries}
 					/>
 				</div>
 			{/if}

@@ -380,7 +380,8 @@
 	</div> -->
 
 	<!-- players -->
-	<div class="flex w-full max-w-lg justify-evenly gap-x-20 self-center">
+	<!-- two equal columns, so both lists' rows are the same width -->
+	<div class="grid w-full max-w-lg grid-cols-2 gap-x-6 self-center">
 		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
 		<PlayerControl player={overlay.current.players[1]} playerNum={1} />
 		<!-- disabled since 4 player POV is not implemented yet -->
