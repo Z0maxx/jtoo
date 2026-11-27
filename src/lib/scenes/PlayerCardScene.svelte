@@ -9,8 +9,10 @@
 	import { mapName, seriesOf, teamText, type Actor } from '$lib/map-picks';
 	import type { Player } from '$lib/types.svelte';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { Tween } from 'svelte/motion';
+	import { cubicInOut, cubicOut, linear } from 'svelte/easing';
 
 	const EVENT_NAME = 'Jump4Charity';
 	// a bar is the gap as a share of the faster time, scaled so the biggest gap is this much of
@@ -19,6 +21,27 @@
 	const BAR_MIN_PERCENT = 4;
 	// the gap is written inside a bar at least this long, and just past its end otherwise
 	const BAR_LABEL_INSIDE_PERCENT = 20;
+	// switching to the scene grows the bars out from the middle, a row after the one above. its
+	// own settings, tuned apart from the rocket bar's fill in
+	const BAR_GROW = { duration: 4500, easing: cubicOut };
+	const BAR_GROW_STAGGER_MS = 10;
+
+	// one clock for the whole entrance, in ms since the scene appeared, run at an even pace: each
+	// row eases its own stretch of it, starting a stagger after the row above
+	const growClock = new Tween(0, { duration: 0, easing: cubicOut });
+	let growTotal = $state(0);
+	onMount(() => {
+		growTotal = BAR_GROW.duration + BAR_GROW_STAGGER_MS * rows.length;
+		growClock.set(growTotal, { duration: growTotal });
+	});
+	// until the clock runs out, bars follow it; after, they slide to changes at their usual speed
+	let entering = $derived(growClock.current < growTotal || growTotal === 0);
+
+	// how far a row's bar has grown, 0 to 1
+	function grown(index: number): number {
+		const t = (growClock.current - index * BAR_GROW_STAGGER_MS) / BAR_GROW.duration;
+		return BAR_GROW.easing(Math.min(1, Math.max(0, t)));
+	}
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 
@@ -114,13 +137,13 @@
 
 		<!-- each pool map's gap as a bar out from the middle column, towards whoever is faster -->
 		<div class="flex min-h-0 flex-1 flex-col gap-2.5">
-			{#each rows as row (row.map.fileName)}
+			{#each rows as row, i (row.map.fileName)}
 				<!-- no gap between the bar tracks and the map tile, so the bars start at its edges -->
 				<div
 					class="grid min-h-0 flex-1 grid-cols-[12rem_minmax(0,1fr)_20rem_minmax(0,1fr)_12rem] items-center"
 				>
 					{@render Time(row, 'A')}
-					{@render Bar(row, 'A')}
+					{@render Bar(row, 'A', i)}
 
 					<div
 						class="relative isolate flex h-full items-center justify-center overflow-hidden rounded-[0.875rem] px-3.5 transition-[filter,box-shadow] duration-500"
@@ -149,7 +172,7 @@
 						></div>
 					</div>
 
-					{@render Bar(row, 'B')}
+					{@render Bar(row, 'B', i)}
 					{@render Time(row, 'B')}
 				</div>
 			{/each}
@@ -253,7 +276,7 @@
 {/snippet}
 
 <!-- only the faster player gets a bar; the gap sits inside it when it fits, else past its end -->
-{#snippet Bar(row: (typeof rows)[number], side: Actor)}
+{#snippet Bar(row: (typeof rows)[number], side: Actor, index: number)}
 	{@const pct = barPercent(row.share)}
 	{@const inside = pct >= BAR_LABEL_INSIDE_PERCENT}
 	{@const label = `−${row.gap.toFixed(2)}`}
@@ -265,12 +288,15 @@
 		class:opacity-80={picksActive && !row.pick}
 	>
 		{#if row.faster === side}
+			<!-- clipped, so the gap inside doesn't spill out while the bar grows. the width
+			     follows the entrance clock every frame, so the css slide only joins in after -->
 			<span
-				class="flex h-7.5 shrink-0 items-center px-3 text-[1.3125rem] font-bold whitespace-nowrap text-ctp-crust transition-[width] duration-700 {teamBar[
-					side
-				]} {side === 'A' ? 'justify-start rounded-l-lg' : 'justify-end rounded-r-lg'} {settings
-					.current.monoFont}"
-				style:width="{pct}%"
+				class="flex h-7.5 shrink-0 items-center overflow-hidden px-3 text-[1.3125rem] font-bold whitespace-nowrap text-ctp-crust {entering
+					? ''
+					: 'transition-[width] duration-700'} {teamBar[side]} {side === 'A'
+					? 'justify-start rounded-l-lg'
+					: 'justify-end rounded-r-lg'} {settings.current.monoFont}"
+				style:width="{pct * grown(index)}%"
 			>
 				{inside ? label : ''}
 			</span>
