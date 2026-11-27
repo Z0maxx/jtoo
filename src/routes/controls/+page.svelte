@@ -347,6 +347,8 @@
 			</Group>
 
 			<Group label="bracket">
+				<EditBracket />
+				<div class="m5"></div>
 				{#if items.current.brackets?.length}
 					<RadioInputs
 						opts={items.current.brackets.map((b) => b.id)}
@@ -357,7 +359,6 @@
 					<!-- the same as under 'players, maps, and brackets', so there's no hunting for it -->
 					<div class="flex flex-wrap items-center gap-2">
 						<span class="opacity-60">no brackets yet</span>
-						<EditBracket />
 					</div>
 				{/if}
 			</Group>
