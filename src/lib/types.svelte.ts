@@ -197,6 +197,9 @@ export type Overlay = {
 	tournament: string; // console tournament id the leaderboard shows; '' follows the race
 	leaderboardView: LeaderboardView; // which board the leaderboard scene shows
 	bracket: string; // id of the bracket the bracket scene shows
+	// a match picked as live by middle clicking it on the bracket scene (null: none is live),
+	// in place of the one the console's race is for. Cleared when the next bracket race starts
+	bracketLive?: { bracket: string; match: string | null };
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
 	// time of the controls' last schedule refresh; the overlay re-fetches the sheet when it changes

@@ -22,6 +22,7 @@
 	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
 	import { pollSchedule } from '$lib/schedule.svelte';
 	import { preloadImages } from '$lib/image-preload.svelte';
+	import { syncBracketResults } from '$lib/bracket-live.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
@@ -43,6 +44,9 @@
 
 	// keep the schedule loaded even off its scene, so switching to it shows it at once
 	pollSchedule();
+
+	// a duel race for a bracket match sets that match's winner when it ends
+	syncBracketResults(live);
 
 	// load map images, then player avatars, ahead of the scenes that show them
 	preloadImages();
