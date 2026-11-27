@@ -305,7 +305,10 @@
 					onconnect={connectGameServer}
 					state={gameServer.state}
 					error={gameServer.error || undefined}
-				/>
+				>
+					<!-- also under fundraising and in the page's automation section -->
+					<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+				</ConnectionPanel>
 			{:else if openStatus === 'fundraising'}
 				<SetFundraisingEvent>
 					<!-- also in the page's automation section -->
