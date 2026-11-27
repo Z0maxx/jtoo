@@ -17,7 +17,7 @@
 	});
 
 	let segments = $derived(schedule.schedule?.segments ?? []);
-	let current = $derived(currentSegmentIndex(segments, time));
+	let current = $derived(currentSegmentIndex(segments, time, schedule.schedule?.date));
 
 	// the sheet's title reads 'EVENT — DAY N: NAME — DATE'
 	let titleParts = $derived(

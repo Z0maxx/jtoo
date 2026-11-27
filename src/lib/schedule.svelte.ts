@@ -40,8 +40,23 @@ export type ScheduleSegment = {
 export type Schedule = {
 	title: string;
 	subtitle: string;
+	// the broadcast's day, read from the title (eg: '27th of November'); the sheet has no year
+	date: { month: number; day: number } | undefined;
 	segments: ScheduleSegment[];
 };
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+// '27th of November', '27 Nov' -> { month: 11, day: 27 }
+export function parseTitleDate(title: string): Schedule['date'] {
+	const m = title.match(
+		/\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i
+	);
+	if (!m) return undefined;
+	const day = Number(m[1]);
+	if (day < 1 || day > 31) return undefined;
+	return { month: MONTHS.indexOf(m[2].toLowerCase()) + 1, day };
+}
 
 export function sheetCsvUrl(sheetUrl: string): string | undefined {
 	const id = sheetUrl.match(/\/spreadsheets\/d\/([\w-]+)/)?.[1];
@@ -149,40 +164,79 @@ export function parseSchedule(rows: string[][]): Schedule {
 		});
 	}
 
+	const title = firstCell(rows[0]);
 	return {
-		title: firstCell(rows[0]),
+		title,
 		subtitle: headerIndex > 1 ? firstCell(rows[1]) : '',
+		date: parseTitleDate(title),
 		segments
 	};
 }
 
-// minutes since midnight in the schedule's time zone
-export function scheduleNowMinutes(time: number): number {
+function scheduleNowParts(time: number) {
 	const parts = new Intl.DateTimeFormat('en-GB', {
 		timeZone: SCHEDULE_TIME_ZONE,
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
 		hour: 'numeric',
 		minute: 'numeric',
 		hourCycle: 'h23'
 	}).formatToParts(time);
 	const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
-	return get('hour') * 60 + get('minute');
+	return {
+		year: get('year'),
+		month: get('month'),
+		day: get('day'),
+		minutes: get('hour') * 60 + get('minute')
+	};
+}
+
+// minutes since midnight in the schedule's time zone
+export function scheduleNowMinutes(time: number): number {
+	return scheduleNowParts(time).minutes;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Minutes since the given date's midnight in the schedule's time zone: negative before that
+ * day, past 24h after it. Without a year, the date is taken in whichever year is nearest.
+ */
+function minutesSinceDate(date: { month: number; day: number }, time: number): number {
+	const now = scheduleNowParts(time);
+	const today = Date.UTC(now.year, now.month - 1, now.day);
+	const days = [now.year - 1, now.year, now.year + 1]
+		.map((year) => Math.round((today - Date.UTC(year, date.month - 1, date.day)) / DAY_MS))
+		.reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a));
+	return days * 24 * 60 + now.minutes;
 }
 
 /**
  * The index of the segment on air now, -1 before the first and segments.length after the last.
- * The sheet has times but no date, so the schedule is placed on whichever day it's nearest:
- * after midnight, times before the first segment count as the previous evening's broadcast.
+ * With the broadcast's date, a day still to come is all ahead and a day gone by is all over.
+ * Without it, the schedule is placed on whichever day it's nearest: after midnight, times
+ * before the first segment count as the previous evening's broadcast.
  */
-export function currentSegmentIndex(segments: ScheduleSegment[], time: number): number {
+export function currentSegmentIndex(
+	segments: ScheduleSegment[],
+	time: number,
+	date?: Schedule['date']
+): number {
 	if (import.meta.env.DEV && PREVIEW_SEGMENT_INDEX !== undefined) return PREVIEW_SEGMENT_INDEX;
 
 	const first = segments.find((s) => s.startMinutes !== undefined)?.startMinutes;
 	const last = segments.findLast((s) => s.endMinutes !== undefined)?.endMinutes;
 	if (first === undefined || last === undefined) return -1;
 
-	let now = scheduleNowMinutes(time);
-	// between the broadcast's end (past midnight) and the next one's start, keep it ended
-	if (now < first && now + 24 * 60 <= last + 12 * 60) now += 24 * 60;
+	let now: number;
+	if (date) {
+		now = minutesSinceDate(date, time);
+	} else {
+		now = scheduleNowMinutes(time);
+		// between the broadcast's end (past midnight) and the next one's start, keep it ended
+		if (now < first && now + 24 * 60 <= last + 12 * 60) now += 24 * 60;
+	}
 
 	if (now < first) return -1;
 	const i = segments.findIndex(
