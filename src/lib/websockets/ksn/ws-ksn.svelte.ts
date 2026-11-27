@@ -2,7 +2,8 @@ import { KSN } from './ws-ksn-types.svelte';
 import { ProxyWebSocket } from '../../ProxyWebSocket';
 import { consoleBaseUrl } from '$lib/util';
 import { TFMap } from '$lib/types.svelte';
-import { settings, wsMessages } from '$lib/storage.svelte';
+import { lastPickSession, pickSessionOnAir, settings, wsMessages } from '$lib/storage.svelte';
+import { lastSession } from '$lib/pick-session-restore';
 
 type PickedMaps = Array<{ mapID: string; steamID3: string }>;
 
@@ -43,6 +44,9 @@ export class KSNWebSocket {
 			case 'clearPicksAndBans':
 				this.clearPicksAndBans();
 				break;
+			case 'restorePicksAndBans':
+				this.restorePicksAndBans();
+				break;
 			case 'request-wsState':
 				this._channel.postMessage({ type: 'wsState', value: this.wsState });
 				break;
@@ -75,8 +79,11 @@ export class KSNWebSocket {
 
 		console.log('initializing ksn websocket');
 
-		// clear messages
+		// start over, but with the session that was on air: the console doesn't send it on
+		// connect, so a reloaded overlay (OBS reloads browser sources when their scene comes
+		// back) or a reconnect would otherwise lose the map picks until the next step
 		this._messages = KSN.defaultMessages();
+		this.showSessionOnAir();
 
 		// connect to websocket
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
@@ -99,6 +106,37 @@ export class KSNWebSocket {
 	clearPicksAndBans() {
 		this._messages.mapPicks = { type: 'pickbans_session_state', session: null };
 		this._pickedMaps = [];
+		pickSessionOnAir.current = false;
+	}
+
+	/** Shows the session that was on air before a reload or reconnect, if there was one. */
+	private showSessionOnAir() {
+		const session = lastPickSession.current;
+		if (!pickSessionOnAir.current || !session) return;
+		this._messages.mapPicks = { type: 'pickbans_session_state', session: $state.snapshot(session) };
+		this.processMapPick();
+	}
+
+	/**
+	 * Puts the last session back on air, e.g. after a reconnect or refresh lost it: the newer of
+	 * the last one received and the console's latest completed one. Tells the controls which.
+	 */
+	async restorePicksAndBans() {
+		const session = await lastSession();
+		if (session) {
+			this._messages.mapPicks = {
+				type: 'pickbans_session_state',
+				session: $state.snapshot(session)
+			};
+			this.processMapPick();
+		}
+		this._channel.postMessage({
+			type: 'picksRestored',
+			value: session
+				? `${session.playerA.displayName} vs ${session.playerB.displayName}` +
+					(session.roundName ? ` (${session.roundName})` : '')
+				: null
+		});
 	}
 
 	logWsMessage(data: KSN.MessageTypes) {
@@ -114,6 +152,8 @@ export class KSNWebSocket {
 	// rebuilt from the session's history on every update, so no step is ever skipped
 	processMapPick() {
 		if (!this._messages.mapPicks.session) {
+			// cancelled on the console: nothing's on air, though the session stays restorable
+			pickSessionOnAir.current = false;
 			return;
 		}
 
@@ -126,6 +166,9 @@ export class KSNWebSocket {
 		}
 
 		this._messages.mapPicksPrevious = { ...this._messages.mapPicks };
+		// kept for the controls' restore button; a null (cancelled) session never overwrites it
+		lastPickSession.current = $state.snapshot(this._messages.mapPicks.session);
+		pickSessionOnAir.current = true;
 	}
 	/**
 	 * The pick & ban id of a map file name, e.g. jump-ambition for jump_ambition_final. The
@@ -151,10 +194,14 @@ export class KSNWebSocket {
 export class KSNWebSocketController {
 	private _channel: BroadcastChannel;
 	private _wsState: number;
+	// what the overlay restored for the last restore click: the match, null when there was
+	// nothing to restore, undefined while waiting or before any click
+	private _restored: string | null | undefined;
 
 	constructor(broadcastChannel: string) {
 		this._channel = new BroadcastChannel(broadcastChannel);
 		this._wsState = $state(WebSocket.CLOSED);
+		this._restored = $state(undefined);
 
 		this._channel.postMessage({
 			type: 'welcome',
@@ -173,6 +220,9 @@ export class KSNWebSocketController {
 			case 'wsState':
 				this._wsState = data.value;
 				break;
+			case 'picksRestored':
+				this._restored = data.value;
+				break;
 			default:
 				break;
 		}
@@ -189,15 +239,31 @@ export class KSNWebSocketController {
 			type: 'clearPicksAndBans'
 		});
 	}
+	restorePicksAndBans() {
+		this._restored = undefined;
+		this._channel.postMessage({
+			type: 'restorePicksAndBans'
+		});
+	}
 
 	// getters
 	get wsState() {
 		return this._wsState;
 	}
+	get restored() {
+		return this._restored;
+	}
 }
 
 interface BaseKSNBCMessage {
-	type: 'welcome' | 'connect' | 'clearPicksAndBans' | 'wsState' | 'request-wsState';
+	type:
+		| 'welcome'
+		| 'connect'
+		| 'clearPicksAndBans'
+		| 'restorePicksAndBans'
+		| 'picksRestored'
+		| 'wsState'
+		| 'request-wsState';
 }
 interface KSNBCWelcomeMessage extends BaseKSNBCMessage {
 	type: 'welcome';
@@ -208,7 +274,11 @@ interface KSNBCConnectMessage extends BaseKSNBCMessage {
 	value: string;
 }
 interface KSNBCPickBanMessage extends BaseKSNBCMessage {
-	type: 'clearPicksAndBans';
+	type: 'clearPicksAndBans' | 'restorePicksAndBans';
+}
+interface KSNBCPicksRestoredMessage extends BaseKSNBCMessage {
+	type: 'picksRestored';
+	value: string | null;
 }
 interface KSNBCWSStateMessage extends BaseKSNBCMessage {
 	type: 'wsState';
@@ -222,5 +292,6 @@ export type KSNBCMessageType =
 	| KSNBCWelcomeMessage
 	| KSNBCConnectMessage
 	| KSNBCPickBanMessage
+	| KSNBCPicksRestoredMessage
 	| KSNBCWSStateMessage
 	| KSNBCRequestWSStateMessage;

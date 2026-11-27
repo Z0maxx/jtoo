@@ -14,6 +14,7 @@ import { addPlayersFromSteamID3, getMap, getPlayer } from './util';
 import { Tempus2 } from './api/tempus2/api-tempus2';
 import { Steam } from './api/steam/api-steam';
 import { TempusPlaza } from './api/tempusplaza/api-tempusplaza';
+import type { KSN } from './websockets/ksn/ws-ksn-types.svelte';
 
 export const defaultStages: Array<string> = [
 	'',
@@ -144,6 +145,22 @@ export const wsMessages: PersistentState<any[]> = new PersistentState('wsMessage
 export const obsProgramScene = new PersistentState<{ name: string; at: number }>(
 	'obsProgramScene',
 	{ name: '', at: 0 },
+	'localStorage'
+);
+
+// the last pick & ban session the overlay received, so the controls can bring it back after a
+// reconnect, an overlay refresh or a clear wipes it
+export const lastPickSession = new PersistentState<KSN.PickBansSessionStateEvent['session']>(
+	'lastPickSession',
+	null,
+	'localStorage'
+);
+
+// whether the overlay is showing lastPickSession, so a reloaded overlay shows it again. a clear
+// or a cancelled session takes it off air
+export const pickSessionOnAir = new PersistentState<boolean>(
+	'pickSessionOnAir',
+	false,
 	'localStorage'
 );
 

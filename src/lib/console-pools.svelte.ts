@@ -19,7 +19,7 @@ type ConsolePlayer = {
 	countryCode: string | null;
 };
 type ConsolePlayerGroup = { id: string; name: string; playerIds: string[] };
-type ConsoleMapPool = {
+export type ConsoleMapPool = {
 	id: string;
 	name: string;
 	maps: { id: string; name: string; displayName: string | null; position: number }[];
@@ -31,7 +31,7 @@ export type PoolImportResult = {
 	errors: string[];
 };
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
 	const response = await fetch(new URL(path, consoleBaseUrl() + '/'));
 	if (!response.ok) throw new Error(`${path}: ${response.status}`);
 	return response.json();

@@ -291,6 +291,17 @@
 			<ConfirmButton variant="danger" onconfirm={() => ksnWs!.clearPicksAndBans()}
 				>clear map picks and bans</ConfirmButton
 			>
+			<!-- puts the last session back on air, for when a reconnect, an overlay refresh or a clear
+			     loses it: the newer of the last one the overlay received and the console's latest
+			     completed one -->
+			<ConfirmButton variant="danger" onconfirm={() => ksnWs!.restorePicksAndBans()}
+				>restore last map picks</ConfirmButton
+			>
+			{#if ksnWs.restored !== undefined}
+				<p class="w-full text-center text-ctp-subtext0" aria-live="polite">
+					{ksnWs.restored ? `restored ${ksnWs.restored}` : 'no map picks to restore'}
+				</p>
+			{/if}
 		</div>
 
 		<!-- MARK: live
