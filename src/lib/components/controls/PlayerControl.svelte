@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { overlay, items, settings } from '$lib/storage.svelte';
 	import { Player, type SteamID3 } from '$lib/types.svelte';
-	import { getPlayer, getPlayerIndex } from '$lib/util';
 	import { poolPlayers } from '$lib/console-pools.svelte';
 	import { getContext, untrack } from 'svelte';
 	import PlayerList from './PlayerList.svelte';
@@ -69,7 +68,12 @@
 
 	// the name filter applies straight away, on top of the race filtering above
 	let nameFilter = $state('');
-	const playerLabel = (sId3: SteamID3) => getPlayer(sId3).name || `[U:1:${sId3}]`;
+	// every items.current read parses all of items (maps' PRs included) from storage, so the
+	// names are read once per change, not once per row, or rebuilding the lists takes seconds
+	const names = $derived(
+		new Map(items.current.players.map((p) => [p.steamID3, p.name] as const))
+	);
+	const playerLabel = (sId3: SteamID3) => names.get(sId3) || `[U:1:${sId3}]`;
 	let shownPlayers = $derived.by(() => {
 		const query = nameFilter.trim().toLowerCase();
 		if (!query) return players;
@@ -86,8 +90,10 @@
 			? new Map(live.currentRace.leaderboard.map((e) => [e.steamId3, e]))
 			: new Map<SteamID3, LeaderboardEntry>()
 	);
-	function refresh() {
-		if (hovered) {
+	// force: refresh even with the pointer over the list, for changes asked for on purpose.
+	// exported, so the 'follow race' switch can refresh the list as it's pressed
+	export function refresh(force = false) {
+		if (hovered && !force) {
 			refreshMissed = true;
 			return;
 		}
@@ -96,17 +102,16 @@
 	}
 
 	$effect(() => {
-		const timer = setInterval(refresh, REFRESH_MS);
+		const timer = setInterval(() => refresh(), REFRESH_MS);
 		return () => clearInterval(timer);
 	});
 
-	// a new race (or the feed connecting) swaps the players, and so does toggling the
-	// setting, so those refresh right away
+	// a new race (or the feed connecting) swaps the players, so that refreshes right away
 	$effect(() => {
 		void live.currentRace?.sessionId;
-		void settings.current.followRacePlayers;
-		untrack(refresh);
+		untrack(() => refresh());
 	});
+	// toggling 'follow race' calls refresh(true) itself, see the controls page
 </script>
 
 <div class="flex w-full max-w-full flex-col items-start">

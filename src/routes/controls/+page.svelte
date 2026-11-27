@@ -131,6 +131,9 @@
 		loadTournaments();
 	}
 
+	// the player lists, so the 'follow race' switch can refresh them as it's pressed
+	let playerControls: (PlayerControl | undefined)[] = $state([]);
+
 	let error = $state({
 		invalidJfRelayToken: {
 			state: false,
@@ -255,12 +258,21 @@
 						setting="followRacePlayers"
 						label="follow race"
 						desc="list only the current race's players, in race order"
+						ontoggle={() => playerControls.forEach((c) => c?.refresh(true))}
 					/>
 				{/snippet}
 				<!-- two equal columns, so both lists' rows are the same width -->
 				<div class="grid grid-cols-2 gap-x-6">
-					<PlayerControl player={overlay.current.players[0]} playerNum={0} />
-					<PlayerControl player={overlay.current.players[1]} playerNum={1} />
+					<PlayerControl
+						bind:this={playerControls[0]}
+						player={overlay.current.players[0]}
+						playerNum={0}
+					/>
+					<PlayerControl
+						bind:this={playerControls[1]}
+						player={overlay.current.players[1]}
+						playerNum={1}
+					/>
 					<!-- disabled since 4 player POV is not implemented yet -->
 					<!-- <PlayerControl player={overlay.current.players[2]} playerNum={2} />
 					<PlayerControl player={overlay.current.players[3]} playerNum={3} /> -->

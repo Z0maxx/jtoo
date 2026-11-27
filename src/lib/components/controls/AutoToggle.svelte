@@ -14,9 +14,11 @@
 		label: string;
 		// what the automation does, for the tooltip
 		desc: string;
+		// after the setting is switched, with its new value
+		ontoggle?: (on: boolean) => void;
 	};
 
-	let { setting, label, desc }: Props = $props();
+	let { setting, label, desc, ontoggle }: Props = $props();
 
 	const on = $derived(!!settings.current[setting]);
 </script>
@@ -28,7 +30,11 @@
 		: 'text-ctp-overlay2 hover:bg-ctp-text/10 hover:text-ctp-text'}"
 	aria-pressed={on}
 	title="{desc}: {on ? 'on' : 'off'}, click to turn {on ? 'off' : 'on'}"
-	onclick={() => (settings.current[setting] = !on)}
+	onclick={() => {
+		const next = !on;
+		settings.current[setting] = next;
+		ontoggle?.(next);
+	}}
 >
 	<!-- off is told apart by its icon as well as its colour -->
 	<span class={on ? 'icon-[mdi--autorenew]' : 'icon-[mdi--autorenew-off]'} aria-hidden="true"
