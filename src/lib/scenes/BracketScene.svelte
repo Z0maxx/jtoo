@@ -23,8 +23,9 @@
 	type Coordinate = { x: number; y: number };
 	type Line = { A: Coordinate; B: Coordinate };
 
-	const maxNameLength = 15;
 	const curveRadius = 25;
+	// every match is this wide, so long names are cut short instead of widening their round
+	const matchWidth = 'w-84';
 
 	// reveals an element left to right. Unlike slide it only clips, so the element keeps
 	// its size throughout and text doesn't re-wrap and shift the layout (and the lines) around
@@ -173,7 +174,7 @@
 					{#if match}
 						{@render Match(match)}
 					{:else}
-						<div class="invisible min-h-32 min-w-60"></div>
+						<div class="invisible min-h-32 {matchWidth}"></div>
 					{/if}
 				{/each}
 			</div>
@@ -209,13 +210,13 @@
 	{@const won: Slot | '' = !winner ? '' : winner == A ? 'A' : 'B'}
 	<div class="grid" {@attach watchMatch(match.id)}>
 		<div
-			class="col-[1/1] row-[1/1] flex min-h-32 min-w-60 flex-col justify-between rounded-xl text-3xl"
+			class="col-[1/1] row-[1/1] flex min-h-32 {matchWidth} flex-col justify-between rounded-xl text-3xl"
 		>
 			{@render MatchPlayer(match.id, A, 'A', won)}
 			{@render MatchPlayer(match.id, B, 'B', won)}
 		</div>
 		<div
-			class="col-[1/1] row-[1/1] min-h-32 min-w-60 rounded-xl bg-linear-to-tr
+			class="col-[1/1] row-[1/1] min-h-32 {matchWidth} rounded-xl bg-linear-to-tr
                         {A && B && !winner
 				? 'from-ctp-lavender-950 via-ctp-lavender-800 to-ctp-lavender-400'
 				: 'from-[#121925] via-[bg-gray-800] to-[#202833]'} bg-gray-800"
@@ -230,11 +231,12 @@
 	{#key won}
 		<button
 			in:wipe={{ duration: 800 }}
-			class="z-1 grow"
+			class="z-1 min-w-0 grow"
 			onclick={() => setWinner(saved!, id, player)}
 			oncontextmenu={() => clearWinner(saved!, id)}
 		>
-			<div class="grid">
+			<!-- grid-cols-1 lets the column shrink below the name, so it can truncate -->
+			<div class="grid grid-cols-1">
 				<div class="col-[1/1] row-[1/1] flex h-full w-full items-center gap-4 p-2">
 					{#if settings.current.enableAvatars && avatarURL}
 						{#key avatarURL}
@@ -242,13 +244,13 @@
 								in:fade
 								src={avatarURL}
 								alt=""
-								class="size-12 rounded-xl object-cover object-center"
+								class="size-12 shrink-0 rounded-xl object-cover object-center"
 								draggable="false"
 							/>
 						{/key}
 					{/if}
-					<span style:filter={getFiltersStyle()}>
-						{steamID3 ? playerLabel(steamID3, maxNameLength) : ''}
+					<span class="min-w-0 truncate" style:filter={getFiltersStyle()}>
+						{steamID3 ? playerLabel(steamID3) : ''}
 					</span>
 				</div>
 				<div
