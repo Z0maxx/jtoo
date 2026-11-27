@@ -2,7 +2,6 @@ import { env } from '$env/dynamic/private';
 import type { Donation } from '$lib/types.svelte';
 import type { RequestHandler } from '@sveltejs/kit';
 import openai from 'openai';
-import { ConsolePlugin } from 'sveltekit-plugin-console';
 
 // created on first request: the key isn't available at build time, when sveltekit imports this module
 let openaiClient: openai | undefined;
