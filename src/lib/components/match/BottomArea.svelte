@@ -7,6 +7,8 @@
 	import MatchMapPicks from './MatchMapPicks.svelte';
 	import MiniLeaderboard from './MiniLeaderboard.svelte';
 	import { showsMiniLeaderboard } from './mini-leaderboard';
+	import { slide } from 'svelte/transition';
+	import { cubicInOut } from 'svelte/easing';
 
 	// the dual pov match scene's area under the povs: space for chat, the mini leaderboard, then
 	// donation messages, the fundraising totals and the map picks
@@ -19,14 +21,21 @@
 	let hideLeaderboard = $derived(!!live.currentRace && !showsMiniLeaderboard(live.currentRace));
 </script>
 
-<div class="flex min-h-0 w-full flex-1 gap-6 px-4 py-2">
+<!-- the columns are spaced with margins, not a gap, so the leaderboard's space (its width and
+     margin) can slide away to nothing as it hides -->
+<div class="flex min-h-0 w-full flex-1 px-4 py-2">
 	<!-- kept clear for a twitch chat browser source -->
-	<div class="w-100 shrink-0"></div>
+	<div class="mr-6 w-100 shrink-0"></div>
 
-	<!-- a fixed column, so the rest doesn't move when there's no race to show -->
+	<!-- a fixed column, so the rest doesn't move when there's no race to show. it slides open and
+	     shut, and the fundraising side (donations, totals, map picks) grows and shrinks with it -->
 	{#if !hideLeaderboard}
-		<div class="flex w-130 shrink-0">
-			<MiniLeaderboard class="flex-1" />
+		<div
+			class="mr-6 flex w-130 shrink-0"
+			transition:slide={{ axis: 'x', duration: 500, easing: cubicInOut }}
+		>
+			<!-- full width while the column narrows, so it's clipped rather than squashed -->
+			<MiniLeaderboard class="w-130 shrink-0" />
 		</div>
 	{/if}
 
