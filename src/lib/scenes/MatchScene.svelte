@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { settings, overlay } from '$lib/storage.svelte';
+	import { settings } from '$lib/storage.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import MatchMapPicks from '$lib/components/match/MatchMapPicks.svelte';
 	import WebSocketTimer from '$lib/components/match/WebSocketTimer.svelte';
@@ -8,6 +8,7 @@
 	import { getContext } from 'svelte';
 	import { getPlayer, msToFormattedTime } from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import type { DelayedPlayers } from '$lib/delayed-players.svelte';
 	// import WebSocketLeader from '$lib/components/match/WebSocketLeader.svelte';
 	import MiniLeaderboard from '$lib/components/match/MiniLeaderboard.svelte';
 	import RoundTab from '$lib/components/match/RoundTab.svelte';
@@ -19,6 +20,8 @@
 	let { single = false }: Props = $props();
 
 	let live: ConsoleLive = getContext('consoleLive');
+	// the selected players, switched as late as the in-game spectator switches
+	let shown: DelayedPlayers = getContext('overlayPlayers');
 </script>
 
 <!-- MARK: top bar -->
@@ -69,10 +72,10 @@
 		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
 	{/if}
 
-	{@render OverlayPlayer(overlay.current.players[0], 0)}
+	{@render OverlayPlayer(shown.players[0], 0)}
 	{#if !single}
 		<div transition:fade class="h-full">
-			{@render OverlayPlayer(overlay.current.players[1], 1)}
+			{@render OverlayPlayer(shown.players[1], 1)}
 		</div>
 	{/if}
 </div>

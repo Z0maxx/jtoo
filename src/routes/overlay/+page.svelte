@@ -14,6 +14,7 @@
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import { DelayedPlayers } from '$lib/delayed-players.svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import { syncWithRace } from '$lib/websockets/console/race-sync.svelte';
 	import { consoleBaseUrl } from '$lib/util';
@@ -27,8 +28,12 @@
 	let ksnWs: KSNWebSocket | undefined = $state();
 
 	// race and tournament state comes from the console's live feeds
-	const live = new ConsoleLive({ tournament: true });
+	// held back by the timer delay setting, to line up with the in-game spectator
+	const live = new ConsoleLive({ tournament: true, delayRace: true });
 	setContext('consoleLive', live);
+
+	// the match scenes switch players late too, as the in-game spectator does
+	setContext('overlayPlayers', new DelayedPlayers());
 
 	// the relay's map progress orders the match scenes' mini leaderboard during mass-single races
 	const jfRelayWs = new JFRelayWebSocket();

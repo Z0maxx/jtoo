@@ -4,8 +4,11 @@
 	import { countdownMs, msToFormattedTime, runDisplayMs } from '$lib/util';
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import type { DelayedPlayers } from '$lib/delayed-players.svelte';
 
 	let live: ConsoleLive = getContext('consoleLive');
+	// the selected players, switched as late as the in-game spectator switches
+	let shown: DelayedPlayers = getContext('overlayPlayers');
 
 	type Props = { numPlayers: number; class?: string };
 	let { numPlayers, class: styleClass }: Props = $props();
@@ -49,9 +52,9 @@
 			{@render SharedStopwatch()}
 			<div></div>
 		{:else}
-			{@render PlayerStopwatch(overlay.current.players[0])}
+			{@render PlayerStopwatch(shown.players[0])}
 			{@render CompetitionTimer()}
-			{@render PlayerStopwatch(overlay.current.players[1])}
+			{@render PlayerStopwatch(shown.players[1])}
 		{/if}
 	</div>
 {:else if numPlayers == 1}
@@ -63,7 +66,7 @@
 			<div></div>
 			{@render SharedStopwatch()}
 		{:else}
-			{@render PlayerStopwatch(overlay.current.players[0])}
+			{@render PlayerStopwatch(shown.players[0])}
 			{@render CompetitionTimer()}
 		{/if}
 	</div>

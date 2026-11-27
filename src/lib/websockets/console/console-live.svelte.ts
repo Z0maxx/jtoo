@@ -16,6 +16,11 @@ export type FeedState = 'connecting' | 'open' | 'closed';
 type Options = {
 	/** Also follow a tournament stream: the race's tournament, or the pinned one. */
 	tournament?: boolean;
+	/**
+	 * Show the race this many ms late (read from the timerDelayMs setting), so the overlay's
+	 * timers line up with the in-game spectator, which is a little behind the console.
+	 */
+	delayRace?: boolean;
 };
 
 // How long to wait before reopening a stream the browser gave up on (a 401, 404 or 503,
@@ -42,6 +47,15 @@ export class ConsoleLive {
 	pinnedTournamentId: string | null = $state(null);
 
 	private readonly followTournament: boolean;
+	private readonly delayRace: boolean;
+	// the delay the shown race snapshot was held back by, so the clock runs that far behind too
+	private raceDelayMs = $state(0);
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
+	private raceDelayTimers = new Set<ReturnType<typeof setTimeout>>();
+	// snapshots are numbered as they arrive, so a shorter delay set mid-race can't let an older
+	// snapshot replace a newer one
+	private raceReceived = 0;
+	private raceShown = 0;
 	private baseUrl = DEFAULT_CONSOLE_URL;
 	private token = '';
 	private raceSource: EventSource | undefined;
@@ -84,6 +98,7 @@ export class ConsoleLive {
 
 	constructor(options: Options = {}) {
 		this.followTournament = options.tournament ?? false;
+		this.delayRace = options.delayRace ?? false;
 	}
 
 	/** Opens the feeds, or reopens them with a new token or console URL. */
@@ -125,9 +140,12 @@ export class ConsoleLive {
 		return this.pinnedTournamentId ?? race?.context.tournamentId ?? null;
 	}
 
-	/** The console's time now, ticking every animation frame. Dummy data runs on local time. */
+	/**
+	 * The console's time now, ticking every animation frame, less the race's delay so running
+	 * timers stay in step with the delayed snapshots. Dummy data runs on local time.
+	 */
 	serverNow(): number {
-		return this.dummy ? now() : now() + this.clockOffset;
+		return this.dummy ? now() : now() + this.clockOffset - this.raceDelayMs;
 	}
 
 	entryFor(steamId3: number | undefined): LeaderboardEntry | undefined {
@@ -176,10 +194,22 @@ export class ConsoleLive {
 		source.onopen = () => (this.raceState = 'open');
 		const onRace = (event: MessageEvent) => {
 			const snapshot = this.onSnapshot(event.data);
-			if (snapshot) {
+			if (!snapshot) return;
+			const seq = ++this.raceReceived;
+			const delayMs = this.delayRace ? Math.max(0, settings.current.timerDelayMs || 0) : 0;
+			const show = () => {
+				if (seq < this.raceShown) return;
+				this.raceShown = seq;
+				this.raceDelayMs = delayMs;
 				this.liveRace = snapshot as RaceSnapshot | IdleSnapshot;
 				this.syncTournament();
-			}
+			};
+			if (!delayMs) return show();
+			const timer = setTimeout(() => {
+				this.raceDelayTimers.delete(timer);
+				show();
+			}, delayMs);
+			this.raceDelayTimers.add(timer);
 		};
 		source.addEventListener('race', onRace);
 		source.addEventListener('idle', onRace);
@@ -195,6 +225,8 @@ export class ConsoleLive {
 
 	private closeRace() {
 		clearTimeout(this.raceRetry);
+		for (const timer of this.raceDelayTimers) clearTimeout(timer);
+		this.raceDelayTimers.clear();
 		this.raceSource?.close();
 		this.raceSource = undefined;
 		this.raceState = 'closed';

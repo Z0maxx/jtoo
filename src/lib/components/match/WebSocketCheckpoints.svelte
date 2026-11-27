@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { overlay, settings } from '$lib/storage.svelte';
+	import { settings } from '$lib/storage.svelte';
 	import { getPlayer, msToFormattedTime } from '$lib/util';
 	import { fade } from 'svelte/transition';
 	import { getContext } from 'svelte';
 	import type { SteamID3 } from '$lib/types.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import type { DelayedPlayers } from '$lib/delayed-players.svelte';
 
 	let live: ConsoleLive = getContext('consoleLive');
+	// the selected players, switched as late as the in-game spectator switches
+	let shown: DelayedPlayers = getContext('overlayPlayers');
 
 	type Props = { numPlayers: number };
 	let { numPlayers }: Props = $props();
@@ -50,7 +53,7 @@
 			class="grid h-83 grid-cols-3 justify-center gap-x-4
                         {numCps > 14 ? 'gap-y-1 text-2xl' : 'gap-y-3 text-3xl'}"
 		>
-			{@render Comparison(overlay.current.players[0], 0)}
+			{@render Comparison(shown.players[0], 0)}
 
 			<!-- leader cps -->
 			<div class="justify-self-center text-center">
@@ -61,7 +64,7 @@
 				{/each}
 			</div>
 
-			{@render Comparison(overlay.current.players[1], 1)}
+			{@render Comparison(shown.players[1], 1)}
 		</div>
 	{/if}
 </div>

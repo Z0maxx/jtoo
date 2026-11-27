@@ -175,6 +175,8 @@ export type Settings = {
 	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
 	selectDuelPlayers: boolean; // a duel race or picks and bans session selects its players as player A and B
 	useDummyData: boolean; // show made-up race and tournament data instead of the console's
+	timerDelayMs: number; // the overlay shows race updates this late, to match the in-game spectator
+	playerSwitchDelayMs: number; // the overlay switches players this late, to match the in-game spectator
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
 	jfRelayWebSocketToken: string;

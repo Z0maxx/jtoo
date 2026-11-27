@@ -50,6 +50,10 @@ export const defaultSettings: Settings = {
 	followRacePlayers: true,
 	selectDuelPlayers: true,
 	useDummyData: false,
+	// the in-game spectator shows timer events ~100ms after the console sends them, and takes
+	// ~200ms to switch players
+	timerDelayMs: 100,
+	playerSwitchDelayMs: 200,
 	tfClass: 'soldier',
 	scheduleDay: 0,
 	jfRelayWebSocketToken: '',
