@@ -13,5 +13,8 @@
 <style>
 	:root {
 		background-color: var(--color-obs-background);
+		/* keep the scrollbar's space even when the page fits, so opening a section that makes the
+		   page scroll doesn't shift the centred page sideways */
+		scrollbar-gutter: stable;
 	}
 </style>
