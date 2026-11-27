@@ -13,8 +13,7 @@ export const POST: RequestHandler = async (request) => {
 			return new Response('no donation', { status: 400 });
 		}
 
-		await moderateName(donation);
-		await moderateMessage(donation);
+		await moderateDonation(donation);
 		return new Response(JSON.stringify({ moderatedDonation: donation }), { status: 200 });
 	} catch (e) {
 		// the error stays in the server log: it can carry details of the openai request
@@ -23,24 +22,19 @@ export const POST: RequestHandler = async (request) => {
 	}
 };
 
-async function moderateName(donation: Donation) {
-	if (await isFlagged(donation.name)) {
-		donation.name = undefined;
-	}
-}
+// the name and message are checked together in one request; empty ones aren't sent
+async function moderateDonation(donation: Donation) {
+	const fields = (['name', 'message'] as const).filter((f) => donation[f]);
+	if (fields.length === 0) return;
 
-async function moderateMessage(donation: Donation) {
-	if (await isFlagged(donation.message)) {
-		donation.message = undefined;
-	}
-}
-
-async function isFlagged(content: string | undefined) {
 	openaiClient ??= new openai({ apiKey: env.OPENAI_API_KEY });
 	const resp = await openaiClient.moderations.create({
 		model: 'omni-moderation-2024-09-26',
-		input: [{ type: 'text', text: content ?? '' }]
+		input: fields.map((f) => donation[f]!)
 	});
 
-	return Object.entries(resp.results[0].categories).some(([_, flagged]) => flagged);
+	// results come back in the same order as the inputs
+	fields.forEach((f, i) => {
+		if (resp.results[i]?.flagged) donation[f] = undefined;
+	});
 }
