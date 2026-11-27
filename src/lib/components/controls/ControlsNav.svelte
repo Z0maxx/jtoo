@@ -3,6 +3,7 @@
 	import { slide } from '$lib/motion';
 	import Checkbox from './Checkbox.svelte';
 	import ConnectionPanel, { feedStates } from './ConnectionPanel.svelte';
+	import RangeInput from './RangeInput.svelte';
 	import SetFundraisingEvent from './SetFundraisingEvent.svelte';
 	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import { obsConnect, obsStatus } from '$lib/websockets/obs/ws-obs.svelte';
@@ -189,7 +190,7 @@
 							<label for="input-websocket-obs-port">port:</label>
 							<input
 								type="number"
-								class="input remove-arrow"
+								class="remove-arrow input"
 								id="input-websocket-obs-port"
 								placeholder="4455"
 								bind:value={settings.current.obsWsPort}
@@ -244,6 +245,16 @@
 								}}
 							/>
 						</div>
+						<!-- the in-game spectator shows timer events a little after the console sends them -->
+						<RangeInput
+							setting="timerDelayMs"
+							label="timer delay"
+							max={500}
+							step={10}
+							unit=" ms"
+							editable
+							help="the overlay's timers wait this long, to match the observer"
+						/>
 						<div class="flex flex-col gap-1">
 							<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
 							<Checkbox setting="logWsMessages" desc="log websocket messages" />
@@ -258,7 +269,20 @@
 					onconnect={onconnectrelay}
 					state={relayState}
 					error={relayError}
-				/>
+				>
+					{#snippet advanced()}
+						<!-- the relay tells the game to spectate the picked players, which takes a moment -->
+						<RangeInput
+							setting="playerSwitchDelayMs"
+							label="switch delay"
+							max={500}
+							step={10}
+							unit=" ms"
+							editable
+							help="the overlay switches players this long after a pick, to match the observer"
+						/>
+					{/snippet}
+				</ConnectionPanel>
 			{:else if openStatus === 'fundraising'}
 				<SetFundraisingEvent>
 					<!-- also in the page's automation section -->
