@@ -128,6 +128,13 @@
 				<span class="size-2.5 rounded-full {statusDots[s.status]}" aria-hidden="true"></span>
 				<span>{s.id}</span>
 				<span class="sr-only">{statusText[s.status]}</span>
+				<!-- the same arrows as the accordions, so it reads as something that opens -->
+				<span
+					class="-ml-1 {openStatus === s.id
+						? 'icon-[mdi--chevron-down]'
+						: 'icon-[mdi--chevron-right]'}"
+					aria-hidden="true"
+				></span>
 			</button>
 		{/each}
 	</div>
