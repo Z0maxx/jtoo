@@ -66,7 +66,7 @@
 	{#if undefinedOption}
 		<label
 			class="button button-option flex cursor-pointer flex-col select-none
-                {typeof value == 'undefined' ? 'border-ctp-lavender-950 bg-ctp-lavender text-black' : ''}"
+                {typeof value == 'undefined' ? 'border-ctp-lavender-950 bg-ctp-lavender text-black hover:bg-ctp-lavender' : ''}"
 		>
 			<input
 				type="radio"
@@ -92,7 +92,7 @@
 	<label
 		class="button button-option flex cursor-pointer flex-col select-none
                 {labelkey && _.isEqual(opt, value)
-			? 'border-ctp-lavender-950 bg-ctp-lavender text-black'
+			? 'border-ctp-lavender-950 bg-ctp-lavender text-black hover:bg-ctp-lavender'
 			: ''}"
 	>
 		<input

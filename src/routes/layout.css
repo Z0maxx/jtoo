@@ -44,57 +44,57 @@
 	}
 }
 
-@layer components {
-	/* buttons and options are a solid dark fill with light text; the selected option is the only
-	   bright one, solid lavender with black text. radio options are labels, so the hover skips a
-	   label whose radio is checked (has-checked) */
-	.button {
-		@apply min-w-6 rounded-sm border-b-2 border-black/40 bg-obs-padding px-2 text-center text-ctp-subtext1 hover:not-has-checked:bg-ctp-surface2;
-	}
+/* buttons and options are a solid dark fill with light text; the selected option is the only
+   bright one, solid lavender with black text. these are utilities, so variants work on them
+   (eg: hover:button-selected) and plain utilities on the same element override them */
+@utility button {
+	@apply min-w-6 rounded-sm border-b-2 border-black/40 bg-obs-padding px-2 text-center text-ctp-subtext1 hover:bg-ctp-surface2;
+}
 
-	.button-container {
-		@apply flex flex-wrap gap-1;
-	}
+@utility button-container {
+	@apply flex flex-wrap gap-1;
+}
 
-	.button-selected {
-		@apply border-ctp-lavender-950 bg-ctp-lavender text-black hover:bg-ctp-lavender;
-	}
+@utility button-selected {
+	@apply border-ctp-lavender-950 bg-ctp-lavender text-black hover:bg-ctp-lavender;
+}
 
-	.button-unselected {
-		@apply border-black/40 bg-obs-padding text-ctp-text hover:not-has-checked:bg-ctp-surface2;
-	}
+@utility button-unselected {
+	@apply border-black/40 bg-obs-padding text-ctp-text hover:bg-ctp-surface2;
+}
 
-	/* the checked state of a radio option, see RadioInputs and PlayerList */
-	.button-option {
-		@apply has-checked:border-ctp-lavender-950 has-checked:bg-ctp-lavender has-checked:text-black has-focus-visible:outline-2 has-focus-visible:outline-ctp-lavender;
-	}
+/* the checked state of a radio option, see RadioInputs and PlayerList. a checked option keeps
+   its colour on hover */
+@utility button-option {
+	@apply has-checked:border-ctp-lavender-950 has-checked:bg-ctp-lavender has-checked:text-black has-checked:hover:bg-ctp-lavender has-focus-visible:outline-2 has-focus-visible:outline-ctp-lavender;
+}
 
-	/* destructive actions, eg: clear the timers. red is kept for these */
-	.button-danger {
-		@apply rounded-sm border border-ctp-red/60 px-2 text-ctp-red hover:bg-ctp-red/15;
-	}
+/* destructive actions, eg: clear the timers. red is kept for these */
+@utility button-danger {
+	@apply rounded-sm border border-ctp-red/60 px-2 text-ctp-red hover:bg-ctp-red/15;
+}
 
-	/* a destructive text action, eg: remove all */
-	.button-remove {
-		@apply w-fit text-ctp-subtext0 decoration-ctp-red hover:text-ctp-red hover:underline;
-	}
+/* a destructive text action, eg: remove all */
+@utility button-remove {
+	@apply w-fit text-ctp-subtext0 decoration-ctp-red hover:text-ctp-red hover:underline;
+}
 
-	/* a harmless text action, eg: refresh */
-	.button-link {
-		@apply w-fit text-ctp-subtext0 decoration-ctp-lavender hover:text-ctp-lavender hover:underline disabled:cursor-default disabled:opacity-50 disabled:hover:text-ctp-subtext0 disabled:hover:no-underline;
-	}
+/* a harmless text action, eg: refresh */
+@utility button-link {
+	@apply w-fit text-ctp-subtext0 decoration-ctp-lavender hover:text-ctp-lavender hover:underline disabled:cursor-default disabled:opacity-50 disabled:hover:text-ctp-subtext0 disabled:hover:no-underline;
+}
 
-	/* a group's label, eg: scene or map, over its options */
-	.label {
-		@apply text-xs tracking-wider text-ctp-subtext0 uppercase;
-	}
+/* a group's label, eg: scene or map, over its options */
+@utility label {
+	@apply text-xs tracking-wider text-ctp-subtext0 uppercase;
+}
 
-	.input {
-		@apply rounded-sm border-b-2 border-ctp-lavender-950 bg-obs-padding/75 px-1 placeholder-ctp-lavender-900 outline-none placeholder:italic focus:border-ctp-lavender focus:bg-obs-padding;
-	}
-	.hr {
-		@apply col-span-full mt-2 mb-2 h-0.5 w-full border-none bg-obs-padding;
-	}
+@utility input {
+	@apply rounded-sm border-b-2 border-ctp-lavender-950 bg-obs-padding/75 px-1 placeholder-ctp-lavender-900 outline-none placeholder:italic focus:border-ctp-lavender focus:bg-obs-padding;
+}
+
+@utility hr {
+	@apply col-span-full mt-2 mb-2 h-0.5 w-full border-none bg-obs-padding;
 }
 
 @keyframes movingMaskBG {
