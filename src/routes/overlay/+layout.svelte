@@ -13,6 +13,7 @@
 	{@render children()}
 
 	{#if settings.current.enableMovingBG && settings.current.overlayScene != 'SinglePovMatchScene' && showSceneBackground()}
-		<MovingBackground />
+		<!-- the dual pov match scene keeps its povs clear for the gameplay under it -->
+		<MovingBackground povCutout={settings.current.overlayScene === 'DualPovMatchScene'} />
 	{/if}
 </div>

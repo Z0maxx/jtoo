@@ -31,6 +31,7 @@ export class Player {
 	rank: Record<TFClass, Rank> | undefined = undefined;
 	TTs: Record<TFClass, number> | undefined = undefined;
 	WRs: Record<TFClass, number> | undefined = undefined;
+	tempusFetchedAt: number = 0; // when rank, TTs and WRs were last fetched; 0 is never
 	bestRun: string = '';
 	note: string = '';
 	favouriteMap: string = '';
@@ -54,6 +55,9 @@ export class TFMap {
 		demoman: undefined
 	};
 	runs: Omit<Record<TFClass, MapRun[]>, 'overall'> = { soldier: [], demoman: [] };
+	// when the pool import last fetched runs, and the tempus ids it kept them for
+	runsFetchedAt: number = 0;
+	runsFetchedFor: TempusID[] = [];
 
 	imageURL?: string = '';
 
@@ -74,20 +78,23 @@ export const nullPlayer: Player = Object.freeze(new Player());
 export const BracketOptions = ['whole', 'upper', 'lower'] as const;
 export type BracketOption = (typeof BracketOptions)[number];
 
-// a double elimination bracket, made on its own from JTOO's players
+// a single or double elimination bracket, made on its own from JTOO's players
 export const BracketSizes = [4, 8, 10] as const;
 export type BracketSize = (typeof BracketSizes)[number];
+export const Eliminations = ['double', 'single'] as const;
+export type Elimination = (typeof Eliminations)[number];
 
 export type SavedBracket = {
 	id: string;
 	name: string;
 	size: BracketSize;
+	elimination?: Elimination; // double when missing, as brackets saved before it were
 	players: SteamID3[]; // seeding order: seed 1 first
 	results: Results;
 };
 
 export function newBracket(): SavedBracket {
-	return { id: uuidv4(), name: '', size: 8, players: [], results: {} };
+	return { id: uuidv4(), name: '', size: 8, elimination: 'double', players: [], results: {} };
 }
 
 // MARK: Settings
@@ -167,7 +174,7 @@ export type Settings = {
 	consoleBaseUrl: string; // console host for the live feeds and the raw websocket
 	followConsoleStageMap: boolean; // set the stage and map labels from the console's race
 	followRacePlayers: boolean; // player lists show the race's players in leaderboard order
-	selectDuelPlayers: boolean; // a duel race selects its racers as player A and B
+	selectDuelPlayers: boolean; // a duel race or picks and bans session selects its players as player A and B
 	useDummyData: boolean; // show made-up race and tournament data instead of the console's
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
@@ -179,15 +186,24 @@ export type Settings = {
 	fundraisingShowDonationSeconds: number;
 };
 
+// the tournament's standings so far, one round's results (its roundIndex), or the final podium
+export type LeaderboardView = 'standings' | 'final' | number;
+
 export type Overlay = {
 	bestOf: number;
 	players: Array<SteamID3 | undefined>;
 	map: MapFileName;
 	stage: string;
 	tournament: string; // console tournament id the leaderboard shows; '' follows the race
+	leaderboardView: LeaderboardView; // which board the leaderboard scene shows
 	bracket: string; // id of the bracket the bracket scene shows
+	// a match picked as live by middle clicking it on the bracket scene (null: none is live),
+	// in place of the one the console's race is for. Cleared when the next bracket race starts
+	bracketLive?: { bracket: string; match: string | null };
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
+	// console time of the last 'clear mini leaderboard'; a race that started earlier isn't listed
+	miniLeaderboardClearedAt?: number;
 	// time of the controls' last schedule refresh; the overlay re-fetches the sheet when it changes
 	scheduleRefreshedAt?: number;
 };

@@ -1,6 +1,15 @@
 import type { Player } from '$lib/types.svelte';
+import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace TempusPlaza {
+	// through our own route, which passes on Tempus Plaza's 429s and Retry-After for the queue
+	// to wait out. Tempus Plaza doesn't document a rate, so this paces like Tempus: 1 a second
+	const fetchPlaza = createRateLimitedApi({
+		baseUrl: '/api/tempusplaza',
+		defaultTimeoutSeconds: 1,
+		requestTimeoutSeconds: 15
+	});
+
 	export function getImageUrl(mapName: string, quality?: 'medium' | 'full') {
 		return quality == 'medium'
 			? `https://tempusplaza.com/map-backgrounds/medium/${mapName}.webp`
@@ -8,8 +17,7 @@ export namespace TempusPlaza {
 	}
 
 	export async function fetchPlayerRecords(player: Player) {
-		const endpoint = `/api/tempusplaza/players/${player.tempusID}/stats`;
-		const response = await fetch(endpoint);
+		const response = await fetchPlaza(`/players/${player.tempusID}/stats`);
 		if (!response.ok) throw new Error(`Failed to fetch stats: ${response.status}`);
 		let data: TempusPlaza.PlayerStats = await response.json();
 

@@ -49,17 +49,11 @@
 			return;
 		}
 
-		let mapAlreadyExists = false;
-		for (let existingMap of items.current.maps) {
-			if (existingMap.fileName == map.fileName) {
-				existingMap = map;
-				mapAlreadyExists = true;
-				items.current.maps = [...items.current.maps];
-				break;
-			}
-		}
-
-		if (!mapAlreadyExists) items.current.maps = [...items.current.maps, map];
+		// re-importing a map JTOO already has replaces it, so it picks up fresh Tempus data
+		// and any image override
+		const index = items.current.maps.findIndex((m) => m.fileName == map.fileName);
+		if (index >= 0) items.current.maps = items.current.maps.with(index, map);
+		else items.current.maps = [...items.current.maps, map];
 
 		console.log('added map:');
 		console.log(map);

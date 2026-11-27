@@ -34,15 +34,6 @@
 		{@render URLButton('overlay', 'overlay')}
 	</div>
 	<div>
-		<h2 class="mb-2 text-center text-3xl">Mini Leaderboard</h2>
-		<hr class="hr" />
-		<ul class="m-auto mb-5 w-fit list-decimal italic">
-			<li>optional: add as a separate browser source</li>
-			<li>set width to 1920 and height to 1080</li>
-		</ul>
-		{@render URLButton('mini leaderboard', 'mini-leaderboard')}
-	</div>
-	<div>
 		<h2 class="mb-2 text-center text-3xl">Scenes</h2>
 		<hr class="hr" />
 		<ul class="m-auto mb-5 w-fit list-decimal italic">
@@ -84,11 +75,7 @@
 	</div>
 </main>
 
-{#snippet URLButton(
-	name: string,
-	pageUrl: 'controls' | 'overlay' | 'mini-leaderboard',
-	nobg?: boolean
-)}
+{#snippet URLButton(name: string, pageUrl: 'controls' | 'overlay', nobg?: boolean)}
 	<div class="relative flex flex-col items-center gap-2">
 		<a href={resolve(`/${pageUrl}`)}>
 			<button

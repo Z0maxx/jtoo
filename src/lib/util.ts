@@ -13,8 +13,18 @@ import {
 import { Steam } from './api/steam/api-steam';
 import type {
 	LeaderboardEntry as LiveLeaderboardEntry,
-	RaceWindow
+	RaceWindow,
+	TournamentRound
 } from './websockets/console/live-types';
+
+/**
+ * A tournament round's number as shown on the overlay: voided rounds are skipped, so the
+ * first round that wasn't voided is round 1. A voided round gets the number of the last
+ * round before it that wasn't (0 when there is none).
+ */
+export function roundNumber(rounds: TournamentRound[], round: TournamentRound): number {
+	return rounds.filter((r) => !r.voided && r.roundIndex <= round.roundIndex).length;
+}
 
 export function getPlayer(steamID3: SteamID3 | undefined): Player {
 	if (!steamID3) return items.current.players[0];

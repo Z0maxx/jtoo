@@ -14,18 +14,25 @@
 
 	import { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import { syncWithRace } from '$lib/websockets/console/race-sync.svelte';
 	import { consoleBaseUrl } from '$lib/util';
 	import { onDestroy, onMount, setContext, type Component } from 'svelte';
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
 	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
 	import { pollSchedule } from '$lib/schedule.svelte';
+	import { preloadImages } from '$lib/image-preload.svelte';
+	import { syncBracketResults } from '$lib/bracket-live.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
 	// race and tournament state comes from the console's live feeds
 	const live = new ConsoleLive({ tournament: true });
 	setContext('consoleLive', live);
+
+	// the relay's map progress orders the match scenes' mini leaderboard during mass-single races
+	const jfRelayWs = new JFRelayWebSocket();
+	setContext('jfRelayWs', jfRelayWs);
 
 	// add the race's players and map to JTOO when it doesn't know them, and select a duel's racers
 	syncWithRace(live, () => ksnWs?.messages.mapPicks?.session);
@@ -37,6 +44,12 @@
 
 	// keep the schedule loaded even off its scene, so switching to it shows it at once
 	pollSchedule();
+
+	// a duel race for a bracket match sets that match's winner when it ends
+	syncBracketResults(live);
+
+	// load map images, then player avatars, ahead of the scenes that show them
+	preloadImages();
 
 	onMount(() => {
 		// follow OBS's program scene, to swap to the idle overlay scene on the Idle scene
@@ -51,8 +64,21 @@
 		if (settings.current.ksnWebSocketToken) {
 			ksnWs.connect(settings.current.ksnWebSocketToken);
 		}
+
+		if (settings.current.jfRelayWebSocketToken) {
+			jfRelayWs.connect(settings.current.jfRelayWebSocketToken);
+		}
+		// the controls' relay connect button reconnects this one too
+		const relayChannel = new BroadcastChannel('jfRelayWs');
+		relayChannel.onmessage = (event: MessageEvent<{ type: string; value: string }>) => {
+			if (event.data.type === 'connect') jfRelayWs.connect(event.data.value);
+		};
+		return () => relayChannel.close();
 	});
-	onDestroy(() => live.close());
+	onDestroy(() => {
+		live.close();
+		jfRelayWs.close();
+	});
 
 	// both match scenes are one component, so it stays mounted when switching between them
 	type MatchSceneName = 'DualPovMatchScene' | 'SinglePovMatchScene';

@@ -1,4 +1,4 @@
-import type { BracketSize, SteamID3 } from './types.svelte';
+import type { BracketSize, Elimination, SteamID3 } from './types.svelte';
 
 // MARK: Formats
 // A format says where each match's two players come from: a seed, or the winner or loser of
@@ -8,7 +8,7 @@ import type { BracketSize, SteamID3 } from './types.svelte';
 type SourceText = `seed ${number}` | `winner ${string}` | `loser ${string}`;
 // rounds in the order they're drawn, each holding its matches top to bottom, by match id
 type HalfText = Record<string, Record<string, [SourceText, SourceText]>>;
-type FormatText = { upper: HalfText; lower: HalfText };
+type FormatText = { upper: HalfText; lower?: HalfText }; // no lower half for single elimination
 
 export type Source = { seed: number } | { winnerOf: string } | { loserOf: string };
 export type MatchDef = { id: string; half: Half; A: Source; B: Source };
@@ -28,7 +28,7 @@ function defineFormat(text: FormatText): Format {
 	const format: Format = { upper: [], lower: [], matches: {} };
 
 	for (const half of ['upper', 'lower'] as const) {
-		for (const [name, matches] of Object.entries(text[half])) {
+		for (const [name, matches] of Object.entries(text[half] ?? {})) {
 			const round: Round = { name, matches: [] };
 			for (const [id, [A, B]] of Object.entries(matches)) {
 				if (format.matches[id]) throw new Error(`bracket format: match ${id} is defined twice`);
@@ -82,7 +82,8 @@ const lower8: HalfText = {
 	}
 };
 
-export const formats: Record<BracketSize, Format> = {
+// double elimination
+const formats: Record<BracketSize, Format> = {
 	4: defineFormat({
 		upper: {
 			'Quarter Finals': {
@@ -156,19 +157,85 @@ export const formats: Record<BracketSize, Format> = {
 	})
 };
 
+// single elimination: the upper half of each double elimination bracket, with the last
+// final deciding the winner instead of a grand final
+const singleFormats: Record<BracketSize, Format> = {
+	4: defineFormat({
+		upper: {
+			'Semi Finals': {
+				SF1: ['seed 1', 'seed 4'],
+				SF2: ['seed 2', 'seed 3']
+			},
+			Final: {
+				F: ['winner SF1', 'winner SF2']
+			}
+		}
+	}),
+
+	8: defineFormat({
+		upper: {
+			'Quarter Finals': {
+				QF1: ['seed 1', 'seed 8'],
+				QF2: ['seed 4', 'seed 5'],
+				QF3: ['seed 2', 'seed 7'],
+				QF4: ['seed 3', 'seed 6']
+			},
+			'Semi Finals': {
+				SF1: ['winner QF1', 'winner QF2'],
+				SF2: ['winner QF3', 'winner QF4']
+			},
+			Final: {
+				F: ['winner SF1', 'winner SF2']
+			}
+		}
+	}),
+
+	// the 8 player bracket, with play-ins for seeds 7 to 10
+	10: defineFormat({
+		upper: {
+			'Play-In': {
+				PI1: ['seed 8', 'seed 9'],
+				PI2: ['seed 7', 'seed 10']
+			},
+			'Quarter Finals': {
+				QF1: ['seed 1', 'winner PI1'],
+				QF2: ['seed 4', 'seed 5'],
+				QF3: ['seed 2', 'winner PI2'],
+				QF4: ['seed 3', 'seed 6']
+			},
+			'Semi Finals': {
+				SF1: ['winner QF1', 'winner QF2'],
+				SF2: ['winner QF3', 'winner QF4']
+			},
+			Final: {
+				F: ['winner SF1', 'winner SF2']
+			}
+		}
+	})
+};
+
+export function formatOf(b: { size: BracketSize; elimination?: Elimination }): Format {
+	return (b.elimination == 'single' ? singleFormats : formats)[b.size];
+}
+
 // MARK: Results
 
 export type Slot = 'A' | 'B';
 export type Results = Record<string, SteamID3>; // match id -> who won
 
 // the parts of a saved bracket that decide who plays who
-export type BracketState = { size: BracketSize; players: SteamID3[]; results?: Results };
+export type BracketState = {
+	size: BracketSize;
+	elimination?: Elimination;
+	players: SteamID3[];
+	results?: Results;
+};
 
 export function playersOf(
 	b: BracketState,
 	id: string
 ): [SteamID3 | undefined, SteamID3 | undefined] {
-	const match = formats[b.size].matches[id];
+	const match = formatOf(b).matches[id];
 	return [playerFrom(b, match.A), playerFrom(b, match.B)];
 }
 
@@ -200,16 +267,19 @@ export function setWinner(b: BracketState, id: string, slot: Slot) {
 	pruneResults(b);
 }
 
+// results are replaced rather than deleted from: the saved state only notices assignments,
+// so a delete wouldn't be saved or update the overlay until the next assignment
 export function clearWinner(b: BracketState, id: string) {
-	if (!b.results) return;
-	delete b.results[id];
+	if (!b.results?.[id]) return;
+	b.results = Object.fromEntries(Object.entries(b.results).filter(([match]) => match != id));
 	pruneResults(b);
 }
 
 // drops results that no longer count, so they can't come back if an earlier result changes back.
 // One pass in any order is enough: a result that doesn't count never makes another one count.
 function pruneResults(b: BracketState) {
-	for (const id of Object.keys(b.results ?? {})) {
-		if (!formats[b.size].matches[id] || !winnerOf(b, id)) delete b.results![id];
-	}
+	const results = b.results ?? {};
+	const counting = Object.keys(results).filter((id) => formatOf(b).matches[id] && winnerOf(b, id));
+	if (counting.length == Object.keys(results).length) return;
+	b.results = Object.fromEntries(counting.map((id) => [id, results[id]]));
 }

@@ -12,6 +12,15 @@ export const GET: RequestHandler = async ({ params, fetch }) => {
 
 	const res = await fetch(`https://api.tempusplaza.com/players/${id}/stats`);
 
+	// passed on with its Retry-After, so the client's rate-limited queue knows how long to wait
+	if (res.status === 429) {
+		const retryAfter = res.headers.get('Retry-After');
+		return new Response('Rate limited by Tempus Plaza', {
+			status: 429,
+			headers: retryAfter ? { 'Retry-After': retryAfter } : {}
+		});
+	}
+
 	if (!res.ok) {
 		throw error(res.status, 'Upstream request failed');
 	}

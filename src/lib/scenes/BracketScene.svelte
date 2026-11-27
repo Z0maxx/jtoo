@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		clearWinner,
-		formats,
+		formatOf,
 		playersOf,
 		setWinner,
 		winnerOf,
@@ -12,42 +12,52 @@
 		type Slot
 	} from '$lib/Bracket.svelte';
 	import type { Attachment } from 'svelte/attachments';
+	import { getContext } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { items, settings, overlay } from '$lib/storage.svelte';
 	import type { SteamID3 } from '$lib/types.svelte';
 	import { getPlayer, playerLabel } from '$lib/util';
-	import { fade, type TransitionConfig } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
-	import { onIdleScene } from '$lib/obs-browser-source.svelte';
+	import { liveMatch, toggleLive } from '$lib/bracket-live.svelte';
+	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
+	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
+	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 
 	type Coordinate = { x: number; y: number };
 	type Line = { A: Coordinate; B: Coordinate };
 
-	const maxNameLength = 15;
+	const EVENT_NAME = 'Jump4Charity';
 	const curveRadius = 25;
 
-	// reveals an element left to right. Unlike slide it only clips, so the element keeps
-	// its size throughout and text doesn't re-wrap and shift the layout (and the lines) around
-	function wipe(_node: Element, { duration = 400 } = {}): TransitionConfig {
-		return {
-			duration,
-			easing: cubicOut,
-			css: (t) => `clip-path: inset(0 ${(1 - t) * 100}% 0 0)`
-		};
-	}
+	let live: ConsoleLive = getContext('consoleLive');
 
 	// the bracket picked in the controls
 	let saved = $derived(items.current.brackets?.find((b) => b.id == overlay.current.bracket));
-	let format = $derived(saved ? formats[saved.size] : undefined);
+	let format = $derived(saved ? formatOf(saved) : undefined);
+	// the match whose duel race is underway on the console
+	let liveId = $derived(saved ? liveMatch(saved, live.currentRace) : undefined);
 
 	// MARK: Layout
-	// Each round is a column, upper bracket on the top row and lower bracket below. The lower
-	// bracket is right-aligned, so both finals line up under the grand final.
+	// Each round is a column, the upper bracket's rounds over the lower bracket's. The shorter
+	// half is right-aligned, so both finals line up under the grand final. A double elimination
+	// bracket labels each half in a column of its own on the left.
+
+	let hasLower = $derived(!!format?.lower.length);
+	let columns = $derived(format ? Math.max(format.upper.length, format.lower.length) : 0);
 
 	function gridColumn(format: Format, half: Half, i: number) {
-		const offset = half == 'lower' ? format.upper.length - format.lower.length : 0;
-		return offset + i + 1;
+		const offset = columns - format[half].length;
+		return offset + i + (hasLower ? 2 : 1);
 	}
+
+	// each half's matches get height in proportion to its most crowded round
+	let gridRows = $derived.by(() => {
+		if (!format) return '';
+		const rows = (half: Half) =>
+			Math.max(1, ...format![half].map((_, i) => rowsOf(format!, half, i).length));
+		return hasLower ? `auto ${rows('upper')}fr auto ${rows('lower')}fr` : `auto ${rows('upper')}fr`;
+	});
 
 	// a round feeding a bigger one (a play-in) gets a row per match of that round,
 	// so each match sits level with the match it feeds. Rows it doesn't feed are left empty.
@@ -62,12 +72,43 @@
 		return [to.A, to.B].some((s) => 'winnerOf' in s && s.winnerOf == from.id);
 	}
 
+	// a single elimination bracket has only the one half, so its matches get more room
+	const sizes = {
+		double: {
+			row: 'h-11',
+			match: 'h-22',
+			seed: 'text-xl',
+			crown: 'text-2xl',
+			avatar: 'size-9',
+			name: 'text-[1.75rem]'
+		},
+		single: {
+			row: 'h-14',
+			match: 'h-28',
+			seed: 'text-xl',
+			crown: 'text-3xl',
+			avatar: 'size-11',
+			name: 'text-[2rem]'
+		}
+	};
+	let size = $derived(hasLower ? sizes.double : sizes.single);
+
+	// middle click picks the live match, or unpicks it
+	function onMiddleClick(e: MouseEvent, id: string) {
+		if (e.button !== 1 || !saved) return;
+		e.preventDefault();
+		toggleLive(saved, id, live.currentRace);
+	}
+
+	const seedOf = (steamID3: SteamID3) => (saved?.players.indexOf(steamID3) ?? -1) + 1;
+
 	// MARK: Lines
 	// Lines between matches are measured from the rendered page rather than placed by hand.
 	// The scene only renders at 1920x1080 in OBS, so the positions on the page are reliable.
 
 	let sectionEl: HTMLElement | undefined;
 	// match boxes on the page, by match id
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- read by measure, not rendered
 	const matchEls = new Map<string, HTMLElement>();
 	let lines: Line[] = $state([]);
 
@@ -134,50 +175,90 @@
 	}
 </script>
 
-{#if saved && format}
-	{#if onIdleScene()}
-		<!-- the bracket has no backdrop of its own, so over the Idle scene's game footage it gets
-		     the same darkening the other scenes' SceneTint gives them -->
-		<div class="pointer-events-none fixed inset-0 bg-black/50"></div>
-	{/if}
-	<section class="relative isolate z-1 m-auto" {@attach watchSection}>
-		<div class="grid gap-x-40 gap-y-20">
-			{#each format.upper as round, i (round.name)}
-				{@render RoundColumn(format, round, 'upper', i)}
-			{/each}
-			{#each format.lower as round, i (round.name)}
-				{@render RoundColumn(format, round, 'lower', i)}
-			{/each}
-		</div>
-		{@render Lines()}
-	</section>
-{/if}
+<SceneFrame class="gap-10">
+	<SceneHeader eventName={EVENT_NAME} title="Bracket">
+		{#snippet subtitle()}
+			{#if saved?.name}
+				<span
+					class="truncate text-5xl leading-tight font-bold text-ctp-lavender uppercase"
+					style:filter={getFiltersStyle()}
+				>
+					{saved.name}
+				</span>
+			{/if}
+		{/snippet}
+		{#snippet aside()}
+			{#if saved}
+				<div in:fade>
+					<SceneTag class="px-6 text-3xl uppercase">
+						{saved.elimination ?? 'double'} Elim
+					</SceneTag>
+				</div>
+			{/if}
+		{/snippet}
+	</SceneHeader>
 
-{#snippet RoundColumn(format: Format, round: Round, half: Half, i: number)}
-	<div
-		class="relative flex flex-col"
-		style:grid-row={half == 'upper' ? 1 : 2}
-		style:grid-column={gridColumn(format, half, i)}
-		in:fade
-	>
-		{#if i == 0}
-			<h2 class="half-label" style:filter={getFiltersStyle()}>
-				{half == 'upper' ? 'Upper' : 'Lower'} Bracket
-			</h2>
-		{/if}
-		<h2 class="text-3xl" style:filter={getFiltersStyle()}>{round.name}</h2>
-		<div class="grid grow">
-			<div class="stage-container">
-				{#each rowsOf(format, half, i) as match, row (row)}
-					{#if match}
-						{@render Match(match)}
-					{:else}
-						<div class="invisible min-h-32 min-w-60"></div>
-					{/if}
+	{#if !saved || !format}
+		<p class="text-3xl text-ctp-subtext0 italic">no bracket selected</p>
+	{:else}
+		<section class="relative isolate flex min-h-0 flex-1" {@attach watchSection}>
+			<div
+				class="grid w-full gap-x-20 gap-y-3"
+				style:grid-template-columns="{hasLower ? 'auto ' : ''}repeat({columns}, minmax(0, 1fr))"
+				style:grid-template-rows={gridRows}
+			>
+				{#if hasLower}
+					{@render HalfLabel('upper')}
+					{@render HalfLabel('lower')}
+				{/if}
+				{#each format.upper as round, i (round.name)}
+					{@render RoundColumn(format, round, 'upper', i)}
+				{/each}
+				{#each format.lower as round, i (round.name)}
+					{@render RoundColumn(format, round, 'lower', i)}
 				{/each}
 			</div>
-			<div class="background" style:filter={getFiltersStyle()}></div>
-		</div>
+			{@render Lines()}
+		</section>
+	{/if}
+</SceneFrame>
+
+<!-- reads bottom to top, beside its half's matches -->
+{#snippet HalfLabel(half: Half)}
+	<h2
+		class="rotate-180 self-center text-[1.375rem] font-bold tracking-[0.16em] whitespace-nowrap text-ctp-lavender uppercase [writing-mode:vertical-rl]"
+		style:grid-column={1}
+		style:grid-row={half == 'upper' ? 2 : 4}
+		style:filter={getFiltersStyle()}
+	>
+		{half == 'upper' ? 'Upper' : 'Lower'} Bracket
+	</h2>
+{/snippet}
+
+{#snippet RoundColumn(format: Format, round: Round, half: Half, i: number)}
+	{@const column = gridColumn(format, half, i)}
+	<h3
+		class="text-center text-xl tracking-[0.16em] whitespace-nowrap text-ctp-subtext0 uppercase
+                {half == 'lower' ? 'mt-4' : ''}"
+		style:grid-column={column}
+		style:grid-row={half == 'upper' ? 1 : 3}
+		in:fade
+	>
+		{round.name}
+	</h3>
+	<div
+		class="flex min-w-0 flex-col justify-around gap-3"
+		style:grid-column={column}
+		style:grid-row={half == 'upper' ? 2 : 4}
+		in:fade
+	>
+		{#each rowsOf(format, half, i) as match, row (row)}
+			{#if match}
+				{@render Match(match)}
+			{:else}
+				<div class="invisible {size.match}"></div>
+			{/if}
+		{/each}
 	</div>
 {/snippet}
 
@@ -197,92 +278,115 @@
 	{@const r = Math.min(curveRadius, Math.abs(B.y - A.y) / 2, (B.x - A.x) / 2)}
 	{@const sweep = dir > 0 ? 1 : 0}
 	<path
+		class="fill-none stroke-ctp-lavender/40 stroke-3"
 		d="M{A.x} {A.y} H{midX - r} a{r},{r} 0 0 {sweep} {r},{dir * r} V{B.y -
 			dir * r} a{r},{r} 0 0 {1 - sweep} {r},{dir * r} H{B.x}"
 	></path>
 {/snippet}
 
+<!-- MARK: Match -->
+<!-- styled like a pair of the leaderboard's rows -->
 {#snippet Match(match: MatchDef)}
 	{@const [A, B] = playersOf(saved!, match.id)}
 	{@const winner = winnerOf(saved!, match.id)}
 	{@const won: Slot | '' = !winner ? '' : winner == A ? 'A' : 'B'}
-	<div class="grid" {@attach watchMatch(match.id)}>
-		<div
-			class="col-[1/1] row-[1/1] flex min-h-32 min-w-60 flex-col justify-between rounded-xl text-3xl"
-		>
+	{@const isLive = liveId === match.id}
+	<div class="relative" {@attach watchMatch(match.id)}>
+		<div class="flex flex-col overflow-hidden rounded-2xl bg-ctp-crust/70">
 			{@render MatchPlayer(match.id, A, 'A', won)}
 			{@render MatchPlayer(match.id, B, 'B', won)}
 		</div>
+		<!-- the outline is its own layer, so the filters tint it without tinting the avatars -->
 		<div
-			class="col-[1/1] row-[1/1] min-h-32 min-w-60 rounded-xl bg-linear-to-tr
-                        {A && B && !winner
-				? 'from-ctp-lavender-950 via-ctp-lavender-800 to-ctp-lavender-400'
-				: 'from-[#121925] via-[bg-gray-800] to-[#202833]'} bg-gray-800"
+			class="pointer-events-none absolute inset-0 rounded-2xl outline-2 -outline-offset-2 transition-colors
+                        {isLive ? 'outline-ctp-lavender' : 'outline-ctp-lavender/25'}"
 			style:filter={getFiltersStyle()}
 		></div>
+		{#if isLive}
+			<span
+				transition:fade
+				class="absolute -top-3 right-4 rounded-md bg-ctp-lavender px-2.5 py-0.5 text-[0.9375rem] font-bold tracking-[0.14em] text-ctp-crust"
+				style:filter={getFiltersStyle()}
+			>
+				LIVE
+			</span>
+		{/if}
 	</div>
 {/snippet}
 
-<!-- click to set the winner, right click to clear it -->
+<!-- click to set the winner, right click to clear it, middle click to make the match live -->
 {#snippet MatchPlayer(id: string, steamID3: SteamID3 | undefined, player: Slot, won: Slot | '')}
+	{@const isWinner = won == player}
+	{@const isLoser = !!won && !isWinner}
 	{@const avatarURL = steamID3 ? getPlayer(steamID3).avatarURL : ''}
-	{#key won}
-		<button
-			in:wipe={{ duration: 800 }}
-			class="z-1 grow"
-			onclick={() => setWinner(saved!, id, player)}
-			oncontextmenu={() => clearWinner(saved!, id)}
-		>
-			<div class="grid">
-				<div class="col-[1/1] row-[1/1] flex h-full w-full items-center gap-4 p-2">
-					{#if settings.current.enableAvatars && avatarURL}
-						{#key avatarURL}
-							<img
-								in:fade
-								src={avatarURL}
-								alt=""
-								class="size-12 rounded-xl object-cover object-center"
-								draggable="false"
-							/>
-						{/key}
-					{/if}
-					<span style:filter={getFiltersStyle()}>
-						{steamID3 ? playerLabel(steamID3, maxNameLength) : ''}
+	<button
+		class="relative isolate flex {size.row} w-full min-w-0 items-center gap-3.5 px-4 text-left"
+		onclick={() => setWinner(saved!, id, player)}
+		oncontextmenu={() => clearWinner(saved!, id)}
+		onmousedown={(e) => e.button === 1 && e.preventDefault()}
+		onauxclick={(e) => onMiddleClick(e, id)}
+	>
+		{#if isWinner}
+			<div
+				in:fade={{ duration: 300 }}
+				class="absolute inset-0 -z-10 bg-ctp-lavender/30"
+				style:filter={getFiltersStyle()}
+			></div>
+		{/if}
+		{#if steamID3}
+			<span
+				class="w-6 shrink-0 text-center {size.seed} font-bold {settings.current.monoFont}
+                                {isWinner
+					? 'text-ctp-lavender'
+					: isLoser
+						? 'text-ctp-overlay0'
+						: 'text-ctp-subtext0'}"
+				style:filter={isWinner ? getFiltersStyle() : undefined}
+			>
+				{seedOf(steamID3)}
+			</span>
+			{#if settings.current.enableAvatars}
+				{#if avatarURL}
+					<img
+						src={avatarURL}
+						alt=""
+						class="{size.avatar} shrink-0 rounded-lg object-cover transition {isLoser
+							? 'opacity-35 grayscale'
+							: ''}"
+						draggable="false"
+					/>
+				{:else}
+					<span
+						class="flex {size.avatar} shrink-0 items-center justify-center rounded-lg bg-ctp-lavender/15 text-lg font-bold text-ctp-lavender uppercase transition {isLoser
+							? 'opacity-35 grayscale'
+							: ''}"
+					>
+						{playerLabel(steamID3).charAt(0)}
 					</span>
-				</div>
-				<div
-					class=" -z-1 col-[1/1] row-[1/1] h-full w-full bg-linear-to-tr pl-6
-                                        {player == 'A' ? 'rounded-t-xl' : 'rounded-b-xl'}
-                                        {won
-						? won == player
-							? 'from-[#40834a]   via-[#369455]  to-[#b2e1bd]'
-							: 'from-ctp-lavender-950/60 via-ctp-lavender-900/20 to-ctp-lavender-950/10'
-						: ''}"
-					style:filter={getFiltersStyle()}
-				></div>
-			</div>
-		</button>
-	{/key}
+				{/if}
+			{/if}
+			<span
+				class="min-w-0 flex-1 truncate {size.name} transition-colors
+                                {isLoser ? 'text-ctp-overlay0' : 'text-white'} {isWinner
+					? 'font-bold'
+					: ''}"
+			>
+				{playerLabel(steamID3)}
+			</span>
+			{#if isWinner}
+				<span
+					in:fade={{ duration: 300 }}
+					class="icon-[mdi--crown] shrink-0 {size.crown} text-ctp-yellow"
+					aria-hidden="true"
+				></span>
+			{/if}
+		{:else}
+			<!-- waiting on an earlier match -->
+			<span class="w-6 shrink-0"></span>
+			{#if settings.current.enableAvatars}
+				<span class="{size.avatar} shrink-0 rounded-lg bg-ctp-overlay0/20"></span>
+			{/if}
+			<span class="min-w-0 flex-1 truncate {size.name} text-ctp-overlay0 italic">TBD</span>
+		{/if}
+	</button>
 {/snippet}
-
-<style>
-	@import 'tailwindcss';
-	@import '@catppuccin/tailwindcss/mocha.css';
-	h2 {
-		@apply mb-2 text-center;
-	}
-	/* sits in the gap left of a half's first round, without taking up any room */
-	.half-label {
-		@apply absolute top-1/2 right-full mr-10 -translate-y-1/2 rotate-180 text-3xl whitespace-nowrap [writing-mode:vertical-lr];
-	}
-	.stage-container {
-		@apply col-[1/1] row-[1/1] flex h-full flex-col justify-around gap-4 rounded-xl;
-	}
-	.stage-container ~ .background {
-		@apply -z-1 col-[1/1] row-[1/1] min-h-32 min-w-60 rounded-xl bg-gray-900/70;
-	}
-
-	svg > path {
-		@apply fill-none stroke-ctp-lavender-900 stroke-2;
-	}
-</style>

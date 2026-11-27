@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ConfirmButton from './ConfirmButton.svelte';
 	import { items } from '$lib/storage.svelte';
 	import { Player } from '$lib/types.svelte';
 	import EditPlayer from './EditPlayer.svelte';
@@ -28,7 +29,7 @@
 				<div>{player.name}</div>
 				<div><EditPlayer {player} /></div>
 				<div>
-					<button class="button-remove" onclick={() => deletePlayer(player)}>delete</button>
+					<ConfirmButton onconfirm={() => deletePlayer(player)}>delete</ConfirmButton>
 				</div>
 			{/if}
 		{/each}
