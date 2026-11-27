@@ -57,7 +57,8 @@
 	// MARK: picks
 	// the pick & ban session's picks, by map file name, with the map left over as the decider.
 	// its players are matched to A and B by steam id, since the session's A and B needn't be
-	// the controls' A and B
+	// the controls' A and B. a session between other players (eg: one left over from an earlier
+	// match) isn't shown at all
 	let picks = $derived.by(() => {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const byMap = new Map<string, { side: Actor | 'decider' }>();
@@ -67,11 +68,15 @@
 			const id = Number(session[`player${actor}`].steamId3.match(/\d+(?=\]?$)/)?.[0]);
 			return id === players.A.steamID3 ? 'A' : id === players.B.steamID3 ? 'B' : undefined;
 		};
+		const sideA = sideOf('A');
+		const sideB = sideOf('B');
+		// both of the session's players have to be the scene's two players
+		if (!sideA || !sideB || sideA === sideB) return byMap;
 		for (const { mapId, actor } of seriesOf(session)) {
 			const file = session.maps.find((m) => m.id === mapId)?.name;
 			// the series has no actor for the decider
-			const side = actor ? sideOf(actor) : 'decider';
-			if (file && side) byMap.set(file, { side });
+			const side = actor === 'A' ? sideA : actor === 'B' ? sideB : 'decider';
+			if (file) byMap.set(file, { side });
 		}
 		return byMap;
 	});
