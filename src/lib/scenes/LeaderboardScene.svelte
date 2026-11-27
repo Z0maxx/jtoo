@@ -8,7 +8,14 @@
 	import { getContext } from 'svelte';
 	import { fitText } from '$lib/fit-text';
 	import type { Attachment } from 'svelte/attachments';
-	import { getMap, getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
+	import {
+		getMap,
+		getPlayer,
+		msToFormattedTime,
+		msToGap,
+		playerLabel,
+		roundNumber
+	} from '$lib/util';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type {
 		RoundResultEntry,
@@ -74,7 +81,8 @@
 		round ? 'round' : view === 'final' ? 'final' : 'standings'
 	);
 
-	const roundNo = (round: TournamentRound) => round.roundIndex + 1;
+	// numbered without the voided rounds
+	const roundNo = (round: TournamentRound) => roundNumber(rounds, round);
 	const roundMap = (round: TournamentRound) => round.map || round.stage;
 	const winnerOf = (round: TournamentRound) =>
 		round.results.find((r) => r.placement === 1)?.steamId3;
