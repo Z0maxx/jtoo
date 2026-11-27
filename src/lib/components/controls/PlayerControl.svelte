@@ -107,49 +107,14 @@
 		void settings.current.followRacePlayers;
 		untrack(refresh);
 	});
-	// const playerObj: Player = $derived(getPlayer(player));
-	// const maxScore: number = $derived((overlay.current.bestOf + 1) / 2);
-
-	// function incrementScore(player: SteamID3) {
-	// 	let newScore = playerObj.score;
-	// 	newScore++;
-	// 	if (newScore > maxScore) return;
-	// 	items.current.players[getPlayerIndex(player)].score = newScore;
-	// }
-	// function decrementScore(player: SteamID3) {
-	// 	let newScore = playerObj.score;
-	// 	newScore--;
-	// 	if (newScore < 0) return;
-	// 	items.current.players[getPlayerIndex(player)].score = newScore;
-	// }
 </script>
 
 <div class="flex w-full max-w-full flex-col items-start">
 	{#if players}
 		<span class="self-center text-center">player {getLabel(playerNum)}</span>
 
-		<!-- score -->
-		<div class="flex justify-center self-center">
-			<!-- <button
-				aria-label="decrease score"
-				class="button rounded-r-none"
-				onclick={() => {
-					if (player) decrementScore(player);
-				}}><span class="icon-[mdi--minus] align-middle"></span></button
-			>
-			<span class="button button-selected rounded-none">{playerObj.score}</span> -->
-			<!-- <button
-				aria-label="increase score"
-				class="button rounded-l-none border-ctp-lavender-950/50 bg-ctp-lavender/50 px-2 hover:bg-ctp-lavender/85"
-				onclick={() => {
-					if (player) incrementScore(player);
-				}}><span class="icon-[mdi--plus] align-middle"></span></button
-			> -->
-		</div>
-
 		<div class="flex w-full flex-col">
 			<!-- name -->
-			<span>player</span>
 			{#if items.current.players.length === 0}
 				<span class="text-ctp-text/50">no players..</span>
 			{:else}
