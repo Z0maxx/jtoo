@@ -230,7 +230,6 @@
 								}}
 							/>
 						</div>
-						<Checkbox setting="followConsoleStageMap" desc="set stage and map from the console" />
 						<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
 						<Checkbox setting="logWsMessages" desc="log websocket messages" />
 					{/snippet}

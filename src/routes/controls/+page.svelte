@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Accordion from '$lib/components/controls/Accordion.svelte';
+	import AutoToggle from '$lib/components/controls/AutoToggle.svelte';
 	import Checkbox from '$lib/components/controls/Checkbox.svelte';
 	import ConfirmButton from '$lib/components/controls/ConfirmButton.svelte';
 	import ControlsNav from '$lib/components/controls/ControlsNav.svelte';
@@ -74,10 +75,9 @@
 	const rtdEnabled = $derived(settings.current.enableFundraisingRtd);
 
 	// the map and stage section starts closed, since the console normally sets them, so its title
-	// shows what's set and whether the console is setting it
+	// shows what's set (and its auto switch whether the console is setting it)
 	const mapStageTitle = $derived(
-		`map and stage: ${overlay.current.map || 'none'}, ${overlay.current.stage || 'none'}` +
-			(settings.current.followConsoleStageMap ? ' (set by console)' : '')
+		`map and stage: ${overlay.current.map || 'none'}, ${overlay.current.stage || 'none'}`
 	);
 
 	// the controls open their own race feed, to show whether the console is reachable and to
@@ -206,245 +206,277 @@
 	relayError={error.invalidJfRelayToken.state ? error.invalidJfRelayToken.msg : undefined}
 />
 
-{#if ksnWs}
-	<!-- presets -->
-	<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
-		<ConfirmButton
-			onconfirm={() => {
-				// in console time, so it compares with the race's own timestamps
-				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
-			}}>clear timers</ConfirmButton
-		>
-		<ConfirmButton
-			onconfirm={() => {
-				// in console time, like the timers
-				overlay.current.miniLeaderboardClearedAt = Date.now() + live.clockOffset;
-			}}>clear mini leaderboard</ConfirmButton
-		>
-		<ConfirmButton onconfirm={() => ksnWs!.clearPicksAndBans()}
-			>clear map picks and bans</ConfirmButton
-		>
-		<ConfirmButton onconfirm={resetVisualSettings}>reset visual settings</ConfirmButton>
-	</div>
+<section class="flex flex-col gap-2">
+	{#if ksnWs}
+		<!-- presets -->
+		<div class="relative m-2 flex w-full max-w-lg justify-center gap-4 self-center">
+			<ConfirmButton
+				onconfirm={() => {
+					// in console time, so it compares with the race's own timestamps
+					overlay.current.timersClearedAt = Date.now() + live.clockOffset;
+				}}>clear timers</ConfirmButton
+			>
+			<ConfirmButton
+				onconfirm={() => {
+					// in console time, like the timers
+					overlay.current.miniLeaderboardClearedAt = Date.now() + live.clockOffset;
+				}}>clear mini leaderboard</ConfirmButton
+			>
+			<ConfirmButton onconfirm={() => ksnWs!.clearPicksAndBans()}
+				>clear map picks and bans</ConfirmButton
+			>
+			<ConfirmButton onconfirm={resetVisualSettings}>reset visual settings</ConfirmButton>
+		</div>
 
-	<!-- MARK: live
-	     what changes during the show, always visible: the OBS scene and players A and B -->
-	<section class="flex w-full max-w-lg flex-col gap-1 self-center" aria-label="live controls">
-		<span>scene</span>
-		<RadioInputs
-			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
-			bind:value={settings.current.overlayScene}
-			onpick={(scene) => scene && setScene(scene)}
-		/>
+		<!-- MARK: live
+        what changes during the show, always visible: the OBS scene and players A and B -->
+		<section class="flex w-full max-w-lg flex-col gap-1 self-center" aria-label="live controls">
+			<span>scene</span>
+			<RadioInputs
+				opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
+				bind:value={settings.current.overlayScene}
+				onpick={(scene) => scene && setScene(scene)}
+			/>
 
-		<!-- picking one also switches OBS to the idle scene -->
-		<span>idle scene overlay</span>
-		<RadioInputs
-			opts={IdleOverlayScenes}
-			bind:value={settings.current.idleOverlayScene}
-			onpick={() => setScene(idleOBSSceneName())}
-		/>
-	</section>
+			<!-- picking one also switches OBS to the idle scene -->
+			<span>idle scene overlay</span>
+			<RadioInputs
+				opts={IdleOverlayScenes}
+				bind:value={settings.current.idleOverlayScene}
+				onpick={() => setScene(idleOBSSceneName())}
+			/>
+		</section>
 
-	<!-- overlay -->
-	<!-- <div class="relative mb-2 flex w-full max-w-lg justify-center gap-1 self-center">
+		<!-- overlay -->
+		<!-- <div class="relative mb-2 flex w-full max-w-lg justify-center gap-1 self-center">
 		<span class="absolute left-0">best of</span>
 		<RadioInputs opts={[1, 3, 5, 7, 9]} bind:value={overlay.current.bestOf} log={true} />
-	</div> -->
+                </div> -->
 
-	<!-- players -->
-	<!-- two equal columns, so both lists' rows are the same width -->
-	<div class="grid w-full max-w-lg grid-cols-2 gap-x-6 self-center">
-		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
-		<PlayerControl player={overlay.current.players[1]} playerNum={1} />
-		<!-- disabled since 4 player POV is not implemented yet -->
-		<!-- <hr class="hr" />
+		<!-- players: the automations that can change the picks below, a click away -->
+		<div class="flex w-full max-w-lg flex-wrap items-center gap-2 self-center">
+			<span>players</span>
+			<AutoToggle
+				setting="selectDuelPlayers"
+				label="auto-select"
+				desc="select the players when a 1v1 race or map pick starts"
+			/>
+			<AutoToggle
+				setting="followRacePlayers"
+				label="follow race"
+				desc="list only the current race's players, in race order"
+			/>
+		</div>
+		<!-- two equal columns, so both lists' rows are the same width -->
+		<div class="grid w-full max-w-lg grid-cols-2 gap-x-6 self-center">
+			<PlayerControl player={overlay.current.players[0]} playerNum={0} />
+			<PlayerControl player={overlay.current.players[1]} playerNum={1} />
+			<!-- disabled since 4 player POV is not implemented yet -->
+			<!-- <hr class="hr" />
 		<PlayerControl player={overlay.current.players[2]} playerNum={2} />
 		<hr class="hr" />
 		<PlayerControl player={overlay.current.players[3]} playerNum={3} /> -->
-	</div>
-	<hr class="hr w-full max-w-lg self-center" />
-
-	<!-- MARK: map and stage
-	     the console sets these, so they're only here to override it; the title shows what's set -->
-	<Accordion title={mapStageTitle} id="map-and-stage" defaultstate="closed">
-		<span>map</span>
-		<RadioInputs
-			opts={poolMaps()}
-			optlabels={settings.current.useShortMapNames
-				? poolMaps().map((m) => getMap(m).shortName || m)
-				: undefined}
-			bind:value={overlay.current.map}
-		/>
-
-		<div class="flex justify-between">
-			<span>stage</span>
-			<ConfirmButton onconfirm={() => (items.current.stages = [...defaultStages])}
-				>reset to default</ConfirmButton
-			>
 		</div>
-		<ItemInput placeholder="add stage" item="stages" class="pb-2" />
-		<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
-	</Accordion>
+		<hr class="hr w-full max-w-lg self-center" />
 
-	<!-- MARK: scene content
-	     what the scenes show: set up before a segment, rarely changed during one -->
-	<Accordion title="scene content" defaultstate="closed">
-		<div class="flex items-center justify-between gap-2">
-			<label for="input-idle-obs-scene">idle OBS scene name</label>
-			<input
-				type="text"
-				class="input"
-				id="input-idle-obs-scene"
-				placeholder="Idle"
-				title="name of the OBS scene this overlay is shown on, without backgrounds"
-				value={settings.current.idleObsScene}
-				onchange={(e) => (settings.current.idleObsScene = (e.target as HTMLInputElement).value)}
+		<!-- MARK: map and stage
+        the console sets these, so they're only here to override it; the title shows what's set -->
+		<Accordion title={mapStageTitle} id="map-and-stage" defaultstate="closed">
+			{#snippet aside()}
+				<AutoToggle
+					setting="followConsoleStageMap"
+					label="auto"
+					desc="set the map and stage from the console"
+				/>
+			{/snippet}
+			<span>map</span>
+			<RadioInputs
+				opts={poolMaps()}
+				optlabels={settings.current.useShortMapNames
+					? poolMaps().map((m) => getMap(m).shortName || m)
+					: undefined}
+				bind:value={overlay.current.map}
 			/>
-		</div>
 
-		<div class="flex justify-between">
-			<span>leaderboard tournament</span>
-			<button class="button-remove" onclick={loadTournaments}>refresh</button>
-		</div>
-		{#if tournamentsError}
-			<span class="text-red-300">{tournamentsError}</span>
-		{/if}
-		<RadioInputs
-			opts={['', ...(tournaments?.tournaments.map((t) => t.id) ?? [])]}
-			optlabels={[
-				'follow active tournament',
-				...(tournaments?.tournaments.map(
-					(t) => t.name + (t.id === tournaments?.activeTournamentId ? ' (active)' : '')
-				) ?? [])
-			]}
-			bind:value={overlay.current.tournament}
-		/>
-
-		<span>leaderboard view</span>
-		<RadioInputs
-			opts={[
-				...(isDuelTournament ? [] : ['standings' as const]),
-				...leaderboardRounds.map((r) => r.roundIndex),
-				...(isDuelTournament ? [] : ['final' as const])
-			]}
-			optlabels={[
-				...(isDuelTournament ? [] : ['current standings']),
-				...leaderboardRounds.map((r) =>
-					isDuelTournament
-						? duelRoundLabel(r)
-						: `${roundNumber(live.tournament?.rounds ?? [], r)}: ${r.map ? mapName(r.map) : r.stage}`
-				),
-				...(isDuelTournament ? [] : ['final standings'])
-			]}
-			bind:value={() => leaderboardView, (view) => (overlay.current.leaderboardView = view)}
-		/>
-
-		<span>bracket</span>
-		<RadioInputs
-			opts={(items.current.brackets ?? []).map((b) => b.id)}
-			optlabels={(items.current.brackets ?? []).map((b) => b.name)}
-			bind:value={overlay.current.bracket}
-		/>
-
-		<span>class</span>
-		<RadioInputs
-			opts={TFClasses.filter((c) => c !== 'overall')}
-			bind:value={settings.current.tfClass}
-		/>
-
-		<div class="flex justify-between">
-			<span>schedule day</span>
-			<button
-				class="button-remove"
-				title="re-fetch the sheet in the controls and on the overlay"
-				disabled={schedule.loading}
-				onclick={refreshSchedule}>refresh</button
-			>
-		</div>
-		<RadioInputs
-			opts={scheduleDays.map((_, i) => i)}
-			optlabels={scheduleDays.map((d) => d.name)}
-			bind:value={
-				() => settings.current.scheduleDay ?? 0, (day) => (settings.current.scheduleDay = day)
-			}
-			onchange={() => schedule.load(scheduleSheetUrl())}
-		/>
-		{#if schedule.loading}
-			<span class="opacity-60">loading...</span>
-		{:else if schedule.error}
-			<span class="text-red-300">{schedule.error}</span>
-		{:else if schedule.schedule}
-			<span class="opacity-60">
-				{schedule.schedule.title} ({schedule.schedule.segments.length} segments)
-			</span>
-		{/if}
-	</Accordion>
-
-	<!-- MARK: setup -->
-	<Accordion title="items" defaultstate="closed">
-		<div class="grid w-full grid-cols-2">
-			<Importplayer />
-			<ManagePlayers />
-			<ImportMap />
-			<ManageMaps />
-			<EditBracket />
-			<ManageBrackets />
-		</div>
-	</Accordion>
-
-	<SetFundraisingEvent />
-	<!-- settings -->
-	<Accordion title="settings" defaultstate="closed">
-		<span>font</span>
-		<RadioInputs opts={[...Fonts]} bind:value={settings.current.font} />
-		<span>mono font</span>
-		<RadioInputs opts={[...MonoFonts]} bind:value={settings.current.monoFont} />
-
-		<!-- color -->
-		<span>theme</span>
-		<div class="flex gap-2">
-			<div
-				class="size-12 border-4 border-ctp-text bg-ctp-lavender"
-				style:filter={getFiltersStyle()}
-			></div>
-			<div class="flex flex-col justify-evenly">
-				<RangeInput setting="hue" max={360} />
-				<RangeInput setting="saturation" max={200} />
+			<div class="flex justify-between">
+				<span>stage</span>
+				<ConfirmButton onconfirm={() => (items.current.stages = [...defaultStages])}
+					>reset to default</ConfirmButton
+				>
 			</div>
-		</div>
+			<ItemInput placeholder="add stage" item="stages" class="pb-2" />
+			<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
+		</Accordion>
 
-		<hr class="hr" />
-
-		<Checkbox desc="show flags" setting="enableFlags" />
-		<Checkbox desc="use moving background" setting="enableMovingBG" />
-		<Checkbox desc="use short map names" setting="useShortMapNames" />
-		<Checkbox desc="show POV guide" setting="enablePOVGuide" />
-		<Checkbox desc="use gradient" setting="enableGradient" />
-		{#if settings.current.enableGradient}
-			<Checkbox desc="use red & blue team colors" setting="enableTeamColors" />
-		{/if}
-		<Checkbox desc="use player PRs" setting="enablePRs" />
-		<Checkbox desc="use avatars" setting="enableAvatars" />
-		<Checkbox desc="use tags" setting="enableTags" />
-		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
-		{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
-			<div>{error.invalidJfRelayToken.msg}</div>
-		{/if}
-		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
-		<label>
-			<input
-				type="number"
-				min="0"
-				class="input remove-arrow w-7 accent-ctp-lavender"
-				bind:value={settings.current.fundraisingShowDonationSeconds}
+		<!-- MARK: automation
+        everything that changes the live picks without being asked; also switched next to them -->
+		<Accordion title="automation" defaultstate="closed">
+			<Checkbox setting="followConsoleStageMap" desc="set map and stage from the console" />
+			<Checkbox
+				setting="selectDuelPlayers"
+				desc="select players when a 1v1 race or map pick starts"
 			/>
-			<span>seconds to show each donation for</span>
-		</label>
-		<Checkbox setting="followRacePlayers" desc="filter players to current race" />
-		<Checkbox
-			setting="selectDuelPlayers"
-			desc="automatically select players on 1v1 race and map picks start"
-		/>
-	</Accordion>
-{/if}
+			<Checkbox
+				setting="followRacePlayers"
+				desc="list only the current race's players, in race order"
+			/>
+		</Accordion>
+
+		<!-- MARK: scene content
+        what the scenes show: set up before a segment, rarely changed during one -->
+		<Accordion title="scene content" defaultstate="closed">
+			<div class="flex items-center justify-between gap-2">
+				<label for="input-idle-obs-scene">idle OBS scene name</label>
+				<input
+					type="text"
+					class="input"
+					id="input-idle-obs-scene"
+					placeholder="Idle"
+					title="name of the OBS scene this overlay is shown on, without backgrounds"
+					value={settings.current.idleObsScene}
+					onchange={(e) => (settings.current.idleObsScene = (e.target as HTMLInputElement).value)}
+				/>
+			</div>
+
+			<div class="flex justify-between">
+				<span>leaderboard tournament</span>
+				<button class="button-remove" onclick={loadTournaments}>refresh</button>
+			</div>
+			{#if tournamentsError}
+				<span class="text-red-300">{tournamentsError}</span>
+			{/if}
+			<RadioInputs
+				opts={['', ...(tournaments?.tournaments.map((t) => t.id) ?? [])]}
+				optlabels={[
+					'follow active tournament',
+					...(tournaments?.tournaments.map(
+						(t) => t.name + (t.id === tournaments?.activeTournamentId ? ' (active)' : '')
+					) ?? [])
+				]}
+				bind:value={overlay.current.tournament}
+			/>
+
+			<span>leaderboard view</span>
+			<RadioInputs
+				opts={[
+					...(isDuelTournament ? [] : ['standings' as const]),
+					...leaderboardRounds.map((r) => r.roundIndex),
+					...(isDuelTournament ? [] : ['final' as const])
+				]}
+				optlabels={[
+					...(isDuelTournament ? [] : ['current standings']),
+					...leaderboardRounds.map((r) =>
+						isDuelTournament
+							? duelRoundLabel(r)
+							: `${roundNumber(live.tournament?.rounds ?? [], r)}: ${r.map ? mapName(r.map) : r.stage}`
+					),
+					...(isDuelTournament ? [] : ['final standings'])
+				]}
+				bind:value={() => leaderboardView, (view) => (overlay.current.leaderboardView = view)}
+			/>
+
+			<span>bracket</span>
+			<RadioInputs
+				opts={(items.current.brackets ?? []).map((b) => b.id)}
+				optlabels={(items.current.brackets ?? []).map((b) => b.name)}
+				bind:value={overlay.current.bracket}
+			/>
+
+			<span>class</span>
+			<RadioInputs
+				opts={TFClasses.filter((c) => c !== 'overall')}
+				bind:value={settings.current.tfClass}
+			/>
+
+			<div class="flex justify-between">
+				<span>schedule day</span>
+				<button
+					class="button-remove"
+					title="re-fetch the sheet in the controls and on the overlay"
+					disabled={schedule.loading}
+					onclick={refreshSchedule}>refresh</button
+				>
+			</div>
+			<RadioInputs
+				opts={scheduleDays.map((_, i) => i)}
+				optlabels={scheduleDays.map((d) => d.name)}
+				bind:value={
+					() => settings.current.scheduleDay ?? 0, (day) => (settings.current.scheduleDay = day)
+				}
+				onchange={() => schedule.load(scheduleSheetUrl())}
+			/>
+			{#if schedule.loading}
+				<span class="opacity-60">loading...</span>
+			{:else if schedule.error}
+				<span class="text-red-300">{schedule.error}</span>
+			{:else if schedule.schedule}
+				<span class="opacity-60">
+					{schedule.schedule.title} ({schedule.schedule.segments.length} segments)
+				</span>
+			{/if}
+		</Accordion>
+
+		<!-- MARK: setup -->
+		<Accordion title="items" defaultstate="closed">
+			<div class="grid w-full grid-cols-2">
+				<Importplayer />
+				<ManagePlayers />
+				<ImportMap />
+				<ManageMaps />
+				<EditBracket />
+				<ManageBrackets />
+			</div>
+		</Accordion>
+
+		<SetFundraisingEvent>
+			<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+			{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
+				<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
+			{/if}
+			<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
+			<label>
+				<input
+					type="number"
+					min="0"
+					class="input remove-arrow w-7 accent-ctp-lavender"
+					bind:value={settings.current.fundraisingShowDonationSeconds}
+				/>
+				<span>seconds to show each donation for</span>
+			</label>
+		</SetFundraisingEvent>
+
+		<Accordion title="overlay visuals" defaultstate="closed">
+			<span>font</span>
+			<RadioInputs opts={[...Fonts]} bind:value={settings.current.font} />
+			<span>mono font</span>
+			<RadioInputs opts={[...MonoFonts]} bind:value={settings.current.monoFont} />
+
+			<!-- color -->
+			<span>theme</span>
+			<div class="flex gap-2">
+				<div
+					class="size-12 border-4 border-ctp-text bg-ctp-lavender"
+					style:filter={getFiltersStyle()}
+				></div>
+				<div class="flex flex-col justify-evenly">
+					<RangeInput setting="hue" max={360} />
+					<RangeInput setting="saturation" max={200} />
+				</div>
+			</div>
+
+			<hr class="hr" />
+
+			<Checkbox desc="show flags" setting="enableFlags" />
+			<Checkbox desc="use moving background" setting="enableMovingBG" />
+			<Checkbox desc="use short map names" setting="useShortMapNames" />
+			<Checkbox desc="show POV guide" setting="enablePOVGuide" />
+			<Checkbox desc="use gradient" setting="enableGradient" />
+			{#if settings.current.enableGradient}
+				<Checkbox desc="use red & blue team colors" setting="enableTeamColors" />
+			{/if}
+			<Checkbox desc="use player PRs" setting="enablePRs" />
+			<Checkbox desc="use avatars" setting="enableAvatars" />
+			<Checkbox desc="use tags" setting="enableTags" />
+		</Accordion>
+	{/if}
+</section>

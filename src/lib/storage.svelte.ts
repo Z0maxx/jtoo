@@ -141,8 +141,8 @@ addMissingDefaults(settings, defaultSettings);
 addMissingDefaults(overlay, defaultOverlay);
 addMissingDefaults(fundraisingState, defaultFundraisingState);
 
-// the settings that only change how the overlay looks and behaves (fonts, theme and the
-// checkboxes in the controls' settings section); tokens, connections and scenes are left alone
+// the settings that only change how the overlay looks and behaves (the controls' overlay visuals
+// and fundraising settings); tokens, connections, scenes and automation are left alone
 const visualSettingKeys = [
 	'font',
 	'monoFont',
@@ -159,9 +159,7 @@ const visualSettingKeys = [
 	'enableTags',
 	'enableFundraisingRtd',
 	'enableFundraisingDonations',
-	'fundraisingShowDonationSeconds',
-	'followRacePlayers',
-	'selectDuelPlayers'
+	'fundraisingShowDonationSeconds'
 ] as const satisfies ReadonlyArray<keyof Settings>;
 
 export function resetVisualSettings() {

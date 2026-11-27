@@ -2,6 +2,10 @@
 	import { defaultFundraisingState, fundraisingState } from '$lib/storage.svelte';
 	import Accordion from './Accordion.svelte';
 	import ConfirmButton from './ConfirmButton.svelte';
+	import type { Snippet } from 'svelte';
+
+	// the fundraising settings, shown under the event
+	let { children }: { children?: Snippet } = $props();
 
 	type Error = { state: boolean; msg: string };
 
@@ -52,7 +56,7 @@
 	}
 </script>
 
-<Accordion title="fundraising event" defaultstate="closed">
+<Accordion title="fundraising" defaultstate="closed">
 	<form
 		class="flex flex-col gap-1"
 		onsubmit={(e) => {
@@ -84,4 +88,8 @@
 			<div class="text-red-300">{e.msg}</div>
 		{/if}
 	{/each}
+	{#if children}
+		<hr class="hr" />
+		{@render children()}
+	{/if}
 </Accordion>
