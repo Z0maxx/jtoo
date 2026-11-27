@@ -180,6 +180,7 @@ export type Settings = {
 	tfClass: Exclude<TFClass, 'overall'>; // the class shown on player cards and lists
 	scheduleDay: number; // index into scheduleDays, the sheet tab the schedule scene reads
 	jfRelayWebSocketToken: string;
+	jfGameServerToken: string; // the game server's console token, which RTD effects are sent with
 	logWsMessages: boolean;
 	obsWsIp: string;
 	obsWsPort: number | undefined;

@@ -47,6 +47,7 @@
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import { watchRtdDonations } from '$lib/fundraising-rtd';
+	import { connectGameServer } from '$lib/game-server.svelte';
 
 	type Error = { state: boolean; msg: string };
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
@@ -164,6 +165,8 @@
 		// with rtd on, the effect below connects instead (and checks the token)
 		if (settings.current.jfRelayWebSocketToken && !rtdEnabled)
 			jfRelayWs.connect(settings.current.jfRelayWebSocketToken);
+
+		if (settings.current.jfGameServerToken) connectGameServer();
 
 		if (settings.current.obsWsPw) {
 			obsConnect(settings.current.obsWsIp, settings.current.obsWsPort, settings.current.obsWsPw);

@@ -1,5 +1,6 @@
 import { Dwb } from '$lib/api/dwb/api-dwb';
-import { fundraisingState, settings } from '$lib/storage.svelte';
+import { gameServerToken, updateGameServerStatus } from '$lib/game-server.svelte';
+import { fundraisingState } from '$lib/storage.svelte';
 import { rtdEffects } from '$lib/websockets/jf-rtd/jf-rtd.svelte';
 import type { Donation } from '$lib/types.svelte';
 
@@ -12,15 +13,21 @@ const RTD_AMOUNT = 20;
  * donation could fire twice. Returns a function that stops it.
  */
 export function watchRtdDonations(): () => void {
-	//fundraisingState.current.lastDonationProcessedByRtdId = ''
+	// fundraisingState.current.lastDonationProcessedByRtdId = '';
 	const startedAt = Date.now();
 	let latestDonations: Donation[] = [];
 	let processing = false;
 	let stopped = false;
 
 	const donationsSubId = Dwb.subscribeToDonations((donations) => {
-		// donations[0].message = 'rtd: snail';
-		// donations[0].amount = 30;
+		// donations.at(-2)!.message = 'rtd: snail';
+		// donations.at(-2)!.amount = 30;
+		// donations.at(-2)!.createdAt = new Date(startedAt).toISOString();
+		//
+		// donations.at(-1)!.message = 'rtd: funnyfeeling';
+		// donations.at(-1)!.amount = 30;
+		// donations.at(-1)!.createdAt = new Date(startedAt).toISOString();
+		// console.log(donations);
 		latestDonations = donations;
 		processNewDonations();
 	});
@@ -37,6 +44,7 @@ export function watchRtdDonations(): () => void {
 			let pending = unprocessed(latestDonations);
 			while (pending.length > 0) {
 				for (const d of pending) {
+					// console.log(d);
 					// a restarted watcher has its own loop
 					if (stopped) return;
 					// marked before sending, so a donation never fires twice
@@ -84,7 +92,8 @@ function rtdEffectFor(d: Donation): string | undefined {
 
 async function sendRtdEffect(effect: string) {
 	try {
-		const resp = await fetch(`/api/rtd/${effect}?token=${settings.current.jfRelayWebSocketToken}`);
+		const resp = await fetch(`/api/rtd/${effect}?token=${gameServerToken()}`);
+		await updateGameServerStatus(resp.clone());
 		if (resp.status !== 204) {
 			console.error(await resp.text());
 		}

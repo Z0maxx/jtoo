@@ -7,6 +7,7 @@
 	import SetFundraisingEvent from './SetFundraisingEvent.svelte';
 	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import { obsConnect, obsStatus } from '$lib/websockets/obs/ws-obs.svelte';
+	import { connectGameServer, gameServer } from '$lib/game-server.svelte';
 	import type { PoolImportResult } from '$lib/console-pools.svelte';
 	import type { ConsoleLive, FeedState } from '$lib/websockets/console/console-live.svelte';
 	import type { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
@@ -38,7 +39,7 @@
 
 	// MARK: status bar
 	// each status opens its connection's settings right below the bar, one at a time
-	type StatusId = 'obs' | 'console' | 'relay' | 'fundraising';
+	type StatusId = 'obs' | 'console' | 'relay' | 'game server' | 'fundraising';
 	let openStatus: StatusId | null = $state(null);
 
 	// 'off' is a connection that isn't set up, which isn't worth a red icon. each state has its
@@ -66,7 +67,14 @@
 		const feed: Status = settings.current.ksnWebSocketToken ? live.raceState : 'off';
 		return statusRank[poolStatus] > statusRank[feed] ? poolStatus : feed;
 	});
-	const rtdError = $derived(settings.current.enableFundraisingRtd ? relayError : undefined);
+	// rtd effects go out through the game server
+	const rtdError = $derived(
+		!settings.current.enableFundraisingRtd
+			? undefined
+			: !settings.current.jfGameServerToken
+				? 'no game server token set'
+				: gameServer.error || undefined
+	);
 	const statuses = $derived<{ id: StatusId; status: Status; detail: string }[]>([
 		{
 			id: 'obs',
@@ -96,8 +104,13 @@
 			status: settings.current.jfRelayWebSocketToken ? relayState : 'off',
 			detail: relayError || (settings.current.jfRelayWebSocketToken ? '' : 'no token set')
 		},
+		{
+			id: 'game server',
+			status: settings.current.jfGameServerToken ? gameServer.state : 'off',
+			detail: gameServer.error || (settings.current.jfGameServerToken ? '' : 'no token set')
+		},
 		// not a connection of its own: set up once there's an event, and broken when RTD is on but
-		// can't reach the relay
+		// can't reach the game server
 		{
 			id: 'fundraising',
 			status: !fundraisingState.current.eventUrl ? 'off' : rtdError ? 'closed' : 'open',
@@ -283,6 +296,16 @@
 						/>
 					{/snippet}
 				</ConnectionPanel>
+			{:else if openStatus === 'game server'}
+				<!-- rtd effects are sent to the game server -->
+				<ConnectionPanel
+					label="token"
+					id="input-game-server-token"
+					bind:value={settings.current.jfGameServerToken}
+					onconnect={connectGameServer}
+					state={gameServer.state}
+					error={gameServer.error || undefined}
+				/>
 			{:else if openStatus === 'fundraising'}
 				<SetFundraisingEvent>
 					<!-- also in the page's automation section -->

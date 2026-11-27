@@ -57,6 +57,7 @@ export const defaultSettings: Settings = {
 	tfClass: 'soldier',
 	scheduleDay: 0,
 	jfRelayWebSocketToken: '',
+	jfGameServerToken: '',
 	logWsMessages: false,
 	overlayScene: 'DualPovMatchScene',
 	idleObsScene: 'Idle',

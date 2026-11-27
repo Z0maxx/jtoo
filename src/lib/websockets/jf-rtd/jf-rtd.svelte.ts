@@ -28,12 +28,17 @@ export class JfRtdWebSocket {
 	}
 
 	connect(wsToken: string) {
-		if (this._ws && this._ws.readyState == ProxyWebSocket.OPEN) {
+		if (
+			this._ws &&
+			(this._ws.readyState === ProxyWebSocket.OPEN ||
+				this._ws.readyState === ProxyWebSocket.CONNECTING)
+		) {
 			console.log('closing web socket connection...');
 			this._ws.close();
 		}
 
-		this._ws = new ProxyWebSocket(`wss://console.jumpfortress.tf/?token=${wsToken}`);
+		const ws = new ProxyWebSocket(`wss://console.jumpfortress.tf/?token=${wsToken}`);
+		this._ws = ws;
 
 		this._ws.onclose = () => {
 			console.log('jf rtd websocket closing');
@@ -44,7 +49,8 @@ export class JfRtdWebSocket {
 		};
 
 		this._ws.state?.subscribe((state) => {
-			this._wsState = state;
+			// a replaced socket closing late mustn't mark the new one closed
+			if (this._ws === ws) this._wsState = state;
 		});
 	}
 
