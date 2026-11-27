@@ -4,7 +4,13 @@
 	import DraggablePlayerList from '../DraggablePlayerList.svelte';
 	import StartingMatches from '../StartingMatches.svelte';
 	import { items } from '$lib/storage.svelte';
-	import { BracketSizes, newBracket, type SavedBracket, type SteamID3 } from '$lib/types.svelte';
+	import {
+		BracketSizes,
+		Eliminations,
+		newBracket,
+		type SavedBracket,
+		type SteamID3
+	} from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
 	import { poolPlayers } from '$lib/console-pools.svelte';
 
@@ -91,6 +97,16 @@
 			/>
 		</div>
 
+		<span class="col-span-4">elimination</span>
+		<div class="col-span-8">
+			<!-- a different format means different matches, so the results start over -->
+			<RadioInputs
+				opts={[...Eliminations]}
+				bind:value={() => bracket.elimination ?? 'double', (e) => (bracket.elimination = e)}
+				onchange={() => (bracket.results = {})}
+			/>
+		</div>
+
 		<hr class="hr" />
 
 		<DraggablePlayerList
@@ -136,6 +152,7 @@
 			<h2 class="col-span-full text-xl">starting matches</h2>
 			<StartingMatches
 				size={bracket.size}
+				elimination={bracket.elimination}
 				bind:players={bracket.players}
 				onchange={() => (bracket.results = {})}
 				class="col-span-full"

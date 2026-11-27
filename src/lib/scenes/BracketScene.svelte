@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		clearWinner,
-		formats,
+		formatOf,
 		playersOf,
 		setWinner,
 		winnerOf,
@@ -38,7 +38,7 @@
 
 	// the bracket picked in the controls
 	let saved = $derived(items.current.brackets?.find((b) => b.id == overlay.current.bracket));
-	let format = $derived(saved ? formats[saved.size] : undefined);
+	let format = $derived(saved ? formatOf(saved) : undefined);
 
 	// MARK: Layout
 	// Each round is a column, upper bracket on the top row and lower bracket below. The lower
@@ -160,7 +160,8 @@
 		style:grid-column={gridColumn(format, half, i)}
 		in:fade
 	>
-		{#if i == 0}
+		<!-- a single elimination bracket has only the one half, so it needs no label -->
+		{#if i == 0 && format.lower.length}
 			<h2 class="half-label" style:filter={getFiltersStyle()}>
 				{half == 'upper' ? 'Upper' : 'Lower'} Bracket
 			</h2>

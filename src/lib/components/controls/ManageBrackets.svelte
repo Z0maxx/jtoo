@@ -17,7 +17,9 @@
 	<div class="grid w-full grid-cols-[1fr_max-content_max-content_max-content] items-center gap-x-4">
 		{#each items.current.brackets ?? [] as bracket (bracket.id)}
 			<div>{bracket.name}</div>
-			<div class="opacity-60">{bracket.size} players</div>
+			<div class="opacity-60">
+				{bracket.size} players, {bracket.elimination ?? 'double'} elim
+			</div>
 			<div><EditBracket {bracket} /></div>
 			<div>
 				<ConfirmButton onconfirm={() => deleteBracket(bracket)}>delete</ConfirmButton>

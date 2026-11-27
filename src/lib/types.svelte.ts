@@ -78,20 +78,23 @@ export const nullPlayer: Player = Object.freeze(new Player());
 export const BracketOptions = ['whole', 'upper', 'lower'] as const;
 export type BracketOption = (typeof BracketOptions)[number];
 
-// a double elimination bracket, made on its own from JTOO's players
+// a single or double elimination bracket, made on its own from JTOO's players
 export const BracketSizes = [4, 8, 10] as const;
 export type BracketSize = (typeof BracketSizes)[number];
+export const Eliminations = ['double', 'single'] as const;
+export type Elimination = (typeof Eliminations)[number];
 
 export type SavedBracket = {
 	id: string;
 	name: string;
 	size: BracketSize;
+	elimination?: Elimination; // double when missing, as brackets saved before it were
 	players: SteamID3[]; // seeding order: seed 1 first
 	results: Results;
 };
 
 export function newBracket(): SavedBracket {
-	return { id: uuidv4(), name: '', size: 8, players: [], results: {} };
+	return { id: uuidv4(), name: '', size: 8, elimination: 'double', players: [], results: {} };
 }
 
 // MARK: Settings
