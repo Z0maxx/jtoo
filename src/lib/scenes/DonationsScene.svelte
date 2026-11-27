@@ -169,7 +169,10 @@
 							>
 								{usd(raised)}
 							</span>
-							<span class="text-4xl font-semibold text-ctp-subtext0 uppercase">raised</span>
+							<span
+								class="text-4xl font-semibold text-ctp-subtext0 uppercase"
+								style:filter={getFiltersStyle()}>raised</span
+							>
 						</div>
 						{#if goal}
 							<div class="flex items-center gap-4">
@@ -181,7 +184,10 @@
 										GOAL REACHED
 									</span>
 								{/if}
-								<span class="text-4xl font-semibold text-ctp-subtext0 uppercase">
+								<span
+									class="text-4xl font-semibold text-ctp-subtext0 uppercase"
+									style:filter={getFiltersStyle()}
+								>
 									goal
 									<span class="text-white tabular-nums {settings.current.monoFont}"
 										>{usd(goal)}</span
@@ -196,7 +202,9 @@
 				<div class="flex min-h-0 flex-1 gap-14">
 					<!-- MARK: top donations -->
 					<div class="flex min-w-0 flex-1 flex-col gap-4">
-						<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Top donations</span
+						<span
+							class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+							style:filter={getFiltersStyle()}>Top donations</span
 						>
 						{#if top.length}
 							<ul class="flex flex-col gap-1">
@@ -211,14 +219,17 @@
 								{/each}
 							</ul>
 						{:else}
-							<p class="px-3 text-2xl text-ctp-subtext0">Be the first to donate!</p>
+							<p class="px-3 text-2xl text-ctp-subtext0" style:filter={getFiltersStyle()}>
+								Be the first to donate!
+							</p>
 						{/if}
 					</div>
 
 					<!-- MARK: recent donations -->
 					<div class="flex min-w-0 flex-1 flex-col gap-4">
-						<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
-							>Recent donations</span
+						<span
+							class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+							style:filter={getFiltersStyle()}>Recent donations</span
 						>
 						{#if recent.length}
 							<div
@@ -277,6 +288,7 @@
 									class="truncate leading-tight text-ctp-subtext0 italic {large
 										? 'text-2xl'
 										: 'text-xl'}"
+									style:filter={getFiltersStyle()}
 								>
 									{message}
 								</span>
@@ -297,7 +309,10 @@
 			<!-- MARK: milestones -->
 			{#if milestones.length}
 				<div class="flex w-[36rem] shrink-0 flex-col gap-4">
-					<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Milestones</span>
+					<span
+						class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+						style:filter={getFiltersStyle()}>Milestones</span
+					>
 					<ul
 						class="-mx-1 flex min-h-0 flex-1 flex-col overflow-hidden p-1"
 						bind:this={milestoneList}

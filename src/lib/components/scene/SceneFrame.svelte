@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import SceneTint from '$lib/components/SceneTint.svelte';
-	import { getFiltersStyle } from '$lib/filters.svelte';
 
 	// a scene's shell: the top border, then the tinted column its content stacks in.
 	// 'page' fills the space under the border with padded content (pair with SceneHeader),

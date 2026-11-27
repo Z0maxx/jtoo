@@ -268,11 +268,13 @@
 	</SceneHeader>
 
 	{#if !tournament}
-		<p class="text-3xl text-ctp-subtext0 italic">
+		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>
 			{live.tournamentId ? 'loading tournament...' : 'no tournament'}
 		</p>
 	{:else if isDuel && !round}
-		<p class="text-3xl text-ctp-subtext0 italic">no rounds played yet</p>
+		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>
+			no rounds played yet
+		</p>
 	{:else}
 		{#key board === 'round' ? round?.roundIndex : board}
 			<div class="flex min-h-0 flex-1 gap-14" in:fade={{ duration: 400 }}>
@@ -298,6 +300,7 @@
 		<div
 			class="grid items-center gap-x-[1em] px-[1.5em] text-ctp-subtext0 uppercase *:text-[1.375em] *:tracking-[0.16em]"
 			style:grid-template-columns={standingsColumns}
+			style:filter={getFiltersStyle()}
 		>
 			<span></span>
 			{#if settings.current.enableAvatars}<span></span>{/if}
@@ -328,7 +331,7 @@
 									: p === null
 										? 'text-ctp-overlay0'
 										: 'text-ctp-subtext1'}"
-								style:filter={p === 1 ? getFiltersStyle() : undefined}
+								style:filter={getFiltersStyle()}
 							>
 								{p ?? '–'}
 							</span>
@@ -352,7 +355,10 @@
 <!-- the rounds played so far and who won them, as tiles styled like the map scene's cards -->
 {#snippet RoundsList()}
 	<div class="flex w-[28rem] shrink-0 flex-col gap-4">
-		<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Rounds</span>
+		<span
+			class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+			style:filter={getFiltersStyle()}>Rounds</span
+		>
 		<!-- sized in em, shrinking from full size until every round fits -->
 		<ul
 			class="flex min-h-0 flex-1 flex-col gap-[0.75em] overflow-hidden"
@@ -369,7 +375,7 @@
 				{@const avatar = winner !== undefined ? getPlayer(winner).avatarURL : ''}
 				<!-- the outline is drawn inside, so the list's overflow doesn't clip it -->
 				<li
-					class="relative isolate flex shrink-0 items-center gap-[1em] overflow-hidden rounded-[1em] px-[1em] py-[0.75em] outline-2 -outline-offset-2 outline-ctp-lavender/25"
+					class="relative isolate flex shrink-0 items-center gap-[1em] overflow-hidden rounded-[1em] px-[1em] py-[0.75em]"
 				>
 					{#if image}
 						<img
@@ -414,6 +420,11 @@
 							</span>
 						{/if}
 					</span>
+					<!-- the outline is its own layer, so the filters tint it without tinting the map -->
+					<div
+						class="pointer-events-none absolute inset-0 rounded-[1em] ring-2 ring-ctp-lavender/25 ring-inset"
+						style:filter={getFiltersStyle()}
+					></div>
 				</li>
 			{/each}
 		</ul>
@@ -432,6 +443,7 @@
 		<div
 			class="grid items-center gap-x-[1.25em] px-[1.5em] text-ctp-subtext0 uppercase *:text-[1.375em] *:tracking-[0.16em]"
 			style:grid-template-columns={resultColumns}
+			style:filter={getFiltersStyle()}
 		>
 			<span></span>
 			{#if settings.current.enableAvatars}<span></span>{/if}
@@ -465,10 +477,14 @@
 						class="text-right text-[2.375em] font-semibold tabular-nums {mono} {entry.prMs === null
 							? 'text-ctp-overlay0'
 							: 'text-white'}"
+						style:filter={getFiltersStyle()}
 					>
 						{entry.prMs === null ? 'DNF' : msToFormattedTime(entry.prMs)}
 					</span>
-					<span class="text-right text-[1.875em] font-medium text-ctp-subtext0 tabular-nums {mono}">
+					<span
+						class="text-right text-[1.875em] font-medium text-ctp-subtext0 tabular-nums {mono}"
+						style:filter={getFiltersStyle()}
+					>
 						{gap(entry, i)}
 					</span>
 					{#if showPoints}
@@ -488,9 +504,7 @@
 	<div class="flex w-[28rem] shrink-0 flex-col gap-8">
 		<!-- a round with no map recorded (see roundMap) has nothing to show here -->
 		{#if round.map}
-			<div
-				class="relative h-75 shrink-0 overflow-hidden rounded-3xl bg-ctp-surface0 outline-4 outline-ctp-lavender"
-			>
+			<div class="relative h-75 shrink-0 overflow-hidden rounded-3xl bg-ctp-surface0">
 				{#if image}
 					<img
 						in:fade
@@ -508,12 +522,20 @@
 						{mapName(round.map)}
 					</span>
 				</div>
+				<!-- the outline is its own layer, so the filters tint it without tinting the map -->
+				<div
+					class="pointer-events-none absolute inset-0 rounded-3xl ring-4 ring-ctp-lavender ring-inset"
+					style:filter={getFiltersStyle()}
+				></div>
 			</div>
 		{/if}
 
 		{#if standings.length}
 			<div class="flex flex-col gap-3">
-				<span class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase">Standings</span>
+				<span
+					class="text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+					style:filter={getFiltersStyle()}>Standings</span
+				>
 				<ol class="flex flex-col gap-1">
 					{#each standings as s (s.steamId3)}
 						<li class="flex items-center gap-4 px-3 py-1.5">
@@ -546,7 +568,7 @@
 			<div class="flex min-w-0 flex-1 flex-col items-center">
 				{#if settings.current.enableAvatars}
 					<span
-						class="mb-6 flex items-center justify-center overflow-hidden rounded-[1.75rem] bg-ctp-lavender/15 font-bold text-ctp-lavender uppercase ring-6 {medal.ring} {first
+						class="mb-6 flex items-center justify-center overflow-hidden rounded-[1.75rem] font-bold uppercase ring-6 {medal.ring} {first
 							? 'size-50 text-[6.25rem]'
 							: 'size-39 text-[4.875rem]'}"
 					>
@@ -559,7 +581,13 @@
 								draggable="false"
 							/>
 						{:else}
-							{playerLabel(p.steamId3)[0]}
+							<!-- tinted on its own, so the medal ring keeps its colour -->
+							<span
+								class="flex size-full items-center justify-center bg-ctp-lavender/15 text-ctp-lavender"
+								style:filter={getFiltersStyle()}
+							>
+								{playerLabel(p.steamId3)[0]}
+							</span>
 						{/if}
 					</span>
 				{/if}
@@ -577,7 +605,10 @@
 					>
 						{formatScore(p.score)}
 					</span>
-					<span class="text-2xl font-semibold text-ctp-subtext0 uppercase">
+					<span
+						class="text-2xl font-semibold text-ctp-subtext0 uppercase"
+						style:filter={getFiltersStyle()}
+					>
 						{isRjr ? 'pts' : 'avg'}
 					</span>
 				</span>
@@ -603,7 +634,10 @@
 
 <!-- MARK: shared -->
 {#snippet Position(position: number, size: string)}
-	<span class="font-bold {size} {medalText(position)} {settings.current.monoFont}">
+	<span
+		class="font-bold {size} {medalText(position)} {settings.current.monoFont}"
+		style:filter={position in medals ? undefined : getFiltersStyle()}
+	>
 		{position}
 	</span>
 {/snippet}

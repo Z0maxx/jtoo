@@ -33,17 +33,21 @@
 		style:filter={getFiltersStyle()}
 	></div>
 	<div class="flex items-baseline gap-2.5">
-		<span class="text-3xl font-bold text-ctp-lavender">{money(overview.raised)}</span>
-		<span class="text-lg text-ctp-subtext0">
+		<span class="text-3xl font-bold text-ctp-lavender" style:filter={getFiltersStyle()}
+			>{money(overview.raised)}</span
+		>
+		<span class="text-lg text-ctp-subtext0" style:filter={getFiltersStyle()}>
 			raised of {money(goal)} goal · {overview.donationCount} donations
 		</span>
 		{#if settings.current.enableFundraisingRtd}
-			<span class="ml-auto text-base text-ctp-overlay2">$20+ rolls RTD · !rtd in chat</span>
+			<span class="ml-auto text-base text-ctp-overlay2" style:filter={getFiltersStyle()}
+				>$20+ rolls RTD · !rtd in chat</span
+			>
 		{/if}
 	</div>
 	<RocketProgressBar {overview} />
 	{#if next}
-		<span class="truncate text-base text-ctp-subtext0">
+		<span class="truncate text-base text-ctp-subtext0" style:filter={getFiltersStyle()}>
 			next milestone
 			<span class="text-ctp-lavender {settings.current.monoFont}">{money(next.goal)}</span>
 			· {next.description}

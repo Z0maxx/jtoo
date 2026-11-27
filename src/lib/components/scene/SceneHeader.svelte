@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getFiltersStyle } from '$lib/filters.svelte';
 	import type { Snippet } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { fitText } from '$lib/fit-text';
@@ -24,7 +25,10 @@
 	<!-- flex-1 gives the column the header's spare width, which the title shrinks to fit -->
 	<div class="flex min-w-0 flex-1 flex-col gap-1">
 		{#if eventName}
-			<span class="text-2xl tracking-[0.18em] text-ctp-subtext0 uppercase">{eventName}</span>
+			<span
+				class="text-2xl tracking-[0.18em] text-ctp-subtext0 uppercase"
+				style:filter={getFiltersStyle()}>{eventName}</span
+			>
 		{/if}
 		<!-- a new title fades in; the first one shows at once -->
 		{#key title}

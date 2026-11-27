@@ -105,19 +105,24 @@
 						style:filter={getFiltersStyle()}
 					></div>
 					<div class="flex items-center gap-2.5">
-						<span class="truncate text-[21px] font-bold">{donation.name || 'Anonymous'}</span>
+						<span class="truncate text-[21px] font-bold" style:filter={getFiltersStyle()}
+							>{donation.name || 'Anonymous'}</span
+						>
 						<span
 							class="ml-auto text-[21px] {donation.id === replaced
 								? ''
 								: 'text-ctp-lavender'} {settings.current.monoFont}"
+							style:filter={getFiltersStyle()}
 						>
 							${donation.amount.toLocaleString('en-US')}
 						</span>
 					</div>
 					<p
-						class="m-0 line-clamp-4 text-lg leading-snug {donation.id === replaced
+						class="m-0 line-clamp-4 text-lg leading-snug
+                                                {donation.id === replaced
 							? ''
 							: 'text-ctp-subtext1'}"
+						style:filter={getFiltersStyle()}
 					>
 						{donation.message}
 					</p>

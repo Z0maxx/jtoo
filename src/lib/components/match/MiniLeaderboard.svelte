@@ -116,6 +116,7 @@
 		></div>
 		<div
 			class="mb-1 flex justify-between border-b border-ctp-lavender/20 px-0.5 pb-2 text-sm font-medium tracking-[0.08em] text-ctp-overlay2 uppercase"
+			style:filter={getFiltersStyle()}
 		>
 			<span>Leaderboard</span>
 			<span>{singleRun ? 'run / gap' : 'pr / gap'}</span>
@@ -132,15 +133,23 @@
 	{@const lead = i === 0 && !row.out}
 	{@const avatar = getPlayer(row.entry.steamId3).avatarURL}
 	<div
-		class="flex min-w-0 items-center gap-3 rounded-md px-1.5
-        {lead ? 'bg-ctp-lavender/14' : ''} 
+		class="relative isolate flex min-w-0 items-center gap-3 rounded-md px-1.5
         {row.out ? 'opacity-45' : ''}"
 	>
+		<!-- the leader's highlight is its own layer, so the filters tint it without tinting the
+		     avatar or the progress bar -->
+		{#if lead}
+			<div
+				class="absolute inset-0 -z-1 rounded-md bg-ctp-lavender/14"
+				style:filter={getFiltersStyle()}
+			></div>
+		{/if}
 		<!-- position -->
 		<span
 			class="w-5.5 shrink-0 text-right text-xl font-bold {lead
 				? 'text-ctp-lavender'
-				: 'text-ctp-overlay2'}">{row.out ? '–' : i + 1}</span
+				: 'text-ctp-overlay2'}"
+			style:filter={getFiltersStyle()}>{row.out ? '–' : i + 1}</span
 		>
 		<!-- avatar -->
 		{#if settings.current.enableAvatars}
@@ -160,20 +169,29 @@
 			class="truncate text-[22px] font-medium
             {row.progress === null ? 'min-w-0 flex-1' : 'w-26 shrink-0'}
             {row.out ? 'line-through' : ''}"
+			style:filter={getFiltersStyle()}
 		>
 			{playerLabel(row.entry.steamId3)}
 		</span>
 		<!-- progress through the map -->
 		{#if row.progress !== null}
-			<div class="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-ctp-lavender/12">
+			<div class="relative isolate h-2 min-w-0 flex-1 overflow-hidden rounded-full">
+				<div
+					class="absolute inset-0 -z-1 bg-ctp-lavender/12"
+					style:filter={getFiltersStyle()}
+				></div>
 				<div
 					class="h-full rounded-full transition-[width] duration-700 {barColor(row)}"
 					style:width="{row.progress * 100}%"
+					style:filter={row.entry.status === 'finished' && !row.out ? getFiltersStyle() : undefined}
 				></div>
 			</div>
 		{/if}
 		<!-- time, gap or DNF -->
-		<span class="w-27 shrink-0 text-right text-xl {settings.current.monoFont}">
+		<span
+			class="w-27 shrink-0 text-right text-xl {settings.current.monoFont}"
+			style:filter={getFiltersStyle()}
+		>
 			{row.value}
 		</span>
 	</div>

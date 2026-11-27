@@ -56,8 +56,8 @@
 			<!-- outlined in the picker's team colour, like the map scene's series cards -->
 			<div
 				class={[
-					'relative min-w-0 overflow-hidden rounded-xl outline-3 transition-opacity duration-500',
-					card.actor ? teamOutline[card.actor] : 'outline-ctp-lavender',
+					'relative min-w-0 overflow-hidden rounded-xl transition-opacity duration-500',
+					card.actor && ['outline-3', teamOutline[card.actor]],
 					{ 'opacity-60': dimmed }
 				]}
 			>
@@ -100,6 +100,14 @@
 						</span>
 					{/if}
 				</div>
+				<!-- a decider's outline is its own layer, so the filters tint it without tinting the
+				     map -->
+				{#if !card.actor}
+					<div
+						class="pointer-events-none absolute inset-0 rounded-xl ring-3 ring-ctp-lavender ring-inset"
+						style:filter={getFiltersStyle()}
+					></div>
+				{/if}
 			</div>
 		{/each}
 	</div>

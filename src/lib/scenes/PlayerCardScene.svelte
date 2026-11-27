@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getFiltersStyle } from '$lib/filters.svelte';
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
@@ -100,7 +101,9 @@
 	<SceneHeader eventName={EVENT_NAME} title="Head to Head" />
 
 	{#if !players.A.name && !players.B.name}
-		<p class="text-3xl text-ctp-subtext0 italic">pick players A and B in the controls</p>
+		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>
+			pick players A and B in the controls
+		</p>
 	{:else}
 		<!-- the players sit over their side of the chart -->
 		<div class="grid grid-cols-[minmax(0,1fr)_20rem_minmax(0,1fr)] items-center gap-6">
@@ -142,6 +145,7 @@
 							class="pointer-events-none absolute inset-0 rounded-[0.875rem] ring-inset {row.pick
 								? `ring-3 ${teamRing[row.pick.side]}`
 								: 'ring-2 ring-ctp-lavender/25'}"
+							style:filter={row.pick ? undefined : getFiltersStyle()}
 						></div>
 					</div>
 
@@ -170,12 +174,14 @@
 						draggable="false"
 					/>
 				{:else}
-					<span
-						class="flex size-30 shrink-0 items-center justify-center rounded-3xl bg-ctp-lavender/15 text-6xl font-bold text-ctp-lavender uppercase ring-5 {teamRing[
-							side
-						]}"
-					>
-						{player.name[0]}
+					<span class="size-30 shrink-0 rounded-3xl ring-5 {teamRing[side]}">
+						<!-- tinted on its own, so the team ring keeps its colour -->
+						<span
+							class="flex size-full items-center justify-center rounded-3xl bg-ctp-lavender/15 text-6xl font-bold text-ctp-lavender uppercase"
+							style:filter={getFiltersStyle()}
+						>
+							{player.name[0]}
+						</span>
 					</span>
 				{/if}
 			{/if}
@@ -189,12 +195,15 @@
 					</span>
 				</span>
 				<!-- stats come from Tempus and Tempus Plaza, and aren't there for every player -->
-				<span class="flex gap-5.5 text-[1.375rem] text-ctp-subtext0">
+				<span
+					class="flex gap-5.5 text-[1.375rem] text-ctp-subtext0"
+					style:filter={getFiltersStyle()}
+				>
 					{@render Stat(rank?.rank ? `#${rank.rank}` : '–', tfClass)}
 					{@render Stat(`${player.WRs?.[tfClass] ?? '–'}`, 'WRs')}
 					{@render Stat(`${player.TTs?.[tfClass] ?? '–'}`, 'TTs')}
 				</span>
-				<span class="text-xl text-ctp-subtext0">
+				<span class="text-xl text-ctp-subtext0" style:filter={getFiltersStyle()}>
 					{[
 						rank?.title,
 						rank?.points ? `${rank.points.toLocaleString('en-US')} points` : '',
@@ -231,11 +240,14 @@
 				: row.faster === side
 					? teamText[side]
 					: 'text-ctp-subtext1'}"
+			style:filter={run && row.faster === side ? undefined : getFiltersStyle()}
 		>
 			{run ? formatTime(run.seconds) : 'no PR'}
 		</span>
 		{#if run}
-			<span class="text-[1.0625rem] text-ctp-subtext0">Rank #{run.rank}</span>
+			<span class="text-[1.0625rem] text-ctp-subtext0" style:filter={getFiltersStyle()}
+				>Rank #{run.rank}</span
+			>
 		{/if}
 	</div>
 {/snippet}

@@ -67,7 +67,10 @@
 						<span class="size-4 rounded-full bg-ctp-red"></span>
 						{STREAM_URL}
 					</SceneTag>
-					<span class="text-xl tracking-[0.12em] text-ctp-subtext0 uppercase">all times CET</span>
+					<span
+						class="text-xl tracking-[0.12em] text-ctp-subtext0 uppercase"
+						style:filter={getFiltersStyle()}>all times CET</span
+					>
 				{/snippet}
 			</SceneHeader>
 		</div>

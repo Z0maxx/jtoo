@@ -77,6 +77,7 @@
 		<div class="flex min-h-0 flex-1 flex-col gap-2.5">
 			<div
 				class="grid grid-cols-[6rem_minmax(0,1fr)_6rem_6rem] items-center gap-x-5 text-xl tracking-[0.16em] text-ctp-subtext0 uppercase"
+				style:filter={getFiltersStyle()}
 			>
 				<span class="text-right">Rank</span>
 				<span>Player</span>
@@ -111,7 +112,7 @@
 										: rank === null
 											? 'bg-ctp-overlay0/25'
 											: 'bg-ctp-lavender/30'}"
-									style:filter={medal || rank === null ? undefined : getFiltersStyle()}
+									style:filter={medal ? undefined : getFiltersStyle()}
 								></span>
 								{#if settings.current.enableFlags}
 									<div class="w-7">
@@ -139,7 +140,10 @@
 								{/if}
 
 								<span class="truncate text-2xl font-semibold text-white">{player.name}</span>
-								<span class="shrink-0 truncate text-lg text-ctp-subtext0">
+								<span
+									class="shrink-0 truncate text-lg text-ctp-subtext0"
+									style:filter={getFiltersStyle()}
+								>
 									{rank === null ? 'unranked' : (title ?? '')}
 								</span>
 							</span>
@@ -154,7 +158,10 @@
 						<span class="text-right text-2xl font-semibold text-white tabular-nums {mono}">
 							{player.WRs?.[tfClass] ?? '–'}
 						</span>
-						<span class="text-right text-2xl font-semibold text-ctp-subtext1 tabular-nums {mono}">
+						<span
+							class="text-right text-2xl font-semibold text-ctp-subtext1 tabular-nums {mono}"
+							style:filter={getFiltersStyle()}
+						>
 							{player.TTs?.[tfClass] ?? '–'}
 						</span>
 					</li>
@@ -162,6 +169,6 @@
 			</ol>
 		</div>
 	{:else}
-		<p class="text-3xl text-ctp-subtext0 italic">no players</p>
+		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>no players</p>
 	{/if}
 </SceneFrame>

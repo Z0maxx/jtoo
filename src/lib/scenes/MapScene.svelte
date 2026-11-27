@@ -227,7 +227,7 @@
 					class="truncate text-5xl leading-tight font-bold uppercase"
 				>
 					<span class={teamText.A}>{players.A.name}</span>
-					<span class="font-medium text-ctp-subtext0">vs.</span>
+					<span class="font-medium text-ctp-subtext0" style:filter={getFiltersStyle()}>vs.</span>
 					<span class={teamText.B}>{players.B.name}</span>
 				</span>
 			{/if}
@@ -262,10 +262,9 @@
 							<div
 								in:receiveIn|global={{ key: map.tile.key }}
 								out:sendOut|global={{ key: map.tile.key }}
-								class="relative h-100 overflow-hidden rounded-3xl outline-4
-                                                                {map.actor
-									? teamOutline[map.actor]
-									: 'outline-ctp-lavender'}"
+								class="relative h-100 overflow-hidden rounded-3xl {map.actor
+									? `outline-4 ${teamOutline[map.actor]}`
+									: ''}"
 							>
 								{@render MapImage(map.tile.image)}
 								<div
@@ -297,6 +296,14 @@
 										</span>
 									{/if}
 								</div>
+								<!-- a decider's outline is its own layer, so the filters tint it without
+								     tinting the map -->
+								{#if !map.actor}
+									<div
+										class="pointer-events-none absolute inset-0 rounded-3xl ring-4 ring-ctp-lavender ring-inset"
+										style:filter={getFiltersStyle()}
+									></div>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -307,7 +314,8 @@
 						<span
 							class="shrink-0 text-2xl tracking-[0.16em] text-ctp-subtext0 uppercase"
 							in:fadeIn|global={{ delay: 400 }}
-							out:fadeOut|global={{ duration: 200 }}>Banned</span
+							out:fadeOut|global={{ duration: 200 }}
+							style:filter={getFiltersStyle()}>Banned</span
 						>
 						<div
 							class="grid grow gap-5"
@@ -317,8 +325,14 @@
 								<div
 									in:receiveIn|global={{ key: ban.tile.key }}
 									out:sendOut|global={{ key: ban.tile.key }}
-									class="flex items-center gap-4 rounded-xl border-2 border-ctp-lavender/15 bg-ctp-lavender/5 p-2"
+									class="relative isolate flex items-center gap-4 rounded-xl border-2 border-transparent p-2"
 								>
+									<!-- the card is its own layer, so the filters tint it without tinting the
+									     player's colour -->
+									<div
+										class="absolute -inset-0.5 -z-1 rounded-xl border-2 border-ctp-lavender/15 bg-ctp-lavender/5"
+										style:filter={getFiltersStyle()}
+									></div>
 									<div
 										class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg brightness-50 grayscale"
 									>
@@ -327,6 +341,7 @@
 									<div class="flex min-w-0 flex-col">
 										<span
 											class="truncate text-3xl font-bold text-ctp-subtext0 uppercase line-through"
+											style:filter={getFiltersStyle()}
 										>
 											{ban.tile.name}
 										</span>
@@ -358,7 +373,7 @@
 							class="relative overflow-hidden rounded-2xl transition-[width,height] duration-700 ease-out {r?.action ===
 							'pick'
 								? `outline-4 ${teamOutline[r.actor]}`
-								: 'outline-2 outline-ctp-lavender/25'}"
+								: ''}"
 						>
 							<div
 								class="absolute inset-0 transition-[filter] duration-500"
@@ -398,6 +413,14 @@
 									</span>
 								</div>
 							{/if}
+							<!-- an unpicked tile's outline is its own layer, so the filters tint it
+							     without tinting the map -->
+							{#if r?.action !== 'pick'}
+								<div
+									class="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-ctp-lavender/25 ring-inset"
+									style:filter={getFiltersStyle()}
+								></div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -421,7 +444,11 @@
 									{remainingText}
 								</span>
 							</div>
-							<div class="h-3.5 overflow-hidden rounded-full bg-ctp-lavender/15">
+							<div class="relative isolate h-3.5 overflow-hidden rounded-full">
+								<div
+									class="absolute inset-0 -z-1 bg-ctp-lavender/15"
+									style:filter={getFiltersStyle()}
+								></div>
 								<div
 									class="h-full rounded-full {teamBg[turn.actor]}"
 									style:width="{turnMs ? (remainingMs / turnMs) * 100 : 0}%"
@@ -434,16 +461,27 @@
 						>
 							{#each steps as step, i (i)}
 								<div
-									class="flex min-w-0 flex-col rounded-xl border-2 px-3.5 py-2.5
+									class="relative isolate flex min-w-0 flex-col rounded-xl border-2 px-3.5 py-2.5
 								{step.state === 'now'
-										? `bg-ctp-lavender/10 ${step.actor === 'A' ? 'border-ctp-blue' : step.actor === 'B' ? 'border-ctp-red' : 'border-ctp-text'}`
-										: 'border-ctp-lavender/20'}"
+										? step.actor === 'A'
+											? 'border-ctp-blue'
+											: step.actor === 'B'
+												? 'border-ctp-red'
+												: 'border-ctp-text'
+										: 'border-transparent'}"
 									class:opacity-50={step.state === 'later'}
 								>
+									<div
+										class="absolute -z-1 rounded-xl {step.state === 'now'
+											? 'inset-0 bg-ctp-lavender/10'
+											: '-inset-0.5 border-2 border-ctp-lavender/20'}"
+										style:filter={getFiltersStyle()}
+									></div>
 									<span
 										class="text-lg font-bold tracking-widest uppercase {step.actor
 											? teamText[step.actor]
 											: 'text-ctp-text'}"
+										style:filter={step.actor ? undefined : getFiltersStyle()}
 									>
 										{step.label}
 									</span>

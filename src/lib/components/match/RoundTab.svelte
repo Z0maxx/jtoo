@@ -54,7 +54,11 @@
 			{/if}
 			{#if mapLabel}
 				{#key mapLabel}
-					<span in:fade class="text-[30px] leading-tight font-bold whitespace-nowrap">
+					<span
+						in:fade
+						class="text-[30px] leading-tight font-bold whitespace-nowrap"
+						style:filter={getFiltersStyle()}
+					>
 						{mapLabel}
 					</span>
 				{/key}

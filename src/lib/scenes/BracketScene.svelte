@@ -199,7 +199,9 @@
 	</SceneHeader>
 
 	{#if !saved || !format}
-		<p class="text-3xl text-ctp-subtext0 italic">no bracket selected</p>
+		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>
+			no bracket selected
+		</p>
 	{:else}
 		<section class="relative isolate flex min-h-0 flex-1" {@attach watchSection}>
 			<div
@@ -243,6 +245,7 @@
 		style:grid-column={column}
 		style:grid-row={half == 'upper' ? 1 : 3}
 		in:fade
+		style:filter={getFiltersStyle()}
 	>
 		{round.name}
 	</h3>
@@ -341,7 +344,7 @@
 					: isLoser
 						? 'text-ctp-overlay0'
 						: 'text-ctp-subtext0'}"
-				style:filter={isWinner ? getFiltersStyle() : undefined}
+				style:filter={getFiltersStyle()}
 			>
 				{seedOf(steamID3)}
 			</span>
@@ -360,6 +363,7 @@
 						class="flex {size.avatar} shrink-0 items-center justify-center rounded-lg bg-ctp-lavender/15 text-lg font-bold text-ctp-lavender uppercase transition {isLoser
 							? 'opacity-35 grayscale'
 							: ''}"
+						style:filter={isLoser ? undefined : getFiltersStyle()}
 					>
 						{playerLabel(steamID3).charAt(0)}
 					</span>
@@ -370,6 +374,7 @@
                                 {isLoser ? 'text-ctp-overlay0' : 'text-white'} {isWinner
 					? 'font-bold'
 					: ''}"
+				style:filter={getFiltersStyle()}
 			>
 				{playerLabel(steamID3)}
 			</span>
@@ -384,9 +389,15 @@
 			<!-- waiting on an earlier match -->
 			<span class="w-6 shrink-0"></span>
 			{#if settings.current.enableAvatars}
-				<span class="{size.avatar} shrink-0 rounded-lg bg-ctp-overlay0/20"></span>
+				<span
+					class="{size.avatar} shrink-0 rounded-lg bg-ctp-overlay0/20"
+					style:filter={getFiltersStyle()}
+				></span>
 			{/if}
-			<span class="min-w-0 flex-1 truncate {size.name} text-ctp-overlay0 italic">TBD</span>
+			<span
+				class="min-w-0 flex-1 truncate {size.name} text-ctp-overlay0 italic"
+				style:filter={getFiltersStyle()}>TBD</span
+			>
 		{/if}
 	</button>
 {/snippet}

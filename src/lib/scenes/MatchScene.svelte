@@ -30,7 +30,7 @@
                 {single ? 'top-6 left-[calc(46%-2.5rem)] w-[54%]' : 'top-11 left-[22.5%] w-[55%]'}"
 		>
 			{#key single}
-				<div in:fade>
+				<div in:fade style:filter={getFiltersStyle()}>
 					<WebSocketTimer numPlayers={single ? 1 : 2} class="w-full" />
 				</div>
 			{/key}
