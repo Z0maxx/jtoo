@@ -1,9 +1,11 @@
 import type { MapFileName } from './types.svelte';
+import jumpBbInitiate from './assets/jump_bb_initiate.png';
 import jumpOdyssey from './assets/jump_odyssey.png';
 
 // our own images for maps whose Tempus image is missing or wrong. Keyed by the map's name without
 // a version, matching the name itself (jump_odyssey) and any version of it (jump_odyssey_rc5)
 const MAP_IMAGE_OVERRIDES: Record<string, string> = {
+	jump_bb_initiate: jumpBbInitiate,
 	jump_odyssey: jumpOdyssey
 };
 
