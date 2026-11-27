@@ -8,6 +8,8 @@
 	import MiniLeaderboard from './MiniLeaderboard.svelte';
 	import { showsMiniLeaderboard } from './mini-leaderboard';
 	import { slide } from 'svelte/transition';
+	import { showsMapPicks } from '$lib/map-picks';
+	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { cubicInOut } from 'svelte/easing';
 
 	// the dual pov match scene's area under the povs: space for chat, the mini leaderboard, then
@@ -19,6 +21,9 @@
 	// fundraising side takes its space
 	let live: ConsoleLive = getContext('consoleLive');
 	let hideLeaderboard = $derived(!!live.currentRace && !showsMiniLeaderboard(live.currentRace));
+
+	let ksnWs: KSNWebSocket = getContext('ksnWs');
+	let mapPicksShown = $derived(showsMapPicks(ksnWs.messages.mapPicks?.session));
 </script>
 
 <!-- the columns are spaced with margins, not a gap, so the leaderboard's space (its width and
@@ -40,11 +45,21 @@
 	{/if}
 
 	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
+		<!-- there's no room for donation messages beside the map picks, so while the picks show
+		     the cards shrink to a name and amount -->
 		{#if eventSet}
-			<DonationMessages class="min-h-0 flex-1" />
-			<!-- the panel keeps its full height and the donation cards take what's left -->
-			<FundraisingPanel class="shrink-0" />
+			<DonationMessages
+				compact={mapPicksShown}
+				class={mapPicksShown ? 'h-22 shrink-0' : 'min-h-0 flex-1'}
+			/>
 		{/if}
-		<MatchMapPicks class="mt-auto h-26 shrink-0" />
+		<!-- the panel and the picks keep their full height at the bottom, the donation cards
+		     taking what's left above -->
+		<div class="mt-auto flex shrink-0 flex-col gap-3.5">
+			{#if eventSet}
+				<FundraisingPanel />
+			{/if}
+			<MatchMapPicks class="h-26" />
+		</div>
 	</div>
 </div>

@@ -39,3 +39,15 @@ export function seriesOf(session: PickSession): { mapId: string; actor?: Actor }
 	if (decider) played.push({ mapId: decider });
 	return played;
 }
+
+/**
+ * Whether the match scene shows the series' map picks: a live session (not cancelled) with more
+ * than one of its maps in the series. Shared so the bottom area can make room for them.
+ */
+export function showsMapPicks(session: PickSession | null | undefined): boolean {
+	if (!session || session.status === 'cancelled') return false;
+	const inSeries = seriesOf(session).filter(({ mapId }) =>
+		session.maps.some((m) => m.id === mapId)
+	);
+	return inSeries.length > 1;
+}

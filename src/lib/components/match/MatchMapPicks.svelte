@@ -4,7 +4,7 @@
 	import PickAvatar from '$lib/components/maps/PickAvatar.svelte';
 	import { fitText } from '$lib/fit-text';
 	import { getFiltersStyle } from '$lib/filters.svelte';
-	import { mapName, seriesOf, teamOutline } from '$lib/map-picks';
+	import { mapName, seriesOf, showsMapPicks, teamOutline } from '$lib/map-picks';
 	import { overlay, settings } from '$lib/storage.svelte';
 	import { getMap } from '$lib/util';
 	import type { KSNWebSocket } from '$lib/websockets/ksn/ws-ksn.svelte';
@@ -45,7 +45,7 @@
 	});
 </script>
 
-{#if cards.length > 1}
+{#if showsMapPicks(session)}
 	<div
 		transition:fade
 		class="{styleClass} grid gap-3.5 p-0.75"

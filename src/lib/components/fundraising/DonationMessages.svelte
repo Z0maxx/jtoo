@@ -9,9 +9,10 @@
 
 	// two donation cards side by side, filling the size the scene gives them: the top donation
 	// on the left, the latest on the right (highlighted for a while when it comes in, then
-	// joined by the one before it)
-	type Props = { class?: string };
-	let { class: styleClass = '' }: Props = $props();
+	// joined by the ones before it). compact cards (when the scene is short on room) show just
+	// the name and amount, and only the latest donation on the right
+	type Props = { class?: string; compact?: boolean };
+	let { class: styleClass = '', compact = false }: Props = $props();
 
 	const HIGHLIGHT_MS = 10 * 1000;
 	const RECENT_AFTER_MS = 30 * 1000;
@@ -110,7 +111,7 @@
 	}
 </script>
 
-<!-- a donation's name, amount and message -->
+<!-- a donation's name, amount and message (not in compact cards) -->
 {#snippet entry(donation: Donation, peach: boolean, lines: string)}
 	<div class="flex items-center gap-2.5">
 		<span class="truncate text-[21px] font-bold" style:filter={getFiltersStyle()}
@@ -124,7 +125,7 @@
 			${donation.amount.toLocaleString('en-US')}
 		</span>
 	</div>
-	{#if donation.message}
+	{#if donation.message && !compact}
 		<p class="m-0 {lines} text-lg leading-snug text-ctp-subtext1" style:filter={getFiltersStyle()}>
 			{donation.message}
 		</p>
@@ -167,8 +168,9 @@
 	{/if}
 
 	{#if latest}
-		<!-- one card for both views, so switching between them crossfades -->
-		{@const stacked = recent.length > 1}
+		<!-- one card for both views, so switching between them crossfades. a compact card only
+		     has room for one donation -->
+		{@const stacked = recent.length > 1 && !compact}
 		{#snippet rightContent()}
 			{#if stacked}
 				<!-- a line of message each. the column wraps, so whichever don't fit fully move into
