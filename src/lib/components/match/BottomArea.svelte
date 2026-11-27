@@ -24,6 +24,13 @@
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 	let mapPicksShown = $derived(showsMapPicks(ksnWs.messages.mapPicks?.session));
+
+	// the donation cards take whatever height the panel and the picks leave, so there's no gap
+	// between the rows. below about a full card's height (header, name and two lines of
+	// message) they shrink to a name and amount
+	const FULL_CARD_PX = 140;
+	let donationsHeight = $state(0);
+	let compactDonations = $derived(mapPicksShown && donationsHeight < FULL_CARD_PX);
 </script>
 
 <!-- the columns are spaced with margins, not a gap, so the leaderboard's space (its width and
@@ -44,22 +51,15 @@
 		</div>
 	{/if}
 
+	<!-- the panel and the picks keep their own height, the donation cards filling the rest above
+	     them. without a fundraising event the picks fill it instead -->
 	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
-		<!-- there's no room for donation messages beside the map picks, so while the picks show
-		     the cards shrink to a name and amount -->
 		{#if eventSet}
-			<DonationMessages
-				compact={mapPicksShown}
-				class={mapPicksShown ? 'h-22 shrink-0' : 'min-h-0 flex-1'}
-			/>
+			<div class="flex min-h-0 flex-1 flex-col" bind:clientHeight={donationsHeight}>
+				<DonationMessages compact={compactDonations} class="min-h-0 flex-1" />
+			</div>
+			<FundraisingPanel class="shrink-0" />
 		{/if}
-		<!-- the panel and the picks keep their full height at the bottom, the donation cards
-		     taking what's left above -->
-		<div class="mt-auto flex shrink-0 flex-col gap-3.5">
-			{#if eventSet}
-				<FundraisingPanel />
-			{/if}
-			<MatchMapPicks class="h-26" />
-		</div>
+		<MatchMapPicks class={eventSet ? 'h-26 shrink-0' : 'min-h-26 flex-1'} />
 	</div>
 </div>
