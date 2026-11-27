@@ -20,7 +20,6 @@
 		overlay,
 		items,
 		defaultStages,
-		defaultSettings,
 		resetVisualSettings
 	} from '$lib/storage.svelte';
 	import {
@@ -71,6 +70,13 @@
 	// straight back to the overlay scene
 	const overlayScene = $derived(settings.current.overlayScene);
 	const rtdEnabled = $derived(settings.current.enableFundraisingRtd);
+
+	// the map and stage section starts closed, since the console normally sets them, so its title
+	// shows what's set and whether the console is setting it
+	const mapStageTitle = $derived(
+		`map and stage: ${overlay.current.map || 'none'}, ${overlay.current.stage || 'none'}` +
+			(settings.current.followConsoleStageMap ? ' (set by console)' : '')
+	);
 
 	// the controls open their own race feed, to show whether the console is reachable and to
 	// order the player lists by the race's leaderboard, and follow the overlay's tournament to
@@ -205,19 +211,9 @@
 		<ConfirmButton onconfirm={resetVisualSettings}>reset visual settings</ConfirmButton>
 	</div>
 
-	<!-- items -->
-	<Accordion title="items">
-		<div class="grid w-full grid-cols-2">
-			<Importplayer />
-			<ManagePlayers />
-			<ImportMap />
-			<ManageMaps />
-			<EditBracket />
-			<ManageBrackets />
-		</div>
-	</Accordion>
-
-	<Accordion title="scenes">
+	<!-- MARK: live
+	     what changes during the show, always visible: the OBS scene and players A and B -->
+	<section class="flex w-full max-w-lg flex-col gap-1 self-center" aria-label="live controls">
 		<span>scene</span>
 		<RadioInputs
 			opts={OverlayScenes.filter((s) => !BrokenOverlayScenes.includes(s))}
@@ -225,8 +221,61 @@
 			onpick={(scene) => scene && setScene(scene)}
 		/>
 
+		<!-- picking one also switches OBS to the idle scene -->
+		<span>idle scene overlay</span>
+		<RadioInputs
+			opts={IdleOverlayScenes}
+			bind:value={settings.current.idleOverlayScene}
+			onpick={() => setScene(idleOBSSceneName())}
+		/>
+	</section>
+
+	<!-- overlay -->
+	<!-- <div class="relative mb-2 flex w-full max-w-lg justify-center gap-1 self-center">
+		<span class="absolute left-0">best of</span>
+		<RadioInputs opts={[1, 3, 5, 7, 9]} bind:value={overlay.current.bestOf} log={true} />
+	</div> -->
+
+	<!-- players -->
+	<!-- two equal columns, so both lists' rows are the same width -->
+	<div class="grid w-full max-w-lg grid-cols-2 gap-x-6 self-center">
+		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
+		<PlayerControl player={overlay.current.players[1]} playerNum={1} />
+		<!-- disabled since 4 player POV is not implemented yet -->
+		<!-- <hr class="hr" />
+		<PlayerControl player={overlay.current.players[2]} playerNum={2} />
+		<hr class="hr" />
+		<PlayerControl player={overlay.current.players[3]} playerNum={3} /> -->
+	</div>
+	<hr class="hr w-full max-w-lg self-center" />
+
+	<!-- MARK: map and stage
+	     the console sets these, so they're only here to override it; the title shows what's set -->
+	<Accordion title={mapStageTitle} defaultstate="closed">
+		<span>map</span>
+		<RadioInputs
+			opts={poolMaps()}
+			optlabels={settings.current.useShortMapNames
+				? poolMaps().map((m) => getMap(m).shortName || m)
+				: undefined}
+			bind:value={overlay.current.map}
+		/>
+
+		<div class="flex justify-between">
+			<span>stage</span>
+			<ConfirmButton onconfirm={() => (items.current.stages = [...defaultStages])}
+				>reset to default</ConfirmButton
+			>
+		</div>
+		<ItemInput placeholder="add stage" item="stages" class="pb-2" />
+		<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
+	</Accordion>
+
+	<!-- MARK: scene content
+	     what the scenes show: set up before a segment, rarely changed during one -->
+	<Accordion title="scene content" defaultstate="closed">
 		<div class="flex items-center justify-between gap-2">
-			<label for="input-idle-obs-scene">idle scene</label>
+			<label for="input-idle-obs-scene">idle OBS scene name</label>
 			<input
 				type="text"
 				class="input"
@@ -237,11 +286,6 @@
 				onchange={(e) => (settings.current.idleObsScene = (e.target as HTMLInputElement).value)}
 			/>
 		</div>
-		<RadioInputs
-			opts={IdleOverlayScenes}
-			bind:value={settings.current.idleOverlayScene}
-			onpick={() => setScene(idleOBSSceneName())}
-		/>
 
 		<div class="flex justify-between">
 			<span>leaderboard tournament</span>
@@ -318,6 +362,18 @@
 		{/if}
 	</Accordion>
 
+	<!-- MARK: setup -->
+	<Accordion title="items" defaultstate="closed">
+		<div class="grid w-full grid-cols-2">
+			<Importplayer />
+			<ManagePlayers />
+			<ImportMap />
+			<ManageMaps />
+			<EditBracket />
+			<ManageBrackets />
+		</div>
+	</Accordion>
+
 	<SetFundraisingEvent />
 	<!-- settings -->
 	<Accordion title="settings" defaultstate="closed">
@@ -372,48 +428,4 @@
 			desc="automatically select players on 1v1 race and map picks start"
 		/>
 	</Accordion>
-
-	<!-- overlay -->
-	<!-- <div class="relative mb-2 flex w-full max-w-lg justify-center gap-1 self-center">
-		<span class="absolute left-0">best of</span>
-		<RadioInputs opts={[1, 3, 5, 7, 9]} bind:value={overlay.current.bestOf} log={true} />
-	</div> -->
-
-	<!-- players -->
-	<!-- two equal columns, so both lists' rows are the same width -->
-	<div class="grid w-full max-w-lg grid-cols-2 gap-x-6 self-center">
-		<PlayerControl player={overlay.current.players[0]} playerNum={0} />
-		<PlayerControl player={overlay.current.players[1]} playerNum={1} />
-		<!-- disabled since 4 player POV is not implemented yet -->
-		<!-- <hr class="hr" />
-		<PlayerControl player={overlay.current.players[2]} playerNum={2} />
-		<hr class="hr" />
-		<PlayerControl player={overlay.current.players[3]} playerNum={3} /> -->
-	</div>
-
-	<div class="max-w-lg self-center">
-		<!-- maps -->
-
-		<span>map</span>
-		<RadioInputs
-			opts={poolMaps()}
-			optlabels={settings.current.useShortMapNames
-				? poolMaps().map((m) => getMap(m).shortName || m)
-				: undefined}
-			bind:value={overlay.current.map}
-		/>
-
-		<!-- stages -->
-		<div class="flex justify-between">
-			<span>stage</span>
-			<button
-				class="button-remove"
-				onclick={() => {
-					items.current.stages = defaultStages;
-				}}>reset to default</button
-			>
-		</div>
-		<ItemInput placeholder="add stage" item="stages" class="pb-2" />
-		<RadioInputs opts={[...items.current.stages]} bind:value={overlay.current.stage} />
-	</div>
 {/if}
