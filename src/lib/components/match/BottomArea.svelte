@@ -59,6 +59,7 @@
 				<DonationMessages
 					compact={compactDonations}
 					recentMessages={!mapPicksShown}
+					tight={mapPicksShown}
 					class="min-h-0 flex-1"
 				/>
 			</div>
