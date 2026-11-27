@@ -202,6 +202,8 @@ export type Overlay = {
 	bracketLive?: { bracket: string; match: string | null };
 	// console time of the last 'clear timers'; runs and race windows that started earlier are hidden
 	timersClearedAt?: number;
+	// console time of the last 'clear mini leaderboard'; a race that started earlier isn't listed
+	miniLeaderboardClearedAt?: number;
 	// time of the controls' last schedule refresh; the overlay re-fetches the sheet when it changes
 	scheduleRefreshedAt?: number;
 };

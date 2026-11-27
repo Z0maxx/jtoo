@@ -409,6 +409,12 @@
 				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
 			}}>clear timers</ConfirmButton
 		>
+		<ConfirmButton
+			onconfirm={() => {
+				// in console time, like the timers
+				overlay.current.miniLeaderboardClearedAt = Date.now() + live.clockOffset;
+			}}>clear mini leaderboard</ConfirmButton
+		>
 		<ConfirmButton onconfirm={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</ConfirmButton
 		>
