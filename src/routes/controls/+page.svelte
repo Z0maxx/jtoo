@@ -49,6 +49,7 @@
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import { getMap, consoleBaseUrl, playerLabel, roundNumber } from '$lib/util';
+	import { withLiveResults } from '$lib/round-results';
 	import type { TournamentRound } from '$lib/websockets/console/live-types';
 	import { mapName } from '$lib/map-picks';
 	import { onMount, setContext, untrack } from 'svelte';
@@ -99,10 +100,11 @@
 	// from here, not the overlay, as there's only ever one controls page, while there can be
 	// several overlay sources (eg: on the Idle scene), and each would count the game again
 	syncBracketResults(live);
-	// only the rounds that count toward the standings: finalized and not voided
+	// the rounds the leaderboard scene can show: any not voided, finalized or not. an unfinalized
+	// round has its live results while its race is the current one (see withLiveResults)
 	let leaderboardRounds = $derived(
-		(live.tournament?.rounds ?? [])
-			.filter((r) => r.finalized && !r.voided)
+		withLiveResults(live.tournament?.rounds ?? [], live.currentRace)
+			.filter((r) => !r.voided)
 			.sort((a, b) => a.roundIndex - b.roundIndex)
 	);
 	// a duel tournament has no standings, so the leaderboard scene only shows its rounds, and
@@ -114,7 +116,7 @@
 		return leaderboardRounds.at(-1)?.roundIndex ?? view;
 	});
 	// a duel round is told apart by its round name (the console's stage), map and matchup, not a
-	// number. only finalized rounds are listed, so the results hold both players
+	// number. an unfinalized round with no live results has no matchup, so it's left out
 	function duelRoundLabel(round: TournamentRound) {
 		const matchup = round.results.map((e) => playerLabel(e.steamId3)).join(' vs ');
 		return [round.stage, round.map && mapName(round.map), matchup].filter(Boolean).join(' · ');

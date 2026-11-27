@@ -17,6 +17,7 @@
 		roundNumber
 	} from '$lib/util';
 	import { mapName } from '$lib/map-picks';
+	import { withLiveResults } from '$lib/round-results';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type {
 		RoundResultEntry,
@@ -71,17 +72,21 @@
 	// a duel tournament's rounds are separate matches, so it only shows each round's results:
 	// no standings, round numbers or scoring
 	let isDuel = $derived(tournament?.kind === 'duel');
-	let rounds = $derived(tournament?.rounds ?? []);
-	// rounds that count toward the standings; voided ones were played but don't
+	// an unfinalized round has its live results while its race is the current one
+	let rounds = $derived(withLiveResults(tournament?.rounds ?? [], live.currentRace));
+	// rounds that count toward the console's standings: finalized and not voided. voided ones
+	// were played but don't count
 	const counts = (round: TournamentRound) => round.finalized && !round.voided;
 	let played = $derived(rounds.filter(counts));
+	// rounds that can be shown on their own: any not voided, finalized or not
+	let listed = $derived(rounds.filter((r) => !r.voided));
 
 	// the board picked in the controls: a round that isn't in this tournament shows the standings,
 	// or in a duel tournament, which has none, the latest round
 	let view = $derived(overlay.current.leaderboardView ?? 'standings');
 	let round = $derived(
-		(typeof view === 'number' ? played.find((r) => r.roundIndex === view) : undefined) ??
-			(isDuel ? played.at(-1) : undefined)
+		(typeof view === 'number' ? listed.find((r) => r.roundIndex === view) : undefined) ??
+			(isDuel ? listed.at(-1) : undefined)
 	);
 	let board: 'standings' | 'round' | 'final' = $derived(
 		round ? 'round' : view === 'final' ? 'final' : 'standings'
@@ -103,9 +108,12 @@
 
 	// the standings as they were after a round, by the console's rules: points summed, or the
 	// average placement with a missed round counting as one behind that round's last place.
-	// after the latest round, these are the console's own standings
+	// after the latest round, these are the console's own standings. an unfinalized round counts
+	// its live results when it's the one shown, as the standings so far
 	function standingsThrough(round: TournamentRound) {
-		const counted = rounds.slice(0, rounds.indexOf(round) + 1).filter(counts);
+		const counted = rounds
+			.slice(0, rounds.indexOf(round) + 1)
+			.filter((r) => counts(r) || (r === round && !r.voided && r.results.length > 0));
 		const players = new Set(counted.flatMap((r) => r.results.map((e) => e.steamId3)));
 		return [...players]
 			.map((steamId3) => {
@@ -157,11 +165,20 @@
 	}
 
 	// MARK: header
+	// a round still racing: unfinalized, with its race the current one
+	let roundLive = $derived(
+		board === 'round' &&
+			!!round &&
+			!round.finalized &&
+			live.currentRace?.sessionId === round.sessionId
+	);
 	let title = $derived(
 		board === 'round' && round
 			? isDuel
-				? 'Round Results'
-				: `Round ${roundNo(round)} Results`
+				? roundLive
+					? 'Round'
+					: 'Round Results'
+				: `Round ${roundNo(round)}${roundLive ? '' : ' Results'}`
 			: board === 'final'
 				? 'Final Standings'
 				: 'Leaderboard'
@@ -245,7 +262,7 @@
 </script>
 
 <SceneFrame class="gap-10">
-	<SceneHeader eventName={EVENT_NAME} {title}>
+	<SceneHeader eventName={EVENT_NAME} {title} live={roundLive}>
 		{#snippet subtitle()}
 			{#if subtitleText}
 				<span
@@ -498,6 +515,12 @@
 				</li>
 			{/each}
 		</ul>
+		<!-- an unfinalized round whose race isn't the current one has no results to show yet -->
+		{#if resultRows.length === 0}
+			<p class="px-[1.5em] text-[2em] text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>
+				no results yet
+			</p>
+		{/if}
 	</div>
 
 	<!-- the map, and the standings after this round -->
