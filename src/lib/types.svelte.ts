@@ -187,6 +187,7 @@ export type Settings = {
 	enableAvatars: boolean;
 	enableTags: boolean;
 	enableFlags: boolean;
+	enableStage: boolean; // the stage above the map on the match scene's round tab
 	enableGradient: boolean;
 	enableTeamColors: boolean;
 	enablePOVGuide: boolean;

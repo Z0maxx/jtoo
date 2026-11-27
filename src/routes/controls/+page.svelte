@@ -541,6 +541,7 @@
 			<Group label="options">
 				<Checkbox desc="show flags" setting="enableFlags" />
 				<Checkbox desc="show player avatars" setting="enableAvatars" />
+				<Checkbox desc="show stage" setting="enableStage" />
 				<!-- <Checkbox desc="show tags" setting="enableTags" /> -->
 				<!-- <Checkbox desc="use moving background" setting="enableMovingBG" /> -->
 				<!-- <Checkbox desc="use short map names" setting="useShortMapNames" /> -->
