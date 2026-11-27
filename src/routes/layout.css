@@ -28,6 +28,9 @@
 	--color-obs-content: #272a33;
 	--color-obs-padding: #3c404d;
 	--color-bordeaux: #5c0012;
+	--color-gold: var(--color-ctp-yellow);
+	--color-silver: var(--color-ctp-subtext1);
+	--color-bronze: var(--color-ctp-peach);
 }
 
 @layer base {

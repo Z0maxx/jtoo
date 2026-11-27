@@ -42,22 +42,22 @@
 	// gold, silver and bronze
 	const medals = {
 		1: {
-			text: 'text-ctp-yellow',
-			ring: 'ring-ctp-yellow',
-			border: 'border-ctp-yellow',
-			bg: 'bg-ctp-yellow/15'
+			text: 'text-gold',
+			ring: 'ring-gold',
+			border: 'border-gold',
+			bg: 'bg-gold/15'
 		},
 		2: {
-			text: 'text-ctp-subtext1',
-			ring: 'ring-ctp-subtext1',
-			border: 'border-ctp-subtext1',
-			bg: 'bg-ctp-subtext1/15'
+			text: 'text-silver',
+			ring: 'ring-silver',
+			border: 'border-silver',
+			bg: 'bg-silver/15'
 		},
 		3: {
-			text: 'text-ctp-peach',
-			ring: 'ring-ctp-peach',
-			border: 'border-ctp-peach',
-			bg: 'bg-ctp-peach/15'
+			text: 'text-bronze',
+			ring: 'ring-bronze',
+			border: 'border-bronze',
+			bg: 'bg-bronze/15'
 		}
 	} as const;
 	const medalText = (position: number) =>

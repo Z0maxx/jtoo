@@ -111,7 +111,7 @@
 
 <div class="flex w-full max-w-full flex-col items-start">
 	{#if players}
-		<span class="label self-center pb-0.5 text-center">player {getLabel(playerNum)}</span>
+		<span class="self-center pb-0.5 text-center label">player {getLabel(playerNum)}</span>
 
 		<div class="flex w-full flex-col">
 			<!-- name -->
@@ -120,7 +120,7 @@
 			{:else}
 				<input
 					type="search"
-					class="input mb-2"
+					class="mb-2 input"
 					placeholder="filter by name"
 					aria-label="filter player {getLabel(playerNum)} by name"
 					bind:value={nameFilter}

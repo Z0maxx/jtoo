@@ -20,9 +20,9 @@
 
 	// gold, silver and bronze for the first three bars
 	const medals = [
-		{ text: 'text-ctp-yellow', bar: 'bg-ctp-yellow/50 ring-ctp-yellow' },
-		{ text: 'text-ctp-subtext1', bar: 'bg-ctp-subtext1/45 ring-ctp-subtext1' },
-		{ text: 'text-ctp-peach', bar: 'bg-ctp-peach/45 ring-ctp-peach' }
+		{ text: 'text-gold', bar: 'bg-gold/50 ring-gold' },
+		{ text: 'text-silver', bar: 'bg-silver/45 ring-silver' },
+		{ text: 'text-bronze', bar: 'bg-bronze/45 ring-bronze' }
 	];
 
 	let tfClass = $derived(settings.current.tfClass ?? 'soldier');
