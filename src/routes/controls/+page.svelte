@@ -267,7 +267,7 @@
 					/>
 					<AutoToggle
 						setting="followRacePlayers"
-						label="follow race"
+						label="filter to current race"
 						desc="list only the current race's players, in race order"
 						ontoggle={() => playerControls.forEach((c) => c?.refresh(true))}
 					/>
