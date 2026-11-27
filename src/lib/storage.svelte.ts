@@ -171,3 +171,23 @@ export function resetVisualSettings() {
 	const visualDefaults = Object.fromEntries(visualSettingKeys.map((k) => [k, defaultSettings[k]]));
 	settings.current = { ...settings.current, ...visualDefaults };
 }
+
+/**
+ * Puts everything this site saves back to how a fresh browser starts: every setting (tokens and
+ * connections too), the overlay's state, players, maps and fundraising, then reloads the page.
+ */
+export function hardReset() {
+	// set to the defaults first, so other open pages (the overlay in OBS) get them through their
+	// storage events; clearing storage on its own leaves their copies in memory as they were
+	settings.current = structuredClone(defaultSettings);
+	overlay.current = structuredClone(defaultOverlay);
+	items.current = structuredClone(defaultItems);
+	pool.current = { players: [], maps: [] };
+	wsMessages.current = [];
+	obsProgramScene.current = { name: '', at: 0 };
+	fundraisingState.current = structuredClone(defaultFundraisingState);
+	// then anything else saved, e.g. which accordions are open
+	localStorage.clear();
+	sessionStorage.clear();
+	location.reload();
+}

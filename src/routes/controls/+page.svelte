@@ -22,7 +22,8 @@
 		overlay,
 		items,
 		defaultStages,
-		resetVisualSettings
+		resetVisualSettings,
+		hardReset
 	} from '$lib/storage.svelte';
 	import {
 		BrokenOverlayScenes,
@@ -482,4 +483,14 @@
 			</Group>
 		</Accordion>
 	{/if}
+
+	<!-- last on the page, out of the way of anything used during a show -->
+	<div class="mt-8 flex flex-col items-center gap-1 self-center text-center">
+		<ConfirmButton
+			variant="danger"
+			title="clear every setting, token, player, map and the fundraising state, then reload"
+			onconfirm={hardReset}>HARD RESET</ConfirmButton
+		>
+		<span class="text-sm opacity-60">clears everything saved, tokens included, and reloads</span>
+	</div>
 </section>
