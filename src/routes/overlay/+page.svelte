@@ -21,6 +21,7 @@
 	import LeaderboardScene from '$lib/scenes/LeaderboardScene.svelte';
 	import { onIdleScene, watchOBSScene } from '$lib/obs-browser-source.svelte';
 	import { pollSchedule } from '$lib/schedule.svelte';
+	import { preloadImages } from '$lib/image-preload.svelte';
 
 	let ksnWs: KSNWebSocket | undefined = $state();
 
@@ -42,6 +43,9 @@
 
 	// keep the schedule loaded even off its scene, so switching to it shows it at once
 	pollSchedule();
+
+	// load map images, then player avatars, ahead of the scenes that show them
+	preloadImages();
 
 	onMount(() => {
 		// follow OBS's program scene, to swap to the idle overlay scene on the Idle scene
