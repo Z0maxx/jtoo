@@ -39,7 +39,9 @@
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
-	import { getMap, consoleBaseUrl, roundNumber } from '$lib/util';
+	import { getMap, consoleBaseUrl, playerLabel, roundNumber } from '$lib/util';
+	import type { TournamentRound } from '$lib/websockets/console/live-types';
+	import { mapName } from '$lib/map-picks';
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
 	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
@@ -92,6 +94,20 @@
 			.filter((r) => r.finalized && !r.voided)
 			.sort((a, b) => a.roundIndex - b.roundIndex)
 	);
+	// a duel tournament has no standings, so the leaderboard scene only shows its rounds, and
+	// shows the latest one when the picked view isn't one of them (see LeaderboardScene)
+	let isDuelTournament = $derived(live.tournament?.kind === 'duel');
+	let leaderboardView = $derived.by(() => {
+		const view = overlay.current.leaderboardView ?? 'standings';
+		if (!isDuelTournament || leaderboardRounds.some((r) => r.roundIndex === view)) return view;
+		return leaderboardRounds.at(-1)?.roundIndex ?? view;
+	});
+	// a duel round is told apart by its round name (the console's stage), map and matchup, not a
+	// number. only finalized rounds are listed, so the results hold both players
+	function duelRoundLabel(round: TournamentRound) {
+		const matchup = round.results.map((e) => playerLabel(e.steamId3)).join(' vs ');
+		return [round.stage, round.map && mapName(round.map), matchup].filter(Boolean).join(' · ');
+	}
 
 	// the event's players and maps come from console pools, imported on every startup
 	let poolImport: PoolImportResult | 'importing' | undefined = $state();
@@ -307,18 +323,21 @@
 
 		<span>leaderboard view</span>
 		<RadioInputs
-			opts={['standings', ...leaderboardRounds.map((r) => r.roundIndex), 'final']}
-			optlabels={[
-				'current standings',
-				...leaderboardRounds.map(
-					(r) => `${roundNumber(live.tournament?.rounds ?? [], r)}: ${r.map || r.stage}`
-				),
-				'final standings'
+			opts={[
+				...(isDuelTournament ? [] : ['standings' as const]),
+				...leaderboardRounds.map((r) => r.roundIndex),
+				...(isDuelTournament ? [] : ['final' as const])
 			]}
-			bind:value={
-				() => overlay.current.leaderboardView ?? 'standings',
-				(view) => (overlay.current.leaderboardView = view)
-			}
+			optlabels={[
+				...(isDuelTournament ? [] : ['current standings']),
+				...leaderboardRounds.map((r) =>
+					isDuelTournament
+						? duelRoundLabel(r)
+						: `${roundNumber(live.tournament?.rounds ?? [], r)}: ${r.map ? mapName(r.map) : r.stage}`
+				),
+				...(isDuelTournament ? [] : ['final standings'])
+			]}
+			bind:value={() => leaderboardView, (view) => (overlay.current.leaderboardView = view)}
 		/>
 
 		<span>bracket</span>

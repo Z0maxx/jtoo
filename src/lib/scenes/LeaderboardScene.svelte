@@ -16,6 +16,7 @@
 		playerLabel,
 		roundNumber
 	} from '$lib/util';
+	import { mapName } from '$lib/map-picks';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type {
 		RoundResultEntry,
@@ -67,15 +68,20 @@
 	// MARK: data
 	let tournament = $derived(live.tournament);
 	let isRjr = $derived(tournament?.scoring === 'rjr-points');
+	// a duel tournament's rounds are separate matches, so it only shows each round's results:
+	// no standings, round numbers or scoring
+	let isDuel = $derived(tournament?.kind === 'duel');
 	let rounds = $derived(tournament?.rounds ?? []);
 	// rounds that count toward the standings; voided ones were played but don't
 	const counts = (round: TournamentRound) => round.finalized && !round.voided;
 	let played = $derived(rounds.filter(counts));
 
-	// the board picked in the controls: a round that isn't in this tournament shows the standings
+	// the board picked in the controls: a round that isn't in this tournament shows the standings,
+	// or in a duel tournament, which has none, the latest round
 	let view = $derived(overlay.current.leaderboardView ?? 'standings');
 	let round = $derived(
-		typeof view === 'number' ? played.find((r) => r.roundIndex === view) : undefined
+		(typeof view === 'number' ? played.find((r) => r.roundIndex === view) : undefined) ??
+			(isDuel ? played.at(-1) : undefined)
 	);
 	let board: 'standings' | 'round' | 'final' = $derived(
 		round ? 'round' : view === 'final' ? 'final' : 'standings'
@@ -83,7 +89,9 @@
 
 	// numbered without the voided rounds
 	const roundNo = (round: TournamentRound) => roundNumber(rounds, round);
-	const roundMap = (round: TournamentRound) => round.map || round.stage;
+	// as the settings want maps shown. the console doesn't record a duel round's map (duel races
+	// don't say which map they're on), so those fall back to the round's name
+	const roundMap = (round: TournamentRound) => (round.map ? mapName(round.map) : round.stage);
 	const winnerOf = (round: TournamentRound) =>
 		round.results.find((r) => r.placement === 1)?.steamId3;
 	const pointsFor = (placement: number) => RJR_POINTS[placement - 1] ?? 0;
@@ -151,14 +159,17 @@
 	// MARK: header
 	let title = $derived(
 		board === 'round' && round
-			? `Round ${roundNo(round)} Results`
+			? isDuel
+				? 'Round Results'
+				: `Round ${roundNo(round)} Results`
 			: board === 'final'
 				? 'Final Standings'
 				: 'Leaderboard'
 	);
 	let subtitleText = $derived.by(() => {
 		if (!tournament) return '';
-		if (board === 'round' && round) return roundMap(round);
+		// a round with no map recorded (see roundMap) shows no subtitle
+		if (board === 'round' && round) return round.map ? mapName(round.map) : '';
 		return `${tournament.name}`;
 	});
 	let scoringLabel = $derived(isRjr ? 'RJR' : 'Avg Placement');
@@ -190,8 +201,17 @@
 	let resultRows = $derived(round?.results.slice(0, MAX_ROWS) ?? []);
 	let resultsCompact = $derived(resultRows.length > COMPACT_ROWS);
 	// the name takes what's left, so the wider time and gap columns narrow it here only
+	// the points column is the scoring method's, so a duel tournament doesn't show it
+	let showPoints = $derived(isRjr && !isDuel);
 	let resultColumns = $derived(
-		['3em', avatarColumn(resultsCompact), 'minmax(0, 1fr)', '15em', '11em', isRjr ? '5.5em' : '']
+		[
+			'3em',
+			avatarColumn(resultsCompact),
+			'minmax(0, 1fr)',
+			'15em',
+			'11em',
+			showPoints ? '5.5em' : ''
+		]
 			.filter(Boolean)
 			.join(' ')
 	);
@@ -237,7 +257,7 @@
 			{/if}
 		{/snippet}
 		{#snippet aside()}
-			{#if tournament}
+			{#if tournament && !isDuel}
 				<div in:fade>
 					<SceneTag class="px-6 text-3xl uppercase">
 						{scoringLabel}
@@ -251,6 +271,8 @@
 		<p class="text-3xl text-ctp-subtext0 italic">
 			{live.tournamentId ? 'loading tournament...' : 'no tournament'}
 		</p>
+	{:else if isDuel && !round}
+		<p class="text-3xl text-ctp-subtext0 italic">no rounds played yet</p>
 	{:else}
 		{#key board === 'round' ? round?.roundIndex : board}
 			<div class="flex min-h-0 flex-1 gap-14" in:fade={{ duration: 400 }}>
@@ -401,7 +423,7 @@
 <!-- MARK: B: round results -->
 {#snippet RoundBoard(round: TournamentRound)}
 	{@const image = getMap(round.map).imageURL}
-	{@const standings = standingsThrough(round).slice(0, TOP_STANDINGS)}
+	{@const standings = isDuel ? [] : standingsThrough(round).slice(0, TOP_STANDINGS)}
 	{@const compact = resultsCompact}
 	<div
 		class="flex min-h-0 min-w-0 flex-1 flex-col gap-[0.75em] overflow-hidden"
@@ -416,7 +438,7 @@
 			<span>Player</span>
 			<span class="text-right">Time</span>
 			<span class="text-right">Gap</span>
-			{#if isRjr}<span class="text-right">Pts</span>{/if}
+			{#if showPoints}<span class="text-right">Pts</span>{/if}
 		</div>
 		<ul class="flex flex-col {compact ? 'gap-[0.125em]' : 'gap-[0.375em]'}">
 			{#each resultRows as entry, i (entry.steamId3)}
@@ -449,7 +471,7 @@
 					<span class="text-right text-[1.875em] font-medium text-ctp-subtext0 tabular-nums {mono}">
 						{gap(entry, i)}
 					</span>
-					{#if isRjr}
+					{#if showPoints}
 						<span
 							class="text-right text-[2.125em] font-bold text-ctp-lavender tabular-nums {mono}"
 							style:filter={getFiltersStyle()}
@@ -464,19 +486,30 @@
 
 	<!-- the map, and the standings after this round -->
 	<div class="flex w-[28rem] shrink-0 flex-col gap-8">
-		<div
-			class="relative h-75 shrink-0 overflow-hidden rounded-3xl bg-ctp-surface0 outline-4 outline-ctp-lavender"
-		>
-			{#if image}
-				<img
-					in:fade
-					src={image}
-					alt=""
-					class="absolute inset-0 size-full object-cover"
-					draggable="false"
-				/>
-			{/if}
-		</div>
+		<!-- a round with no map recorded (see roundMap) has nothing to show here -->
+		{#if round.map}
+			<div
+				class="relative h-75 shrink-0 overflow-hidden rounded-3xl bg-ctp-surface0 outline-4 outline-ctp-lavender"
+			>
+				{#if image}
+					<img
+						in:fade
+						src={image}
+						alt=""
+						class="absolute inset-0 size-full object-cover"
+						draggable="false"
+					/>
+				{/if}
+				<!-- the map's name along the bottom, on a fade dark enough to read over any map -->
+				<div
+					class="absolute inset-x-0 bottom-0 bg-linear-to-t from-ctp-crust/90 via-ctp-crust/60 to-transparent px-5 pt-12 pb-3"
+				>
+					<span class="block truncate text-4xl leading-tight font-bold text-white uppercase">
+						{mapName(round.map)}
+					</span>
+				</div>
+			</div>
+		{/if}
 
 		{#if standings.length}
 			<div class="flex flex-col gap-3">
