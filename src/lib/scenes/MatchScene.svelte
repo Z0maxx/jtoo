@@ -17,6 +17,7 @@
 	import { bestOfOf, gameWins, playersOf, winsNeeded } from '$lib/Bracket.svelte';
 	import type { SteamID3 } from '$lib/types.svelte';
 	import { prSinceClear } from '$lib/components/match/timers-cleared';
+	import { fitText } from '$lib/fit-text';
 
 	// one scene for both match layouts, so switching between them animates the differences
 	// instead of tearing one scene down and building the other
@@ -32,6 +33,15 @@
 	// part of a match
 	const match = $derived(bracketMatchBetween(shown.players[0], shown.players[1]));
 	const massRace = $derived(!!live.currentRace && live.currentRace.mode !== 'duel');
+	// everyone gets one run, so there's no PR or games won to show: the name takes the full height
+	const massSingle = $derived(live.currentRace?.mode === 'mass-single');
+
+	// the name's size, in px for fitText (tailwind's text-6xl, 5xl, 4xl and 3xl at a 16px rem)
+	const TEXT_4XL_PX = 36;
+	function nameSizePx(massSingle: boolean, single: boolean): number {
+		if (massSingle) return single ? 60 : 48;
+		return single ? TEXT_4XL_PX : 30;
+	}
 	const series = $derived.by(() => {
 		if (!match || massRace || bestOfOf(match.bracket, match.id) < 2) return undefined;
 		const [A, B] = playersOf(match.bracket, match.id);
@@ -92,9 +102,17 @@
 		<div class="absolute top-0 left-0 size-full bg-black/35"></div>
 	{/if}
 
-	{@render OverlayPlayer(shown.players[0], 0)}
+	<!-- each player's slot ends 1rem short of the timer box, so a long name fits up to it: single,
+	     the box starts at 46% - 2.5rem; dual, at 22.5%. the percentages are of the bar's width
+	     inside its padding, hence the rem adjustments -->
+	<div
+		class="h-full shrink-0 transition-[width] duration-500
+            {single ? 'w-[calc(46%-3.6rem)]' : 'w-[calc(22.5%-1.55rem)]'}"
+	>
+		{@render OverlayPlayer(shown.players[0], 0)}
+	</div>
 	{#if !single}
-		<div transition:fade class="h-full">
+		<div transition:fade class="h-full w-[calc(22.5%-1.55rem)] shrink-0">
 			{@render OverlayPlayer(shown.players[1], 1)}
 		</div>
 	{/if}
@@ -160,10 +178,10 @@
 	{@const name = player.name}
 	<!-- blank once 'clear timers' is pressed, until a new PR -->
 	{@const pr = prSinceClear(live.entryFor(steamID3), live.currentRace)}
-	<div class="relative z-10 flex h-full gap-4 {playerNum === 1 ? 'flex-row-reverse' : ''}">
+	<div class="relative z-10 flex h-full w-full gap-4 {playerNum === 1 ? 'flex-row-reverse' : ''}">
 		<!-- flag -->
 		{#if settings.current.enableFlags && flag}
-			<Flag code={flag} class="flex h-fit w-fit rounded-xl text-[6rem]" />
+			<Flag code={flag} class="flex h-fit w-fit shrink-0 rounded-xl text-[6rem]" />
 		{/if}
 		{#if settings.current.enableAvatars && avatarURL}
 			{#key avatarURL}
@@ -171,71 +189,87 @@
 					in:fade
 					src={avatarURL}
 					alt=""
-					class="size-24 rounded-xl object-cover object-center"
+					class="size-24 shrink-0 rounded-xl object-cover object-center"
 					draggable="false"
 				/>
 			{/key}
 		{/if}
 		<div
-			class="flex flex-col {playerNum === 1 ? 'items-end' : 'items-start'}"
+			class="flex min-w-0 flex-1 flex-col {playerNum === 1 ? 'items-end' : 'items-start'}
+                {massSingle ? 'justify-center' : ''}"
 			style:filter={getFiltersStyle()}
 		>
-			<div class="mb-3 flex gap-2">
+			<!-- mirrored for player 2, so the tag sits on the outside and the name runs toward the
+			     timer -->
+			<div
+				class="flex w-full items-baseline gap-2 transition-[margin] duration-500
+                    {playerNum === 1 ? 'flex-row-reverse' : ''} {massSingle ? '' : 'mb-3'}"
+			>
 				<!-- tag -->
 				{#if settings.current.enableTags && tag}
 					{#key tag}
-						<span in:fade class="text-4xl text-ctp-text/75">{tag}</span>
+						<span in:fade class="shrink-0 text-4xl text-ctp-text/75">{tag}</span>
 					{/key}
 				{/if}
-				<!-- name: a little bigger when it's the only player -->
+				<!-- name: a little bigger when it's the only player, and bigger still when it has
+				     the full height to itself. a long one shrinks to fit, down to text-4xl (or its
+				     own size, if smaller), and is cut off with an ellipsis past that -->
 				{#key name}
 					<span
 						in:fade
-						class="font-bold transition-[font-size] duration-500
-                        {single ? 'text-4xl' : 'text-3xl'}">{name}</span
+						class="min-w-0 flex-1 truncate font-bold transition-[font-size] duration-500
+                        {playerNum === 1 ? 'text-right' : ''}"
+						{@attach fitText(
+							{ max: nameSizePx(massSingle, single), min: TEXT_4XL_PX },
+							name,
+							settings.current.font
+						)}>{name}</span
 					>
 				{/key}
 			</div>
-			<!-- games won, then PRs -->
-			<div
-				class="flex gap-2 text-ctp-text/75
-                                {playerNum === 1 ? 'flex-row-reverse' : ''}"
-			>
-				{#if series}
-					{@const wins = series.winsOf(steamID3)}
-					<!-- one box per game needed to win, filled from the outside in -->
-					<div
-						transition:fade
-						class="flex h-8 gap-2 {playerNum === 1 ? 'flex-row-reverse' : ''}"
-						aria-label="{wins} of {series.needed} games won"
-					>
-						{#each { length: series.needed }, i (i)}
-							<span
-								class="size-7 rounded-md border-4 transition-colors duration-500
-                                    {i < wins
-									? 'border-ctp-text bg-ctp-lavender'
-									: 'border-ctp-text/50 bg-transparent'}"
-							></span>
-						{/each}
-					</div>
-				{/if}
+			<!-- games won, then PRs: collapses away for a mass-single race -->
+			{#if !massSingle}
 				<div
-					class="-mt-4 mr-2 ml-2 flex h-16 max-w-55 flex-wrap items-center
-                                        {playerNum === 1 ? 'flex-row-reverse' : ''}
-                                        {settings.current.monoFont}"
+					transition:slide={{ duration: 500 }}
+					class="flex gap-2 text-ctp-text/75
+                                {playerNum === 1 ? 'flex-row-reverse' : ''}"
 				>
-					{#if settings.current.enablePRs}
-						<div class="flex gap-2">
-							{#if pr !== null}
-								<span class="text-xl opacity-80 {settings.current.font}">pr</span>
-								<span class="text-3xl">
-									{msToFormattedTime(pr)}
-								</span>
-							{/if}
+					{#if series}
+						{@const wins = series.winsOf(steamID3)}
+						<!-- one box per game needed to win, filled from the outside in -->
+						<div
+							transition:fade
+							class="flex h-8 gap-2 {playerNum === 1 ? 'flex-row-reverse' : ''}"
+							aria-label="{wins} of {series.needed} games won"
+						>
+							{#each { length: series.needed }, i (i)}
+								<span
+									class="size-7 rounded-md border-4 transition-colors duration-500
+                                    {i < wins
+										? 'border-ctp-text bg-ctp-lavender'
+										: 'border-ctp-text/50 bg-transparent'}"
+								></span>
+							{/each}
 						</div>
 					{/if}
+					<div
+						class="-mt-4 mr-2 ml-2 flex h-16 max-w-55 flex-wrap items-center
+                                        {playerNum === 1 ? 'flex-row-reverse' : ''}
+                                        {settings.current.monoFont}"
+					>
+						{#if settings.current.enablePRs}
+							<div class="flex gap-2">
+								{#if pr !== null}
+									<span class="text-xl opacity-80 {settings.current.font}">pr</span>
+									<span class="text-3xl">
+										{msToFormattedTime(pr)}
+									</span>
+								{/if}
+							</div>
+						{/if}
+					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 	</div>
 {/snippet}
