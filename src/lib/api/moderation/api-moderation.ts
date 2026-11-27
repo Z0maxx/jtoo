@@ -1,5 +1,5 @@
 import type { Donation } from '$lib/types.svelte';
-import { deepCopy } from '$lib/util';
+import { deepCopy, sleep } from '$lib/util';
 
 export namespace Moderation {
 	// how many donations are checked at once, so a first load with a long history doesn't send
@@ -21,14 +21,27 @@ export namespace Moderation {
 		return moderated;
 	}
 
+	// a failed check is retried with a growing delay (2s, 4s, 8s) before giving up, since a
+	// donation is only fetched once and a given-up one stays hidden for good
+	const maxAttempts = 4;
+	const baseRetryDelay = 2000;
+
 	async function moderateDonation(donation: Donation) {
-		try {
-			return await fetchModeratedDonation(donation);
-		} catch (e) {
-			console.log(e);
-			return defaultModeratedDonation(donation);
+		for (let attempt = 1; ; attempt++) {
+			try {
+				return await fetchModeratedDonation(donation);
+			} catch (e) {
+				if (e instanceof PermanentModerationError || attempt >= maxAttempts) {
+					console.error(`donation moderation gave up after ${attempt} attempt(s)`, e);
+					return defaultModeratedDonation(donation);
+				}
+				await sleep(baseRetryDelay * 2 ** (attempt - 1));
+			}
 		}
 	}
+
+	// a bad request won't get any better by sending it again
+	class PermanentModerationError extends Error {}
 
 	async function fetchModeratedDonation(donation: Donation) {
 		const resp = await fetch('/api/moderation/donation', {
@@ -38,8 +51,11 @@ export namespace Moderation {
 			})
 		});
 
+		if (resp.status === 400) {
+			throw new PermanentModerationError(`donation moderation: ${resp.status}`);
+		}
 		if (resp.status !== 200) {
-			return defaultModeratedDonation(donation);
+			throw new Error(`donation moderation: ${resp.status}`);
 		}
 
 		const { moderatedDonation } = (await resp.json()) as { moderatedDonation: Donation };
