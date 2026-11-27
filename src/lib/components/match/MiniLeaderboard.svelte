@@ -9,6 +9,7 @@
 	import type { LeaderboardEntry, RaceSnapshot } from '$lib/websockets/console/live-types';
 	import {
 		massSingleOrder,
+		progressFractions,
 		progressOrder,
 		type JFRelayWebSocket
 	} from '$lib/websockets/jf-relay/js-relay.svelte';
@@ -52,6 +53,8 @@
 			? massSingleOrder(board, jfRelayWs.progress).map((id) => byId.get(id)!)
 			: [...board].sort((a, b) => a.position - b.position);
 		const relayRunning = new Set(jfRelayWs ? progressOrder(jfRelayWs.progress) : []);
+		// the game servers' level progress, finer than checkpoints; checkpoints are the fallback
+		const relayFraction = jfRelayWs ? progressFractions(jfRelayWs.progress) : undefined;
 		const started = (e: LeaderboardEntry) =>
 			e.status === 'finished' ||
 			e.status === 'running' ||
@@ -67,6 +70,7 @@
 			const checkpoints = running
 				? reached(entry.currentSplitsMs)
 				: entry.bestProgress.checkpointCount;
+			const fraction = relayFraction?.get(entry.steamId3);
 			let value = '';
 			if (out) value = 'DNF';
 			else if (finished) value = entry === leader ? time(entry.prMs) : gap(entry.gapToLeaderMs);
@@ -74,7 +78,7 @@
 				entry,
 				out,
 				value,
-				progress: finished ? 1 : total ? Math.min(checkpoints / total, 1) : 0,
+				progress: finished ? 1 : (fraction ?? (total ? Math.min(checkpoints / total, 1) : 0)),
 				running
 			};
 		});

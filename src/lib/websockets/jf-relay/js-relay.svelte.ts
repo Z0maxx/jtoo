@@ -28,6 +28,7 @@ type JFRelayEvents = JFRelaySpectatorSelectEvent | JFRelayWelcomeEvent;
 export interface RelayProgress {
 	type: 'relay_progress';
 	protocol: 1;
+	totalProgressLevels: number; // how many levels the map has; 0 when unknown
 	map: string;
 	server_code: string;
 	userids: number[]; // the running players' userids, furthest through the map first
@@ -65,6 +66,22 @@ export function progressOrder(snapshots: RelayProgress[]): SteamID3[] {
 		if (best < 0) return order;
 		order.push(ranked[best].shift()!.account);
 	}
+}
+
+/**
+ * How far through the map each running player is, 0 to 1, by their level out of the map's
+ * levels. Servers that don't know the map's level count are left out.
+ */
+export function progressFractions(snapshots: RelayProgress[]): Map<SteamID3, number> {
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
+	const fractions = new Map<SteamID3, number>();
+	for (const s of snapshots) {
+		if (!(s.totalProgressLevels > 0)) continue;
+		for (const p of s.players) {
+			if (p.running) fractions.set(p.account, Math.min(p.level / s.totalProgressLevels, 1));
+		}
+	}
+	return fractions;
 }
 
 /**
