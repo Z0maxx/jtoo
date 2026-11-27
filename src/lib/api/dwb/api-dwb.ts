@@ -185,7 +185,7 @@ export namespace Dwb {
 		endpoint: () => string;
 		modelName: DwbModelName;
 		fetchUntil: () => boolean;
-		callback: (result: TDwbModel) => void;
+		callback: (result: TDwbModel) => void | Promise<void>;
 	}) {
 		if (fetching.has(modelName)) {
 			return;
@@ -206,7 +206,7 @@ export namespace Dwb {
 				}
 
 				const result = (await resp.json()) as TDwbModel;
-				callback(result);
+				await callback(result);
 			} catch (err) {
 				console.error(`dwb: fetching ${modelName} failed`, err);
 			}
