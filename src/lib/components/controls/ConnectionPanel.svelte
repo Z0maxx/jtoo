@@ -68,7 +68,8 @@
 	{@render children?.()}
 </form>
 {#if advanced}
-	<Accordion title="advanced settings" defaultstate="closed">
+	<!-- every connection has one, so it's saved under the connection's id -->
+	<Accordion title="advanced settings" id="{id}-advanced" defaultstate="closed">
 		{@render advanced()}
 	</Accordion>
 {/if}

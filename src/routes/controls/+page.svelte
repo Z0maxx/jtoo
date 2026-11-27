@@ -267,7 +267,7 @@
 
 	<!-- MARK: map and stage
 	     the console sets these, so they're only here to override it; the title shows what's set -->
-	<Accordion title={mapStageTitle} defaultstate="closed">
+	<Accordion title={mapStageTitle} id="map-and-stage" defaultstate="closed">
 		<span>map</span>
 		<RadioInputs
 			opts={poolMaps()}
