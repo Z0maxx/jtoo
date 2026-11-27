@@ -277,7 +277,6 @@ export type FundraisingState = {
 	lastDonationProcessedByRtdId: string;
 	donations: Donation[];
 	displayedDonations: Donation[];
-	displayedDonationsWithMessages: Donation[];
 	stage: number;
 	animationStage: number;
 	sumGoal: number;

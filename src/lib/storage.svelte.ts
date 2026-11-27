@@ -91,7 +91,6 @@ export const defaultFundraisingState: FundraisingState = {
 	lastDonationProcessedByRtdId: '',
 	donations: [],
 	displayedDonations: [],
-	displayedDonationsWithMessages: [],
 	stage: 0,
 	animationStage: 0,
 	sumGoal: 0,

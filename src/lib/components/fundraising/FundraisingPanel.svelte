@@ -50,7 +50,10 @@
 	<RocketProgressBar {overview} />
 	{#if next}
 		<!-- milestone descriptions run long, so they get two lines instead of being cut off -->
-		<span class="line-clamp-2 text-base leading-snug text-ctp-subtext0" style:filter={getFiltersStyle()}>
+		<span
+			class="line-clamp-2 text-base leading-snug text-ctp-subtext0"
+			style:filter={getFiltersStyle()}
+		>
 			next milestone
 			<span class="text-ctp-lavender {settings.current.monoFont}">{money(next.goal)}</span>
 			· {next.description}

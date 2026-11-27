@@ -5,9 +5,17 @@
 
 ## Testing donation messages
 
-- in .env set OPENAI_API_KEY
-- In DonationMessages component enable the commented out lines
-- Set the messages of donations
+- In .env set OPENAI_API_KEY. Names and messages are moderated before they're shown; without a
+  key, moderation gives up after a few retries (about 15s) and the donation shows as Anonymous
+  with no message
+- Make a donation to the test participant. The overlay polls every 16s, so it shows within about
+  16s: the latest donation card turns peach for 10s, then after 30s with nothing new it fades to
+  the recent donations list
+- To replay donations the overlay has already shown: in the overlay's devtools, set
+  `lastDonationProcessedByMessagesId` in the `fundraisingState` local storage entry to the id of
+  an earlier donation (ids are in its `donations` list), then reload. The cards step through
+  every donation after it as if they were new
+- A cleared or unknown id doesn't replay anything: the overlay starts at the latest donation
 
 ## Testing RTD
 
