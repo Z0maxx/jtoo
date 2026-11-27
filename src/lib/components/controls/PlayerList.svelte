@@ -11,9 +11,11 @@
 		label: (sId3: SteamID3) => string;
 		// the race's entries, to mark who has finished or is out; empty to mark no one
 		entries?: Map<SteamID3, LeaderboardEntry>;
+		// the selected row was clicked again, which doesn't change the value
+		onreselect?: () => void;
 	};
 
-	let { players, value = $bindable(), label, entries = new Map() }: Props = $props();
+	let { players, value = $bindable(), label, entries = new Map(), onreselect }: Props = $props();
 
 	const name = $props.id();
 
@@ -39,7 +41,17 @@
 		title={rowLabel}
 	>
 		<!-- visually hidden, not display:none, so the list works with the keyboard -->
-		<input type="radio" class="sr-only" {name} bind:group={value} value={sId3} />
+		<!-- the click comes before the change, so value is still the previous pick here -->
+		<input
+			type="radio"
+			class="sr-only"
+			{name}
+			bind:group={value}
+			value={sId3}
+			onclick={() => {
+				if (sId3 === value) onreselect?.();
+			}}
+		/>
 		<span class="flex items-center gap-1 text-sm">
 			{#if sId3 === undefined}
 				✖

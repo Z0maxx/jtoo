@@ -146,6 +146,11 @@
 						bind:value={overlay.current.players[playerNum]}
 						label={playerLabel}
 						entries={raceEntries}
+						onreselect={() =>
+							jfRelayWs.broadcastSelectedPlayers([
+								overlay.current.players[0],
+								overlay.current.players[1]
+							])}
 					/>
 				</div>
 			{/if}
