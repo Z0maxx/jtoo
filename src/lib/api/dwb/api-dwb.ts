@@ -133,7 +133,6 @@ export namespace Dwb {
 					name: d.displayName,
 					amount: d.amount,
 					message: d.message,
-					avatarUrl: d.avatarImageUrl,
 					createdAt: d.createdDateUTC
 				}));
 
@@ -237,7 +236,6 @@ export namespace Dwb {
 		donationID: string;
 		displayName: string;
 		message: string;
-		avatarImageUrl: string;
 		createdDateUTC: string;
 		amount: number;
 	};
