@@ -23,7 +23,9 @@
 	const money = (amount: number) => `$${amount.toLocaleString('en-US')}`;
 	// the rocket bar moves the goal on by 1000 each time it fills
 	let goal = $derived(fundraisingState.current.sumGoal || overview.goal);
-	let next = $derived(milestones.find((m) => m.isActive) ?? milestones.find((m) => !m.isComplete));
+	// dwb's isActive only says a milestone is enabled, so the next one is the first not reached
+	// yet: marked complete by dwb, or passed by the total before dwb catches up
+	let next = $derived(milestones.find((m) => !m.isComplete && m.goal > overview.raised));
 </script>
 
 <div class="{styleClass} relative isolate flex flex-col gap-2.5 px-4.5 py-3.5">
@@ -47,7 +49,8 @@
 	</div>
 	<RocketProgressBar {overview} />
 	{#if next}
-		<span class="truncate text-base text-ctp-subtext0" style:filter={getFiltersStyle()}>
+		<!-- milestone descriptions run long, so they get two lines instead of being cut off -->
+		<span class="line-clamp-2 text-base leading-snug text-ctp-subtext0" style:filter={getFiltersStyle()}>
 			next milestone
 			<span class="text-ctp-lavender {settings.current.monoFont}">{money(next.goal)}</span>
 			· {next.description}

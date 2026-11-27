@@ -118,7 +118,7 @@
 						</span>
 					</div>
 					<p
-						class="m-0 line-clamp-4 text-lg leading-snug
+						class="m-0 line-clamp-3 text-lg leading-snug
                                                 {donation.id === replaced
 							? ''
 							: 'text-ctp-subtext1'}"

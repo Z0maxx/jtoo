@@ -33,7 +33,8 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
 		{#if eventSet}
 			<DonationMessages class="min-h-0 flex-1" />
-			<FundraisingPanel />
+			<!-- the panel keeps its full height and the donation cards take what's left -->
+			<FundraisingPanel class="shrink-0" />
 		{/if}
 		<MatchMapPicks class="mt-auto h-26 shrink-0" />
 	</div>
