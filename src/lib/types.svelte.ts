@@ -163,7 +163,6 @@ export type Settings = {
 	enableGradient: boolean;
 	enableTeamColors: boolean;
 	enablePOVGuide: boolean;
-	enableFundraisingSection: boolean;
 	enableFundraisingDonations: boolean;
 	enableFundraisingRtd: boolean;
 	useShortMapNames: boolean;

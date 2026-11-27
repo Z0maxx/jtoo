@@ -38,7 +38,9 @@
 
 <!-- both labels share one grid cell, so the button is always as wide as the longer one and
      doesn't resize (and move out from under the pointer) when it arms or disarms -->
+<!-- type="button": inside a form it would otherwise submit it -->
 <button
+	type="button"
 	class="{className} inline-grid whitespace-nowrap {armed ? 'text-ctp-red! underline' : ''}"
 	{title}
 	{onclick}

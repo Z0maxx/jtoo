@@ -352,7 +352,6 @@
 		<Checkbox desc="use player PRs" setting="enablePRs" />
 		<Checkbox desc="use avatars" setting="enableAvatars" />
 		<Checkbox desc="use tags" setting="enableTags" />
-		<Checkbox desc="show fundraising section" setting="enableFundraisingSection" />
 		<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
 		{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
 			<div>{error.invalidJfRelayToken.msg}</div>

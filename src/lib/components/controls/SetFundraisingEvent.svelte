@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { defaultFundraisingState, fundraisingState } from '$lib/storage.svelte';
 	import Accordion from './Accordion.svelte';
+	import ConfirmButton from './ConfirmButton.svelte';
 
 	type Error = { state: boolean; msg: string };
 
@@ -14,9 +15,27 @@
 		invalidUrl: { state: false, msg: 'error: invalid DWB event url' } as Error
 	});
 
+	// a fresh fundraising state for the given event, or none: a copy, so later changes don't
+	// write into the defaults
+	function resetFundraising(eventUrl: string) {
+		fundraisingState.current = { ...structuredClone(defaultFundraisingState), eventUrl };
+	}
+
+	// no event hides the overlay's fundraising section and stops fetching donations
+	function clearEvent() {
+		error.invalidUrl.state = false;
+		resetFundraising('');
+	}
+
 	async function onSearch() {
+		// an emptied field clears the event, the same as the clear button
+		if (!url.trim()) {
+			clearEvent();
+			return;
+		}
+
 		fetched = false;
-		if (!url || !url.startsWith(dwbUrlPrefix)) {
+		if (!url.startsWith(dwbUrlPrefix)) {
 			error.invalidUrl.state = true;
 			return;
 		}
@@ -28,8 +47,7 @@
 		}
 
 		error.invalidUrl.state = false;
-		fundraisingState.current = defaultFundraisingState;
-		fundraisingState.current.eventUrl = url;
+		resetFundraising(url);
 		fetched = true;
 	}
 </script>
@@ -52,13 +70,18 @@
 				bind:value={url}
 			/>
 		</div>
-		<div class="flex gap-2">
+		<div class="flex items-center gap-2">
 			<button class="button button-unselected hover:button-selected" type="submit">fetch</button>
+			{#if savedUrl}
+				<ConfirmButton onconfirm={clearEvent}>clear</ConfirmButton>
+			{:else}
+				<span class="opacity-60">no event set: the fundraising section is hidden</span>
+			{/if}
 		</div>
 	</form>
 	{#each Object.values(error) as e, i (i)}
 		{#if e.state}
-			<div>{e.msg}</div>
+			<div class="text-red-300">{e.msg}</div>
 		{/if}
 	{/each}
 </Accordion>

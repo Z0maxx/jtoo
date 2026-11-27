@@ -193,6 +193,12 @@ export namespace Dwb {
 
 		fetching.add(modelName);
 		while (fetchUntil()) {
+			// no event set (it was cleared in the controls): wait for one instead of fetching
+			// a participant with no id
+			if (!fundraisingState.current.eventUrl) {
+				await sleep(fetchInterval);
+				continue;
+			}
 			try {
 				const resp = await fetchDwb(endpoint(), eTags.get(modelName));
 				if (resp.status === 304 || resp.status === 204) {

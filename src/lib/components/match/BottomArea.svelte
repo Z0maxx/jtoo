@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fundraisingState, settings } from '$lib/storage.svelte';
+	import { fundraisingState } from '$lib/storage.svelte';
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import DonationMessages from '$lib/components/fundraising/DonationMessages.svelte';
@@ -10,7 +10,7 @@
 
 	// the dual pov match scene's area under the povs: space for chat, the mini leaderboard, then
 	// donation messages, the fundraising totals and the map picks
-	let fundraising = $derived(settings.current.enableFundraisingSection);
+	// the fundraising side shows whenever an event is set
 	let eventSet = $derived(!!fundraisingState.current.eventUrl);
 
 	// duels don't show the leaderboard, and nor does a cleared one, so the fundraising side
@@ -33,11 +33,9 @@
 	{/if}
 
 	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
-		{#if fundraising && eventSet}
+		{#if eventSet}
 			<DonationMessages class="min-h-0 flex-1" />
 			<FundraisingPanel />
-		{:else if fundraising}
-			<div class="text-3xl">Fundraising event is not set</div>
 		{/if}
 		<MatchMapPicks class="mt-auto h-26 shrink-0" />
 	</div>
