@@ -4,6 +4,7 @@ import { Steam } from '../steam/api-steam';
 import _ from 'underscore';
 import { TempusPlaza } from '../tempusplaza/api-tempusplaza';
 import { createRateLimitedApi } from '../rate-limited-api';
+import { mapImageOverride } from '$lib/map-image-overrides';
 
 export namespace Tempus2 {
 	// Tempus2 API Interfaces
@@ -124,7 +125,7 @@ export namespace Tempus2 {
 
 		map.authors = data.authors;
 
-		map.imageURL = TempusPlaza.getImageUrl(map.fileName);
+		map.imageURL = mapImageOverride(map.fileName) ?? TempusPlaza.getImageUrl(map.fileName);
 
 		return map;
 	}

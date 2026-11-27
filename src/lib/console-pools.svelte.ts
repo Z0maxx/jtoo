@@ -2,7 +2,7 @@ import { items, pool, settings } from './storage.svelte';
 import { consoleBaseUrl } from './util';
 import { Player, TFMap, type MapFileName, type MapRun, type SteamID3 } from './types.svelte';
 import { Tempus2 } from './api/tempus2/api-tempus2';
-import jumpOdysseyRc3 from './assets/jump_odyssey_rc3.png';
+import { mapImageOverride } from './map-image-overrides';
 
 // The event's players and maps come from a console player pool and map pool. These are
 // the console's public endpoints, so no token is needed.
@@ -23,12 +23,6 @@ type ConsoleMapPool = {
 	id: string;
 	name: string;
 	maps: { id: string; name: string; displayName: string | null; position: number }[];
-};
-
-// our own images for maps whose Tempus image is missing or wrong; they replace the map's
-// image on every import, so maps saved before the override existed pick it up too
-const MAP_IMAGE_OVERRIDES: Record<MapFileName, string> = {
-	jump_odyssey_rc3: jumpOdysseyRc3
 };
 
 export type PoolImportResult = {
@@ -242,14 +236,15 @@ async function importMapPool(poolId: string): Promise<number> {
 	return names.length;
 }
 
+// maps saved before an image override existed pick it up on every pool import
 function applyMapImageOverrides(names: MapFileName[]) {
-	const needsOverride = (m: TFMap) =>
-		names.includes(m.fileName) &&
-		MAP_IMAGE_OVERRIDES[m.fileName] &&
-		m.imageURL !== MAP_IMAGE_OVERRIDES[m.fileName];
+	const needsOverride = (m: TFMap) => {
+		const url = mapImageOverride(m.fileName);
+		return names.includes(m.fileName) && url !== undefined && m.imageURL !== url;
+	};
 	if (!items.current.maps.some(needsOverride)) return;
 	items.current.maps = items.current.maps.map((m) =>
-		needsOverride(m) ? { ...m, imageURL: MAP_IMAGE_OVERRIDES[m.fileName] } : m
+		needsOverride(m) ? { ...m, imageURL: mapImageOverride(m.fileName)! } : m
 	);
 }
 
