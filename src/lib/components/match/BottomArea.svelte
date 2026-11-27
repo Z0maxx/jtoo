@@ -52,8 +52,9 @@
 	{/if}
 
 	<!-- the panel and the picks keep their own height, the donation cards filling the rest above
-	     them. without a fundraising event the picks fill it instead -->
-	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
+	     them. without a fundraising event the picks fill it instead. spaced with margins and
+	     padding, not a gap, so the picks' space slides open and shut with them -->
+	<div class="flex min-w-0 flex-1 flex-col">
 		{#if eventSet}
 			<div class="flex min-h-0 flex-1 flex-col" bind:clientHeight={donationsHeight}>
 				<DonationMessages
@@ -63,8 +64,16 @@
 					class="min-h-0 flex-1"
 				/>
 			</div>
-			<FundraisingPanel class="shrink-0" />
+			<FundraisingPanel class="mt-3.5 shrink-0" />
+			<!-- the picks slide in under the panel, the donation cards shrinking smoothly to make
+			     room (and growing back as they slide out) -->
+			{#if mapPicksShown}
+				<div class="shrink-0 pt-3.5" transition:slide={{ duration: 500, easing: cubicInOut }}>
+					<MatchMapPicks class="h-26" />
+				</div>
+			{/if}
+		{:else}
+			<MatchMapPicks class="min-h-26 flex-1" />
 		{/if}
-		<MatchMapPicks class={eventSet ? 'h-26 shrink-0' : 'min-h-26 flex-1'} />
 	</div>
 </div>

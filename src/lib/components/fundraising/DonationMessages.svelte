@@ -156,9 +156,10 @@
 			style:filter={getFiltersStyle()}
 		></div>
 		{#key key}
-			<!-- absolute, so the outgoing and incoming content overlap as they fade -->
+			<!-- absolute, so the outgoing and incoming content overlap as they fade. going tight
+			     eases its padding and gap, alongside the map picks sliding in -->
 			<div
-				class="absolute inset-0 flex flex-col overflow-hidden px-4.5 text-[18px] {tight
+				class="absolute inset-0 flex flex-col overflow-hidden px-4.5 text-[18px] transition-[padding,gap] duration-500 ease-in-out {tight
 					? 'gap-1 py-2.5'
 					: 'gap-2 py-3.5'}"
 				transition:fade={{ duration: 400 }}
@@ -166,7 +167,7 @@
 				<span
 					class="{tight
 						? 'text-xs'
-						: 'text-sm'} font-bold tracking-wider uppercase transition-colors duration-500
+						: 'text-sm'} font-bold tracking-wider uppercase transition-[color,font-size,line-height] duration-500 ease-in-out
 					{peach ? 'text-ctp-peach' : 'text-ctp-overlay2'}"
 					style:filter={getFiltersStyle()}>{header}</span
 				>
@@ -185,10 +186,14 @@
 			     biggest donation alone wouldn't fit -->
 			<div
 				class="flex min-h-0 flex-1 flex-col flex-wrap content-start overflow-hidden"
-				{@attach fitItems(18, [
-					[2, 14],
-					[1, 11]
-				])}
+				{@attach fitItems(
+					18,
+					[
+						[2, 14],
+						[1, 11]
+					],
+					tight
+				)}
 			>
 				{#each top as d, i (d.id)}
 					<div
@@ -229,7 +234,7 @@
 				     messages (while map picks show) the text shrinks a little so three fit -->
 				<div
 					class="flex min-h-0 flex-1 flex-col flex-wrap content-start overflow-hidden"
-					{@attach fitItems(18, [[recentMessages && !compact ? 1 : 3, 12]])}
+					{@attach fitItems(18, [[recentMessages && !compact ? 1 : 3, 12]], tight)}
 				>
 					{#each recent as d, i (d.id)}
 						<div
