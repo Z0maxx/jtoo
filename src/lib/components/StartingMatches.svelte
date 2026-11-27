@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formats, type MatchDef, type Source } from '$lib/Bracket.svelte';
-	import type { BracketSize, SteamID3 } from '$lib/types.svelte';
+	import { formatOf, type MatchDef, type Source } from '$lib/Bracket.svelte';
+	import type { BracketSize, Elimination, SteamID3 } from '$lib/types.svelte';
 	import { getPlayer } from '$lib/util';
 	import { flip } from 'svelte/animate';
 
@@ -8,11 +8,12 @@
 	// Dragging a player onto another swaps their seeds.
 	type Props = {
 		size: BracketSize;
+		elimination?: Elimination;
 		players: SteamID3[]; // seeding order: seed 1 first
 		onchange?: () => void;
 		class?: string;
 	};
-	let { size, players = $bindable(), onchange, class: styleClass }: Props = $props();
+	let { size, elimination, players = $bindable(), onchange, class: styleClass }: Props = $props();
 
 	// the grid rows of each starting match (two rows each, one per spot),
 	// with a row for a divider between each round
@@ -20,7 +21,7 @@
 		const matches: { match: MatchDef; row: number }[] = [];
 		const dividers: number[] = [];
 		let row = 1;
-		for (const round of formats[size].upper) {
+		for (const round of formatOf({ size, elimination }).upper) {
 			const starting = round.matches.filter((m) => 'seed' in m.A || 'seed' in m.B);
 			if (!starting.length) continue;
 			if (matches.length) dividers.push(row++);

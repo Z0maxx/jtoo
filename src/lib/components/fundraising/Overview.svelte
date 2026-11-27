@@ -81,7 +81,7 @@
 		}
 
 		33% {
-			transform: translateX(calc(var(--spacing) * 4));
+			transform: translateX(calc(var(--spacing) * 2));
 		}
 
 		66% {
@@ -89,13 +89,13 @@
 		}
 
 		to {
-			transform: translateX(calc(var(--spacing) * -4));
+			transform: translateX(calc(var(--spacing) * -2));
 		}
 	}
 
 	@keyframes progress-bar-restore-2 {
 		from {
-			transform: translateX(calc(var(--spacing) * -4));
+			transform: translateX(calc(var(--spacing) * -2));
 		}
 
 		to {

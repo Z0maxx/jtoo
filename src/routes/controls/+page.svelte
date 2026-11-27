@@ -40,7 +40,7 @@
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
 	import { ConsoleLive, type FeedState } from '$lib/websockets/console/console-live.svelte';
-	import { getMap, consoleBaseUrl } from '$lib/util';
+	import { getMap, consoleBaseUrl, roundNumber } from '$lib/util';
 	import { slide } from 'svelte/transition';
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
@@ -409,6 +409,12 @@
 				overlay.current.timersClearedAt = Date.now() + live.clockOffset;
 			}}>clear timers</ConfirmButton
 		>
+		<ConfirmButton
+			onconfirm={() => {
+				// in console time, like the timers
+				overlay.current.miniLeaderboardClearedAt = Date.now() + live.clockOffset;
+			}}>clear mini leaderboard</ConfirmButton
+		>
 		<ConfirmButton onconfirm={() => ksnWs!.clearPicksAndBans()}
 			>clear map picks and bans</ConfirmButton
 		>
@@ -476,7 +482,9 @@
 			opts={['standings', ...leaderboardRounds.map((r) => r.roundIndex), 'final']}
 			optlabels={[
 				'current standings',
-				...leaderboardRounds.map((r) => `${r.roundIndex + 1}: ${r.map || r.stage}`),
+				...leaderboardRounds.map(
+					(r) => `${roundNumber(live.tournament?.rounds ?? [], r)}: ${r.map || r.stage}`
+				),
 				'final standings'
 			]}
 			bind:value={

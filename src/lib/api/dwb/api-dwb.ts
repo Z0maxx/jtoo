@@ -1,10 +1,11 @@
 import { fundraisingState } from '$lib/storage.svelte';
 import type { DonationsOverview, Donation, DonationMilestone, Subscriber } from '$lib/types.svelte';
 import { deepCopy, sleep } from '$lib/util';
+import { Moderation } from '../moderation/api-moderation';
 import { createRateLimitedApi } from '../rate-limited-api';
 
 export namespace Dwb {
-	//fundraisingState.current.donations = []
+	//fundraisingState.current.donations = [];
 	const participantEndpoint = () =>
 		'/participants/' + fundraisingState.current.eventUrl.split('/').at(-1);
 	const fetching = new Set<DwbModelName>();
@@ -123,7 +124,7 @@ export namespace Dwb {
 				`${participantEndpoint()}/donations?offset=${donations.length}&orderBy=createdDateUTC%20ASC`,
 			modelName: 'donations',
 			fetchUntil: () => donationsSubscribers.length > 0,
-			callback: (dwbDonations) => {
+			callback: async (dwbDonations) => {
 				const eTag = eTags.get('donations');
 				if (!eTag || eTag === lastETag) return;
 
@@ -132,14 +133,17 @@ export namespace Dwb {
 					name: d.displayName,
 					amount: d.amount,
 					message: d.message,
-					avatarUrl: d.avatarImageUrl,
 					createdAt: d.createdDateUTC
 				}));
 
 				if (newDonations.length === 0) return;
 
 				const newDonationIds = newDonations.map((d) => d.id);
-				donations = donations.filter((d) => !newDonationIds.includes(d.id)).concat(newDonations);
+				const moderatedDonations = await Moderation.moderateDonations(newDonations);
+				donations = donations
+					.filter((d) => !newDonationIds.includes(d.id))
+					.concat(moderatedDonations);
+
 				fundraisingState.current.donations = donations;
 				donationsSubscribers.forEach((s) => s.handler(donationsCopy()));
 				lastETag = eTag;
@@ -181,7 +185,7 @@ export namespace Dwb {
 		endpoint: () => string;
 		modelName: DwbModelName;
 		fetchUntil: () => boolean;
-		callback: (result: TDwbModel) => void;
+		callback: (result: TDwbModel) => void | Promise<void>;
 	}) {
 		if (fetching.has(modelName)) {
 			return;
@@ -202,7 +206,7 @@ export namespace Dwb {
 				}
 
 				const result = (await resp.json()) as TDwbModel;
-				callback(result);
+				await callback(result);
 			} catch (err) {
 				console.error(`dwb: fetching ${modelName} failed`, err);
 			}
@@ -232,7 +236,6 @@ export namespace Dwb {
 		donationID: string;
 		displayName: string;
 		message: string;
-		avatarImageUrl: string;
 		createdDateUTC: string;
 		amount: number;
 	};

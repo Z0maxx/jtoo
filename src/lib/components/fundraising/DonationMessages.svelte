@@ -3,7 +3,6 @@
 	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import type { Donation } from '$lib/types.svelte';
 	import { sleep } from '$lib/util';
-	import { isMessageAcceptable } from '$lib/message-moderation.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { onDestroy } from 'svelte';
 
@@ -58,7 +57,7 @@
 				if (!iterateDonations()) break;
 
 				fundraisingState.current.lastDonationProcessedByMessagesId = d.id;
-				if (!d.message || !(await isMessageAcceptable(d))) continue;
+				if (!d.message) continue;
 
 				const lastEmpty = fundraisingState.current.displayedDonationsWithMessages.findIndex(
 					(d) => d.id === ''
@@ -106,9 +105,6 @@
 						style:filter={getFiltersStyle()}
 					></div>
 					<div class="flex items-center gap-2.5">
-						{#if donation.avatarUrl}
-							<img src={donation.avatarUrl} alt="" class="size-7 rounded-full" draggable="false" />
-						{/if}
 						<span class="truncate text-[21px] font-bold">{donation.name || 'Anonymous'}</span>
 						<span
 							class="ml-auto text-[21px] {donation.id === replaced

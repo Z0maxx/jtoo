@@ -3,6 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { getPlayer, msToFormattedTime, msToGap, playerLabel } from '$lib/util';
 	import { settings } from '$lib/storage.svelte';
+	import { miniLeaderboardCleared } from './mini-leaderboard';
 	import { getContext } from 'svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import type { LeaderboardEntry, RaceSnapshot } from '$lib/websockets/console/live-types';
@@ -38,6 +39,7 @@
 	const reached = (splits: (number | null)[]) => splits.filter((s) => s !== null).length;
 
 	let race = $derived(live.currentRace);
+	let cleared = $derived(miniLeaderboardCleared(race));
 	let singleRun = $derived(race?.mode === 'mass-single');
 
 	// single run races: finished players by position, then the running players by map progress,
@@ -103,7 +105,7 @@
 </script>
 
 <!-- duels don't need a leaderboard -->
-{#if race && race.mode !== 'duel'}
+{#if race && race.mode !== 'duel' && !cleared}
 	<section class="{styleClass} relative isolate flex flex-col px-4 pt-3 pb-3.5" transition:fade>
 		<!-- background -->
 		<div

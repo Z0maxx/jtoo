@@ -40,7 +40,7 @@
 		}
 
 		100% {
-			rotate: -11.5deg;
+			rotate: -4deg;
 		}
 	}
 
