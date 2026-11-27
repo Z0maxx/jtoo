@@ -347,11 +347,19 @@
 			</Group>
 
 			<Group label="bracket">
-				<RadioInputs
-					opts={(items.current.brackets ?? []).map((b) => b.id)}
-					optlabels={(items.current.brackets ?? []).map((b) => b.name)}
-					bind:value={overlay.current.bracket}
-				/>
+				{#if items.current.brackets?.length}
+					<RadioInputs
+						opts={items.current.brackets.map((b) => b.id)}
+						optlabels={items.current.brackets.map((b) => b.name)}
+						bind:value={overlay.current.bracket}
+					/>
+				{:else}
+					<!-- the same as under 'players, maps, and brackets', so there's no hunting for it -->
+					<div class="flex flex-wrap items-center gap-2">
+						<span class="opacity-60">no brackets yet</span>
+						<EditBracket />
+					</div>
+				{/if}
 			</Group>
 
 			<Group label="class">
