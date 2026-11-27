@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { defaultFundraisingState, fundraisingState } from '$lib/storage.svelte';
-	import Accordion from './Accordion.svelte';
+	import { defaultFundraisingState, fundraisingState, settings } from '$lib/storage.svelte';
+	import type { FeedState } from '$lib/websockets/console/console-live.svelte';
+	import Checkbox from './Checkbox.svelte';
 	import ConfirmButton from './ConfirmButton.svelte';
+	import ConnectionPanel from './ConnectionPanel.svelte';
 	import type { Snippet } from 'svelte';
 
-	// the fundraising settings, shown under the event
+	// the fundraising event, in the controls' status bar like the connections. anything else to
+	// show under its status (eg: RTD) comes in as children
 	let { children }: { children?: Snippet } = $props();
-
-	type Error = { state: boolean; msg: string };
 
 	const dwbUrlPrefix = 'https://events.doctorswithoutborders.org/';
 	// fundraisingState changes all the time (donations, the progress bar), so the saved url gets
 	// its own derived: the input below only resets when the url itself changes, not mid-typing
 	const savedUrl = $derived(fundraisingState.current.eventUrl);
 	let url = $derived(savedUrl);
-	let fetched = $derived(!!savedUrl);
-	let error = $state({
-		invalidUrl: { state: false, msg: 'error: invalid DWB event url' } as Error
-	});
+	let fetching = $state(false);
+	let invalidUrl = $state(false);
+
+	// 'connected' once an event is set: the overlay fetches its donations
+	const eventState: FeedState = $derived(
+		fetching ? 'connecting' : savedUrl && !invalidUrl ? 'open' : 'closed'
+	);
 
 	// a fresh fundraising state for the given event, or none: a copy, so later changes don't
 	// write into the defaults
@@ -27,7 +31,7 @@
 
 	// no event hides the overlay's fundraising section and stops fetching donations
 	function clearEvent() {
-		error.invalidUrl.state = false;
+		invalidUrl = false;
 		resetFundraising('');
 	}
 
@@ -38,58 +42,45 @@
 			return;
 		}
 
-		fetched = false;
 		if (!url.startsWith(dwbUrlPrefix)) {
-			error.invalidUrl.state = true;
+			invalidUrl = true;
 			return;
 		}
 
-		const resp = await fetch(`/api/dwb/participants/${url.split('/').at(-1)}`);
-		if (resp.status === 404) {
-			error.invalidUrl.state = true;
-			return;
+		fetching = true;
+		try {
+			const resp = await fetch(`/api/dwb/participants/${url.split('/').at(-1)}`);
+			invalidUrl = resp.status === 404;
+			if (!invalidUrl) resetFundraising(url);
+		} finally {
+			fetching = false;
 		}
-
-		error.invalidUrl.state = false;
-		resetFundraising(url);
-		fetched = true;
 	}
 </script>
 
-<Accordion title="fundraising" defaultstate="closed">
-	<form
-		class="flex flex-col gap-1"
-		onsubmit={(e) => {
-			e.preventDefault();
-			onSearch();
-		}}
-	>
-		<div class="flex gap-2">
-			<label for="input-fundraising-url">url: </label>
+<ConnectionPanel
+	label="url"
+	id="input-fundraising-url"
+	type="text"
+	placeholder={dwbUrlPrefix}
+	submitLabel="fetch"
+	bind:value={url}
+	onconnect={onSearch}
+	state={eventState}
+	error={invalidUrl ? "that isn't a DWB event url" : undefined}
+>
+	{@render children?.()}
+
+	{#snippet advanced()}
+		<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
+		<label>
 			<input
-				type="text"
-				class="input w-full {fetched ? 'border-b-green-700' : ''}"
-				id="input-fundraising-url"
-				placeholder={dwbUrlPrefix}
-				bind:value={url}
+				type="number"
+				min="0"
+				class="input remove-arrow w-7 accent-ctp-lavender"
+				bind:value={settings.current.fundraisingShowDonationSeconds}
 			/>
-		</div>
-		<div class="flex items-center gap-2">
-			<button class="button button-unselected hover:button-selected" type="submit">fetch</button>
-			{#if savedUrl}
-				<ConfirmButton onconfirm={clearEvent}>clear</ConfirmButton>
-			{:else}
-				<span class="opacity-60">no event set: the fundraising section is hidden</span>
-			{/if}
-		</div>
-	</form>
-	{#each Object.values(error) as e, i (i)}
-		{#if e.state}
-			<div class="text-red-300">{e.msg}</div>
-		{/if}
-	{/each}
-	{#if children}
-		<hr class="hr" />
-		{@render children()}
-	{/if}
-</Accordion>
+			<span>seconds to show each donation for</span>
+		</label>
+	{/snippet}
+</ConnectionPanel>

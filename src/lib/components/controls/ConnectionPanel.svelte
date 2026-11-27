@@ -14,7 +14,7 @@
 	import Accordion from './Accordion.svelte';
 
 	type Props = {
-		// what the secret is called, e.g. 'token' or 'password'
+		// what the field is called, e.g. 'token', 'password' or 'url'
 		label: string;
 		id: string;
 		value: string;
@@ -27,6 +27,11 @@
 		children?: Snippet;
 		// settings that rarely change, behind a closed accordion
 		advanced?: Snippet;
+		// the field is a password by default; eg: a url isn't secret
+		type?: 'password' | 'text';
+		placeholder?: string;
+		// what the submit button says
+		submitLabel?: string;
 	};
 
 	let {
@@ -38,7 +43,10 @@
 		error,
 		note,
 		children,
-		advanced
+		advanced,
+		type = 'password',
+		placeholder,
+		submitLabel = 'connect'
 	}: Props = $props();
 </script>
 
@@ -52,10 +60,12 @@
 >
 	<div class="flex items-center gap-2">
 		<label for={id}>{label}:</label>
-		<input type="password" class="input grow" {id} bind:value />
+		<input {type} class="input grow" {id} {placeholder} bind:value />
 	</div>
 	<div class="flex flex-wrap items-center gap-2">
-		<button class="button button-unselected hover:button-selected" type="submit">connect</button>
+		<button class="button button-unselected hover:button-selected" type="submit"
+			>{submitLabel}</button
+		>
 		<span>status:</span>
 		<span class={feedStates[state].color}>{feedStates[state].state}</span>
 		{#if note}

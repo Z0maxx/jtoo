@@ -3,7 +3,8 @@
 	import { slide } from 'svelte/transition';
 	import Checkbox from './Checkbox.svelte';
 	import ConnectionPanel, { feedStates } from './ConnectionPanel.svelte';
-	import { settings } from '$lib/storage.svelte';
+	import SetFundraisingEvent from './SetFundraisingEvent.svelte';
+	import { fundraisingState, settings } from '$lib/storage.svelte';
 	import { obsConnect, obsStatus } from '$lib/websockets/obs/ws-obs.svelte';
 	import type { PoolImportResult } from '$lib/console-pools.svelte';
 	import type { ConsoleLive, FeedState } from '$lib/websockets/console/console-live.svelte';
@@ -36,7 +37,7 @@
 
 	// MARK: status bar
 	// each status opens its connection's settings right below the bar, one at a time
-	type StatusId = 'obs' | 'console' | 'relay';
+	type StatusId = 'obs' | 'console' | 'relay' | 'fundraising';
 	let openStatus: StatusId | null = $state(null);
 
 	// 'off' is a connection that isn't set up, which isn't worth a red dot
@@ -63,6 +64,7 @@
 		const feed: Status = settings.current.ksnWebSocketToken ? live.raceState : 'off';
 		return statusRank[poolStatus] > statusRank[feed] ? poolStatus : feed;
 	});
+	const rtdError = $derived(settings.current.enableFundraisingRtd ? relayError : undefined);
 	const statuses = $derived<{ id: StatusId; status: Status; detail: string }[]>([
 		{
 			id: 'obs',
@@ -91,6 +93,17 @@
 			id: 'relay',
 			status: settings.current.jfRelayWebSocketToken ? relayState : 'off',
 			detail: relayError || (settings.current.jfRelayWebSocketToken ? '' : 'no token set')
+		},
+		// not a connection of its own: set up once there's an event, and broken when RTD is on but
+		// can't reach the relay
+		{
+			id: 'fundraising',
+			status: !fundraisingState.current.eventUrl ? 'off' : rtdError ? 'closed' : 'open',
+			detail: !fundraisingState.current.eventUrl
+				? 'no event set'
+				: rtdError
+					? `RTD: ${rtdError}`
+					: ''
 		}
 	]);
 	const statusText: Record<Status, string> = {
@@ -243,6 +256,14 @@
 					state={relayState}
 					error={relayError}
 				/>
+			{:else if openStatus === 'fundraising'}
+				<SetFundraisingEvent>
+					<!-- also in the page's automation section -->
+					<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+					{#if rtdError}
+						<div class="text-red-300">{rtdError}</div>
+					{/if}
+				</SetFundraisingEvent>
 			{/if}
 		</div>
 	{/if}

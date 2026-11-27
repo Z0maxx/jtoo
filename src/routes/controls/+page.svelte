@@ -45,7 +45,6 @@
 	import { mapName } from '$lib/map-picks';
 	import { onMount, setContext, untrack } from 'svelte';
 	import { JFRelayWebSocket } from '$lib/websockets/jf-relay/js-relay.svelte';
-	import SetFundraisingEvent from '$lib/components/controls/SetFundraisingEvent.svelte';
 
 	type Error = { state: boolean; msg: string };
 	import { refreshSchedule, schedule, scheduleDays, scheduleSheetUrl } from '$lib/schedule.svelte';
@@ -320,6 +319,11 @@
 				setting="followRacePlayers"
 				desc="list only the current race's players, in race order"
 			/>
+			<!-- also in the fundraising panel in the status bar -->
+			<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
+			{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
+				<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
+			{/if}
 		</Accordion>
 
 		<!-- MARK: scene content
@@ -427,23 +431,6 @@
 				<ManageBrackets />
 			</div>
 		</Accordion>
-
-		<SetFundraisingEvent>
-			<Checkbox desc="enable fundraising RTD" setting="enableFundraisingRtd" />
-			{#if settings.current.enableFundraisingRtd && error.invalidJfRelayToken.state}
-				<div class="text-red-300">{error.invalidJfRelayToken.msg}</div>
-			{/if}
-			<Checkbox desc="iterate fundraising donations" setting="enableFundraisingDonations" />
-			<label>
-				<input
-					type="number"
-					min="0"
-					class="input remove-arrow w-7 accent-ctp-lavender"
-					bind:value={settings.current.fundraisingShowDonationSeconds}
-				/>
-				<span>seconds to show each donation for</span>
-			</label>
-		</SetFundraisingEvent>
 
 		<Accordion title="overlay visuals" defaultstate="closed">
 			<span>font</span>
