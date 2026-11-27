@@ -12,10 +12,12 @@
 
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { slide } from '$lib/motion';
 
 	type Props = {
 		title: string;
+		// shown after the title, muted, eg: what a closed section has set
+		summary?: string;
 		children: Snippet;
 		defaultstate?: 'open' | 'closed';
 		// what its open state is saved under; needed when the title changes, or isn't unique
@@ -24,7 +26,7 @@
 		aside?: Snippet;
 	};
 
-	let { title, children, defaultstate = 'open', id, aside }: Props = $props();
+	let { title, summary, children, defaultstate = 'open', id, aside }: Props = $props();
 
 	const key = $derived(id ?? title);
 	const open = $derived(openAccordions.current[key] ?? defaultstate === 'open');
@@ -41,12 +43,16 @@
 		>
 			<span class="align-middle {open ? 'icon-[mdi--chevron-down]' : 'icon-[mdi--chevron-right]'}"
 			></span>
-			<span>{title}</span></button
-		>
+			<span class="font-semibold">{title}</span>
+			{#if summary}
+				<span class="text-ctp-subtext0">{summary}</span>
+			{/if}
+		</button>
 		{@render aside?.()}
 	</div>
 	{#if open}
-		<div class="mb-2 flex flex-col gap-1" transition:slide>
+		<!-- groups 12px apart; each Group spaces its own label and controls closer -->
+		<div class="mt-1 mb-2 flex flex-col gap-3" transition:slide>
 			{@render children()}
 		</div>
 	{/if}

@@ -111,7 +111,7 @@
 
 <div class="flex w-full max-w-full flex-col items-start">
 	{#if players}
-		<span class="self-center text-center">player {getLabel(playerNum)}</span>
+		<span class="label self-center pb-0.5 text-center">player {getLabel(playerNum)}</span>
 
 		<div class="flex w-full flex-col">
 			<!-- name -->

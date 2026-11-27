@@ -79,7 +79,7 @@
 	<div class="relative flex flex-col items-center gap-2">
 		<a href={resolve(`/${pageUrl}`)}>
 			<button
-				class="button border-ctp-lavender-950/50 bg-ctp-lavender/35 p-1 px-5 text-4xl hover:bg-ctp-lavender/85"
+				class="button border-ctp-lavender-950/50 bg-ctp-lavender/35 p-1 px-5 text-4xl text-black hover:bg-ctp-lavender/85"
 			>
 				{name}
 			</button>

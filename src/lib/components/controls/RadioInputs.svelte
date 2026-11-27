@@ -65,13 +65,12 @@
 <div class="button-container">
 	{#if undefinedOption}
 		<label
-			class="button button-unselected flex cursor-pointer flex-col select-none has-checked:border-ctp-lavender-950 has-checked:bg-ctp-lavender
-                {typeof value == 'undefined' ? 'border-ctp-lavender-950 bg-ctp-lavender' : ''}"
+			class="button button-option flex cursor-pointer flex-col select-none
+                {typeof value == 'undefined' ? 'border-ctp-lavender-950 bg-ctp-lavender text-black' : ''}"
 		>
 			<input
 				type="radio"
-				class="hidden"
-				id="undefined"
+				class="sr-only"
 				{name}
 				bind:group={value}
 				value={undefined}
@@ -91,15 +90,14 @@
 {#snippet RadioButton(opt: any, index: number)}
 	{@const optlabel = getOptionLabel(opt, labelkey, index)}
 	<label
-		class="button button-unselected flex cursor-pointer flex-col select-none has-checked:border-ctp-lavender-950 has-checked:bg-ctp-lavender
+		class="button button-option flex cursor-pointer flex-col select-none
                 {labelkey && _.isEqual(opt, value)
-			? 'border-ctp-lavender-950 bg-ctp-lavender'
+			? 'border-ctp-lavender-950 bg-ctp-lavender text-black'
 			: ''}"
 	>
 		<input
 			type="radio"
-			class="hidden"
-			id={optlabel}
+			class="sr-only"
 			{name}
 			bind:group={value}
 			value={opt}

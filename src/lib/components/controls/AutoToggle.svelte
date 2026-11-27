@@ -24,12 +24,14 @@
 <button
 	type="button"
 	class="flex items-center gap-0.5 rounded-sm px-1 text-sm {on
-		? 'bg-ctp-lavender/25 text-ctp-lavender hover:bg-ctp-lavender/40'
-		: 'text-ctp-text/50 line-through hover:bg-ctp-text/10 hover:text-ctp-text/80'}"
+		? 'bg-ctp-lavender/20 text-ctp-lavender hover:bg-ctp-lavender/35'
+		: 'text-ctp-overlay2 hover:bg-ctp-text/10 hover:text-ctp-text'}"
 	aria-pressed={on}
 	title="{desc}: {on ? 'on' : 'off'}, click to turn {on ? 'off' : 'on'}"
 	onclick={() => (settings.current[setting] = !on)}
 >
-	<span class="icon-[mdi--autorenew]" aria-hidden="true"></span>
+	<!-- off is told apart by its icon as well as its colour -->
+	<span class={on ? 'icon-[mdi--autorenew]' : 'icon-[mdi--autorenew-off]'} aria-hidden="true"
+	></span>
 	{label}
 </button>

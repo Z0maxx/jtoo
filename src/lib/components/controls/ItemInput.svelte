@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { items } from '$lib/storage.svelte';
 	import type { Items } from '$lib/types.svelte';
-	import { slide } from 'svelte/transition';
+	import { slide } from '$lib/motion';
 
 	type Props = {
 		placeholder: string;
@@ -27,10 +27,10 @@
 			}
 		}}
 	/>
-	<button
+	<!-- <button
 		class="button-remove"
 		onclick={() => {
 			items.current[item] = [''];
 		}}>remove all</button
-	>
+	> -->
 </div>

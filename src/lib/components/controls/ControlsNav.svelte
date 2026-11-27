@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { slide } from '$lib/motion';
 	import Checkbox from './Checkbox.svelte';
 	import ConnectionPanel, { feedStates } from './ConnectionPanel.svelte';
 	import SetFundraisingEvent from './SetFundraisingEvent.svelte';
@@ -40,13 +40,14 @@
 	type StatusId = 'obs' | 'console' | 'relay' | 'fundraising';
 	let openStatus: StatusId | null = $state(null);
 
-	// 'off' is a connection that isn't set up, which isn't worth a red dot
+	// 'off' is a connection that isn't set up, which isn't worth a red icon. each state has its
+	// own shape as well as colour, so they're told apart without the colour
 	type Status = FeedState | 'off';
-	const statusDots: Record<Status, string> = {
-		connecting: 'bg-yellow-200',
-		open: 'bg-green-300',
-		closed: 'bg-red-300',
-		off: 'bg-ctp-text/30'
+	const statusIcons: Record<Status, string> = {
+		connecting: 'icon-[mdi--loading] motion-safe:animate-spin text-yellow-200',
+		open: 'icon-[mdi--check-circle] text-green-300',
+		closed: 'icon-[mdi--close-circle] text-red-300',
+		off: 'icon-[mdi--circle-outline] text-ctp-overlay1'
 	};
 	// the console is two things: the live race feed (needs the token) and the startup import of
 	// the event's player and map pools (public). its dot shows whichever is worse
@@ -119,7 +120,7 @@
 >
 	<!-- title, statuses centred, links: the side columns share the spare width so the statuses
 	     stay centred on the page -->
-	<div class="whitespace-nowrap">JTOO CONTROLS</div>
+	<div class="font-semibold tracking-wider whitespace-nowrap">JTOO CONTROLS</div>
 	<a
 		class="absolute top-0 right-0 m-1 opacity-50 hover:opacity-100"
 		href="https://github.com/jump-fortress/jtoo"
@@ -138,7 +139,7 @@
 				aria-controls="status-panel"
 				onclick={() => (openStatus = openStatus === s.id ? null : s.id)}
 			>
-				<span class="size-2.5 rounded-full {statusDots[s.status]}" aria-hidden="true"></span>
+				<span class="text-sm {statusIcons[s.status]}" aria-hidden="true"></span>
 				<span>{s.id}</span>
 				<span class="sr-only">{statusText[s.status]}</span>
 				<!-- the same arrows as the accordions, so it reads as something that opens -->
@@ -223,7 +224,7 @@
 								<span></span>
 							{/if}
 							<button
-								class="button-remove"
+								class="button-link"
 								title="import the event's players and maps from the console pools again"
 								disabled={poolImport === 'importing'}
 								onclick={importPools}>re-import</button
@@ -243,8 +244,10 @@
 								}}
 							/>
 						</div>
-						<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
-						<Checkbox setting="logWsMessages" desc="log websocket messages" />
+						<div class="flex flex-col gap-1">
+							<Checkbox setting="useDummyData" desc="use dummy race and tournament data" />
+							<Checkbox setting="logWsMessages" desc="log websocket messages" />
+						</div>
 					{/snippet}
 				</ConnectionPanel>
 			{:else if openStatus === 'relay'}

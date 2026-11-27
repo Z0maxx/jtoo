@@ -4,11 +4,18 @@
 	type Props = {
 		children: Snippet;
 		onconfirm: () => void;
-		class?: string;
+		// 'link' is a text action, eg: reset to default; 'danger' an outlined button for the
+		// actions that clear what's on air, eg: the timers
+		variant?: 'link' | 'danger';
 		title?: string;
 	};
 
-	let { children, onconfirm, class: className = 'button-remove', title }: Props = $props();
+	let { children, onconfirm, variant = 'link', title }: Props = $props();
+
+	const variants = {
+		link: { base: 'button-remove', armed: 'text-ctp-red! underline' },
+		danger: { base: 'button-danger', armed: 'bg-ctp-red! text-black! hover:bg-ctp-red!' }
+	};
 
 	// how long the second click has to come within, before the button goes back to normal
 	const CONFIRM_MS = 3000;
@@ -41,7 +48,9 @@
 <!-- type="button": inside a form it would otherwise submit it -->
 <button
 	type="button"
-	class="{className} inline-grid whitespace-nowrap {armed ? 'text-ctp-red! underline' : ''}"
+	class="{variants[variant].base} inline-grid whitespace-nowrap {armed
+		? variants[variant].armed
+		: ''}"
 	{title}
 	{onclick}
 	onblur={disarm}

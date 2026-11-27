@@ -63,7 +63,7 @@
 		<input {type} class="input grow" {id} {placeholder} bind:value />
 	</div>
 	<div class="flex flex-wrap items-center gap-2">
-		<button class="button button-unselected hover:button-selected" type="submit"
+		<button class="button hover:border-ctp-lavender-950 hover:bg-ctp-lavender hover:text-black" type="submit"
 			>{submitLabel}</button
 		>
 		<span>status:</span>

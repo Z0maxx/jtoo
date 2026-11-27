@@ -34,9 +34,7 @@
 	{@const rowLabel = sId3 === undefined ? 'none' : label(sId3)}
 	<!-- finished and out players are dimmed, unless selected, so the running ones stand out -->
 	<label
-		class="button button-unselected grid cursor-pointer grid-cols-[2.5rem_1fr] items-center text-left select-none
-			has-checked:border-ctp-lavender-950 has-checked:bg-ctp-lavender
-			has-focus-visible:outline-2 has-focus-visible:outline-ctp-lavender
+		class="button button-option grid cursor-pointer grid-cols-[2.5rem_1fr] items-center text-left select-none
 			{finished || isOut(entry) ? 'opacity-60 has-checked:opacity-100' : ''}"
 		title={rowLabel}
 	>
