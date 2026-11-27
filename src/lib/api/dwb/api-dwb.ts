@@ -32,10 +32,13 @@ export namespace Dwb {
 		return deepCopy(milestones);
 	}
 
+	// uncached: the cloudflare adapter cached the totals and milestones (whose urls never change)
+	// for hours, as DWB marks its responses cacheable for 4 hours
 	const fetchDwb = createRateLimitedApi({
 		baseUrl: '/api/dwb',
 		defaultTimeoutSeconds: 15,
-		rateLimitedPerEndpoint: true
+		rateLimitedPerEndpoint: true,
+		cache: 'no-store'
 	});
 
 	export function subscribeToDonationsOverview(callback: (overview: DonationsOverview) => void) {
