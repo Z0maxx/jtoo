@@ -37,36 +37,45 @@ async function getJson<T>(path: string): Promise<T> {
 	return response.json();
 }
 
+export type PoolIds = { playerPoolId?: string | null; mapPoolId?: string | null };
+
+// bumped by each import, so an earlier import that finishes late can't replace the pools of a
+// later one (eg: the live tournament changed twice in quick succession)
+let importRun = 0;
+
 /**
- * Imports the configured player pool and map pool from the console: the players and maps
- * are added to JTOO (or updated, for players it already has) and become the lists the
- * controls pick from. Safe to run on every startup.
+ * Imports a player pool and map pool from the console, by default the event's: the players
+ * and maps are added to JTOO (or updated, for players it already has) and become the lists
+ * the controls pick from. A pool id left out or null uses the default. Safe to run on every
+ * startup.
  */
-export async function importConsolePools(): Promise<PoolImportResult> {
+export async function importConsolePools(ids: PoolIds = {}): Promise<PoolImportResult> {
+	const run = ++importRun;
+	const stale = () => run !== importRun;
 	const result: PoolImportResult = { players: 0, maps: 0, errors: [] };
 
 	let poolPlayers: ConsolePlayer[] = [];
 	try {
-		poolPlayers = await importPlayerPool(DEFAULT_PLAYER_POOL_ID);
+		poolPlayers = await importPlayerPool(ids.playerPoolId || DEFAULT_PLAYER_POOL_ID, stale);
 		result.players = poolPlayers.length;
 	} catch (e) {
 		result.errors.push(`player pool: ${e instanceof Error ? e.message : e}`);
 	}
 	try {
-		result.maps = await importMapPool(DEFAULT_MAP_POOL_ID);
+		result.maps = await importMapPool(ids.mapPoolId || DEFAULT_MAP_POOL_ID, stale);
 	} catch (e) {
 		result.errors.push(`map pool: ${e instanceof Error ? e.message : e}`);
 	}
 
 	// in the background, so the import isn't held up by Tempus lookups
-	fillTempusData(poolPlayers);
+	if (!stale()) fillTempusData(poolPlayers);
 
 	for (const error of result.errors) console.error('console pools:', error);
 	return result;
 }
 
 /** The pool's players, added to JTOO or updated. */
-async function importPlayerPool(poolId: string): Promise<ConsolePlayer[]> {
+async function importPlayerPool(poolId: string, stale: () => boolean): Promise<ConsolePlayer[]> {
 	const [{ groups }, { players }] = await Promise.all([
 		getJson<{ groups: ConsolePlayerGroup[] }>('/api/player-groups'),
 		getJson<{ players: ConsolePlayer[] }>('/api/players')
@@ -96,6 +105,8 @@ async function importPlayerPool(poolId: string): Promise<ConsolePlayer[]> {
 	}
 	items.current.players = updated;
 
+	// the players are still added, but the pool stays the newer import's
+	if (stale()) return poolPlayers;
 	const ids = poolPlayers.map((p) => Number(p.steamAccountId));
 	pool.current = { ...pool.current, players: ids, playerPoolName: group.name };
 	return poolPlayers;
@@ -218,7 +229,7 @@ async function fillMapPrs(run: number) {
 	}
 }
 
-async function importMapPool(poolId: string): Promise<number> {
+async function importMapPool(poolId: string, stale: () => boolean): Promise<number> {
 	const { mapPools } = await getJson<{ mapPools: ConsoleMapPool[] }>('/api/map-pools');
 	const mapPool = mapPools.find((p) => p.id === poolId);
 	if (!mapPool) throw new Error(`no map pool with id ${poolId}`);
@@ -226,26 +237,42 @@ async function importMapPool(poolId: string): Promise<number> {
 	const names: MapFileName[] = [...mapPool.maps]
 		.sort((a, b) => a.position - b.position)
 		.map((m) => m.name.trim());
-	pool.current = { ...pool.current, maps: names, mapPoolName: mapPool.name };
+	if (!stale()) pool.current = { ...pool.current, maps: names, mapPoolName: mapPool.name };
 
-	// add maps JTOO doesn't have, from Tempus when it knows them
-	await Promise.all(
-		names.filter((name) => !items.current.maps.some((m) => m.fileName == name)).map(addMap)
-	);
-	applyMapImageOverrides(names);
+	// the pool's maps first, as the controls pick from them, then every other pool's, so they're
+	// all saved for when a tournament with another pool goes live. The others are added in the
+	// background, so the import isn't held up by their Tempus lookups
+	await addMissingMaps(names);
+	const others = [
+		...new Set(mapPools.flatMap((p) => p.maps.map((m) => m.name.trim())).filter(Boolean))
+	].filter((name) => !names.includes(name));
+	addMissingMaps(others);
 	return names.length;
 }
 
-// maps saved before an image override existed pick it up on every pool import
-function applyMapImageOverrides(names: MapFileName[]) {
-	const needsOverride = (m: TFMap) => {
-		const url = mapImageOverride(m.fileName);
-		return names.includes(m.fileName) && url !== undefined && m.imageURL !== url;
-	};
-	if (!items.current.maps.some(needsOverride)) return;
-	items.current.maps = items.current.maps.map((m) =>
-		needsOverride(m) ? { ...m, imageURL: mapImageOverride(m.fileName)! } : m
+/** Adds the maps JTOO doesn't have, from Tempus when it knows them. */
+async function addMissingMaps(names: MapFileName[]) {
+	await Promise.all(
+		names.filter((name) => !items.current.maps.some((m) => m.fileName == name)).map(addMap)
 	);
+	applyMapFixes(names);
+}
+
+/**
+ * Brings saved maps up to date with rules added since they were saved: the pool maps' image
+ * overrides, and every map's short name where the rules for it have changed (jump_bb_ maps).
+ */
+function applyMapFixes(names: MapFileName[]) {
+	const fix = (m: TFMap): TFMap => {
+		const url = mapImageOverride(m.fileName);
+		const imageURL = names.includes(m.fileName) && url !== undefined ? url : m.imageURL;
+		const shortName = TFMap.hasOwnShortNameRule(m.fileName)
+			? TFMap.fileNameToShortName(m.fileName)
+			: m.shortName;
+		return imageURL === m.imageURL && shortName === m.shortName ? m : { ...m, imageURL, shortName };
+	};
+	const fixed = items.current.maps.map(fix);
+	if (fixed.some((m, i) => m !== items.current.maps[i])) items.current.maps = fixed;
 }
 
 async function addMap(fileName: MapFileName) {

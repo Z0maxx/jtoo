@@ -37,7 +37,13 @@
 
 	import { obsConnect, setScene } from '$lib/websockets/obs/ws-obs.svelte';
 	import { idleOBSSceneName } from '$lib/obs-browser-source.svelte';
-	import { importConsolePools, poolMaps, type PoolImportResult } from '$lib/console-pools.svelte';
+	import {
+		DEFAULT_MAP_POOL_ID,
+		DEFAULT_PLAYER_POOL_ID,
+		importConsolePools,
+		poolMaps,
+		type PoolImportResult
+	} from '$lib/console-pools.svelte';
 	import { fetchConsoleTournaments, type ConsoleTournamentList } from '$lib/console-tournaments';
 
 	import { KSNWebSocketController } from '$lib/websockets/ksn/ws-ksn.svelte';
@@ -114,16 +120,13 @@
 		return [round.stage, round.map && mapName(round.map), matchup].filter(Boolean).join(' · ');
 	}
 
-	// the event's players and maps come from console pools, imported on every startup
-	let poolImport: PoolImportResult | 'importing' | undefined = $state();
-	async function importPools() {
-		poolImport = 'importing';
-		poolImport = await importConsolePools();
-	}
-
-	// the console's tournaments, for picking the one the leaderboard scene shows
+	// the console's tournaments, for picking the one the leaderboard scene shows and finding the
+	// pools of the one the controls follow
 	let tournaments: ConsoleTournamentList | undefined = $state();
 	let tournamentsError = $state('');
+	// set once the first load has finished (or been skipped, without a token), so the pools are
+	// imported once on startup, not from the defaults and then again from the tournament's
+	let tournamentsLoaded = $state(false);
 	async function loadTournaments() {
 		const token = settings.current.ksnWebSocketToken.trim();
 		if (!token) return;
@@ -133,6 +136,50 @@
 		} catch (e) {
 			tournamentsError = e instanceof Error ? e.message : `${e}`;
 		}
+	}
+
+	// the event's players and maps come from the console pools of the tournament the controls
+	// follow: the picked one, else the race's, else the console's active one. A tournament with
+	// no pool set, or none at all, uses the default pools
+	const poolTournamentId = $derived(
+		live.liveTournamentId ?? tournaments?.activeTournamentId ?? null
+	);
+	const poolTournament = $derived(tournaments?.tournaments.find((t) => t.id === poolTournamentId));
+	const poolIds = $derived({
+		playerPoolId: poolTournament?.playerPoolId || DEFAULT_PLAYER_POOL_ID,
+		mapPoolId: poolTournament?.mapPoolId || DEFAULT_MAP_POOL_ID
+	});
+	const poolIdsKey = $derived(`${poolIds.playerPoolId}/${poolIds.mapPoolId}`);
+
+	let poolImport: PoolImportResult | 'importing' | undefined = $state();
+	// the pools last asked for, so they're only imported again when they change
+	let importedPoolsKey: string | undefined;
+	async function importPools() {
+		const key = poolIdsKey;
+		importedPoolsKey = key;
+		poolImport = 'importing';
+		const result = await importConsolePools(poolIds);
+		// a later import, for other pools, shows its own result
+		if (importedPoolsKey === key) poolImport = result;
+	}
+	$effect(() => {
+		if (tournamentsLoaded && poolIdsKey !== importedPoolsKey) untrack(importPools);
+	});
+	// a tournament made, or given other pools, since the list was loaded: load it again, once
+	// for each tournament it's missing
+	let reloadedForTournament: string | undefined;
+	$effect(() => {
+		const id = poolTournamentId;
+		if (!tournaments || !id || poolTournament || id === reloadedForTournament) return;
+		reloadedForTournament = id;
+		untrack(loadTournaments);
+	});
+	// the nav's re-import button: picks up pools changed on the console, then imports them
+	// (unless reloading the list already started importing other pools)
+	async function reimportPools() {
+		const before = importedPoolsKey;
+		await loadTournaments();
+		if (importedPoolsKey === before) importPools();
 	}
 
 	function connectConsole() {
@@ -168,8 +215,7 @@
 			live.connect(settings.current.ksnWebSocketToken, consoleBaseUrl());
 		}
 
-		importPools();
-		loadTournaments();
+		loadTournaments().finally(() => (tournamentsLoaded = true));
 
 		// with rtd on, the effect below connects instead (and checks the token)
 		if (settings.current.jfRelayWebSocketToken && !rtdEnabled)
@@ -216,7 +262,7 @@
 
 <ControlsNav
 	{poolImport}
-	{importPools}
+	importPools={reimportPools}
 	onconnectconsole={connectConsole}
 	onconnectrelay={connectToJfRelay}
 	relayError={error.invalidJfRelayToken.state ? error.invalidJfRelayToken.msg : undefined}
@@ -319,7 +365,7 @@
 				<RadioInputs
 					opts={['', ...(tournaments?.tournaments.map((t) => t.id) ?? [])]}
 					optlabels={[
-						'follow active tournament',
+						"follow race's tournament",
 						...(tournaments?.tournaments.map(
 							(t) => t.name + (t.id === tournaments?.activeTournamentId ? ' (active)' : '')
 						) ?? [])

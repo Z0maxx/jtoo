@@ -63,8 +63,21 @@ export class TFMap {
 	static fileNameToShortName(fileName: string): string {
 		if (fileName == 'jump_') return fileName;
 
+		// bunny hop maps keep their 'bb_' prefix, as the name alone is just 'bb', eg: 'bb_initiate'
+		// from 'jump_bb_initiate_b3'
+		const bb = fileName.match(/^jump_bb_([^_]+)/);
+		if (bb) return `bb_${bb[1].trim()}`;
+
 		const tmp = fileName.match(/(?<=_)[^_]+/); // match name after first '_' and before any subsequent '_', eg: 'beef' from 'jump_beef' or 'jump_beef_final'
 		return tmp ? tmp[0].trim() : '';
+	}
+
+	/**
+	 * Whether a map's short name comes from a rule added after maps were first saved, so saved
+	 * maps are given it again (see the pool import).
+	 */
+	static hasOwnShortNameRule(fileName: string): boolean {
+		return fileName.startsWith('jump_bb_');
 	}
 
 	static fileNameToTfId(fileName: string): string {

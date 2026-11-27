@@ -135,7 +135,7 @@ export class ConsoleLive {
 	}
 
 	/** The tournament the stream follows, whether or not dummy data is shown. */
-	private get liveTournamentId(): string | null {
+	get liveTournamentId(): string | null {
 		const race = this.liveRace?.sessionId !== null ? (this.liveRace as RaceSnapshot | null) : null;
 		return this.pinnedTournamentId ?? race?.context.tournamentId ?? null;
 	}

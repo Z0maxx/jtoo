@@ -4,6 +4,9 @@ export type ConsoleTournament = {
 	id: string;
 	name: string;
 	kind: 'mass' | 'duel';
+	/** The tournament's console map pool and player pool, null when it has none set. */
+	mapPoolId: string | null;
+	playerPoolId: string | null;
 };
 
 export type ConsoleTournamentList = {
@@ -25,7 +28,9 @@ export async function fetchConsoleTournaments(token: string): Promise<ConsoleTou
 		tournaments: (data.tournaments ?? []).map((t) => ({
 			id: t.id,
 			name: t.name,
-			kind: t.kind
+			kind: t.kind,
+			mapPoolId: t.mapPoolId ?? null,
+			playerPoolId: t.playerPoolId ?? null
 		})),
 		activeTournamentId: data.activeTournamentId ?? null
 	};
