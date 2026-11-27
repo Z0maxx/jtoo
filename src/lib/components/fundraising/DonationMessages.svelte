@@ -6,13 +6,15 @@
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import { onDestroy, type Snippet } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { fitFirstItem } from '$lib/fit-text';
 
-	// two donation cards side by side, filling the size the scene gives them: the top donation
-	// on the left, the latest on the right (highlighted for a while when it comes in, then
+	// two donation cards side by side, filling the size the scene gives them: the top donations
+	// (up to five, as many as fit with their full messages) on the left, the latest on the right (highlighted for a while when it comes in, then
 	// joined by the ones before it). compact cards (when the scene is short on room) show just
-	// the name and amount, and only the latest donation on the right
-	type Props = { class?: string; compact?: boolean };
-	let { class: styleClass = '', compact = false }: Props = $props();
+	// the name and amount, and only the latest donation on the right. without recentMessages the
+	// recent donations list shows just names and amounts too (eg: while map picks show)
+	type Props = { class?: string; compact?: boolean; recentMessages?: boolean };
+	let { class: styleClass = '', compact = false, recentMessages = true }: Props = $props();
 
 	const HIGHLIGHT_MS = 10 * 1000;
 	const RECENT_AFTER_MS = 30 * 1000;
@@ -26,15 +28,15 @@
 	const cursor = () => fundraisingState.current.lastDonationProcessedByMessagesId;
 	let shownCount = $derived(donations.findIndex((d) => d.id === cursor()) + 1);
 	let latest = $derived(shownCount > 0 ? donations[shownCount - 1] : undefined);
-	// the biggest donation shown so far (the earliest on a tie), so it doesn't jump ahead of the
-	// latest card while that's still stepping through a batch
+	// the biggest donations shown so far, biggest first (the earliest first on a tie, as the sort
+	// is stable), so none jumps ahead of the latest card while that's still stepping through a
+	// batch. the card shows as many as fit whole
+	const MAX_TOP = 5;
 	let top = $derived(
 		donations
 			.slice(0, shownCount)
-			.reduce<Donation | undefined>(
-				(best, d) => (!best || d.amount > best.amount ? d : best),
-				undefined
-			)
+			.sort((a, b) => b.amount - a.amount)
+			.slice(0, MAX_TOP)
 	);
 
 	let highlightedId = $state('');
@@ -111,22 +113,26 @@
 	}
 </script>
 
-<!-- a donation's name, amount and message (not in compact cards) -->
-{#snippet entry(donation: Donation, peach: boolean, lines: string)}
+<!-- a donation's name, amount and message (not in compact cards), sized in em from the card's
+     18px, so the top donations' list can shrink them to fit -->
+{#snippet entry(donation: Donation, peach: boolean, lines: string, message = true)}
 	<div class="flex items-center gap-2.5">
-		<span class="truncate text-[21px] font-bold" style:filter={getFiltersStyle()}
+		<span class="truncate text-[1.1667em] font-bold" style:filter={getFiltersStyle()}
 			>{donation.name || 'Anonymous'}</span
 		>
 		<span
-			class="ml-auto text-[21px] transition-colors duration-500
+			class="ml-auto text-[1.1667em] transition-colors duration-500
 			{peach ? 'text-ctp-peach' : 'text-ctp-lavender'} {settings.current.monoFont}"
 			style:filter={getFiltersStyle()}
 		>
 			${donation.amount.toLocaleString('en-US')}
 		</span>
 	</div>
-	{#if donation.message && !compact}
-		<p class="m-0 {lines} text-lg leading-snug text-ctp-subtext1" style:filter={getFiltersStyle()}>
+	{#if donation.message && message && !compact}
+		<p
+			class="m-0 {lines} text-[1em] leading-snug wrap-break-word text-ctp-subtext1"
+			style:filter={getFiltersStyle()}
+		>
 			{donation.message}
 		</p>
 	{/if}
@@ -143,7 +149,7 @@
 		{#key key}
 			<!-- absolute, so the outgoing and incoming content overlap as they fade -->
 			<div
-				class="absolute inset-0 flex flex-col gap-2 overflow-hidden px-4.5 py-3.5"
+				class="absolute inset-0 flex flex-col gap-2 overflow-hidden px-4.5 py-3.5 text-[18px]"
 				transition:fade={{ duration: 400 }}
 			>
 				<span
@@ -158,11 +164,34 @@
 {/snippet}
 
 <div class="{styleClass} grid grid-cols-2 gap-3.5">
-	{#if top}
+	{#if top.length > 0}
 		{#snippet topContent()}
-			{@render entry(top!, false, 'line-clamp-2')}
+			<!-- full messages, never clamped. the column wraps, so whichever don't fit whole move
+			     into a second column outside the card and are clipped; the text shrinks only when
+			     the biggest donation alone wouldn't fit -->
+			<div
+				class="flex min-h-0 flex-1 flex-col flex-wrap content-start overflow-hidden"
+				{@attach fitFirstItem(18, 11)}
+			>
+				{#each top as d, i (d.id)}
+					<div class="relative flex w-full shrink-0 flex-col gap-0.5 {i > 0 ? 'pt-2' : ''}">
+						{#if i > 0}
+							<div
+								class="absolute inset-x-0 top-1 h-px bg-ctp-lavender/20"
+								style:filter={getFiltersStyle()}
+							></div>
+						{/if}
+						{@render entry(d, false, '')}
+					</div>
+				{/each}
+			</div>
 		{/snippet}
-		{@render card(top.id, 'Top Donation', false, topContent)}
+		{@render card(
+			top.map((d) => d.id).join(),
+			top.length > 1 ? 'Top Donations' : 'Top Donation',
+			false,
+			topContent
+		)}
 	{:else}
 		<div></div>
 	{/if}
@@ -184,7 +213,7 @@
 									style:filter={getFiltersStyle()}
 								></div>
 							{/if}
-							{@render entry(d, false, 'line-clamp-1')}
+							{@render entry(d, false, 'line-clamp-1', recentMessages)}
 						</div>
 					{/each}
 				</div>

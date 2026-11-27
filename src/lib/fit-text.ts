@@ -69,3 +69,38 @@ export function fitText(
 		};
 	};
 }
+
+/**
+ * Sizes a list's text (its font-size, which its items size themselves from in `em`) at `max`, or
+ * smaller when its first item wouldn't fit the list's height whole, down to `min`. The list
+ * needs a height of its own (e.g. a flex item with a basis), not its content's. Refits when the
+ * list resizes or its content changes.
+ */
+export function fitFirstItem(max: number, min: number): Attachment<HTMLElement> {
+	return (list) => {
+		const fit = () => {
+			let size = max;
+			list.style.fontSize = `${size}px`;
+			const first = list.firstElementChild as HTMLElement | null;
+			if (!first || !(list.clientHeight > 0)) return;
+			while (size > min && first.offsetHeight > list.clientHeight) {
+				size -= 0.5;
+				list.style.fontSize = `${size}px`;
+			}
+		};
+
+		const resized = new ResizeObserver(fit);
+		resized.observe(list);
+		// a new donation, or one leaving the list (only the font-size, an attribute, is set here,
+		// so fitting never sets this off)
+		const changed = new MutationObserver(fit);
+		changed.observe(list, { childList: true, subtree: true, characterData: true });
+		fit();
+		// text measured in a fallback font is the wrong height once the real one loads
+		document.fonts.ready.then(fit);
+		return () => {
+			resized.disconnect();
+			changed.disconnect();
+		};
+	};
+}

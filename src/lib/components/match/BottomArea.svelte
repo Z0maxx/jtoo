@@ -56,7 +56,11 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
 		{#if eventSet}
 			<div class="flex min-h-0 flex-1 flex-col" bind:clientHeight={donationsHeight}>
-				<DonationMessages compact={compactDonations} class="min-h-0 flex-1" />
+				<DonationMessages
+					compact={compactDonations}
+					recentMessages={!mapPicksShown}
+					class="min-h-0 flex-1"
+				/>
 			</div>
 			<FundraisingPanel class="shrink-0" />
 		{/if}
