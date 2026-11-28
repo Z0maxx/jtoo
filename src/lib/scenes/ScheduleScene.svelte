@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import PicksStarted from '$lib/components/scene/PicksStarted.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import { getFiltersStyle } from '$lib/filters.svelte';
@@ -121,4 +122,5 @@
 	{:else if schedule.error}
 		<p class="text-2xl text-ctp-red">schedule: {schedule.error}</p>
 	{/if}
+	<PicksStarted />
 </SceneFrame>

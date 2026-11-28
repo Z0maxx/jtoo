@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import PicksStarted from '$lib/components/scene/PicksStarted.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import { Dwb } from '$lib/api/dwb/api-dwb';
@@ -359,4 +360,5 @@
 			{/if}
 		</div>
 	{/if}
+	<PicksStarted />
 </SceneFrame>

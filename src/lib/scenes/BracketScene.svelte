@@ -24,6 +24,7 @@
 	import { liveMatch, toggleLive } from '$lib/bracket-live.svelte';
 	import type { ConsoleLive } from '$lib/websockets/console/console-live.svelte';
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import PicksStarted from '$lib/components/scene/PicksStarted.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 
@@ -226,6 +227,7 @@
 			{@render Lines()}
 		</section>
 	{/if}
+	<PicksStarted />
 </SceneFrame>
 
 <!-- reads bottom to top, beside its half's matches -->

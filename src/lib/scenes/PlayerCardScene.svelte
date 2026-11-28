@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getFiltersStyle } from '$lib/filters.svelte';
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import PicksStarted from '$lib/components/scene/PicksStarted.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
 	import { overlay, settings } from '$lib/storage.svelte';
@@ -183,6 +184,7 @@
 			{/each}
 		</div>
 	{/if}
+	<PicksStarted />
 </SceneFrame>
 
 <!-- a player's avatar, name and flag, with their stats in the same order on both sides -->

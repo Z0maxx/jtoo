@@ -12,6 +12,16 @@ export function dwbParticipantUrl(id: string, subPath = ''): string {
 }
 
 /**
+ * A DWB url made unique to this request, so no cache along the way (eg: cloudflare's, for the
+ * worker's own requests) can answer it with a stored copy: DWB marks its responses cacheable
+ * for 4 hours, and ignores the extra parameter. Appended as text, not through URLSearchParams,
+ * which would re-encode the query's spaces as + (DWB wants %20).
+ */
+export function fresh(url: string): string {
+	return `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
+}
+
+/**
  * A DWB response passed on to the overlay, uncached. DWB marks its responses cacheable for 4
  * hours, which kept browsers (OBS's included) showing old donations; only what the client reads
  * (the body, its type, the status and the ETag) is passed on.

@@ -129,10 +129,16 @@
 			: { A: noPlayer, B: noPlayer }
 	);
 
-	// the stage and series length belong to the match, so they only show once a session starts
+	// the stage (unless the show stage setting is off) and series length belong to the match, so
+	// they only show once a session starts
 	let matchTag = $derived(
 		session
-			? [overlay.current.stage, `Bo${session.config.seriesLength}`].filter(Boolean).join(' · ')
+			? [
+					settings.current.enableStage === false ? '' : overlay.current.stage,
+					`Bo${session.config.seriesLength}`
+				]
+					.filter(Boolean)
+					.join(' · ')
 			: ''
 	);
 

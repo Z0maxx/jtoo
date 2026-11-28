@@ -16,6 +16,9 @@ type Config = {
 	// how long one request may take before it's cancelled and retried; raise it for slow,
 	// large responses
 	requestTimeoutSeconds?: number;
+	// 'no-store' sends Cache-Control: no-cache, which also skips the response cache the
+	// cloudflare adapter keeps in front of the app's own routes
+	cache?: RequestCache;
 };
 
 const maxTimeout = 60 * 30 * 1000;
@@ -26,7 +29,8 @@ export function createRateLimitedApi({
 	baseUrl,
 	defaultTimeoutSeconds,
 	rateLimitedPerEndpoint = false,
-	requestTimeoutSeconds = 5
+	requestTimeoutSeconds = 5,
+	cache
 }: Config) {
 	const defaultTimeout = defaultTimeoutSeconds * 1000;
 	const requestTimeout = requestTimeoutSeconds * 1000;
@@ -71,10 +75,16 @@ export function createRateLimitedApi({
 					if (item.eTag) {
 						headers['If-None-Match'] = item.eTag;
 					}
+					// set by hand as well: browsers should add it for 'no-store', but OBS's older
+					// built-in chromium may not, and the cloudflare adapter only skips its cache for it
+					if (cache === 'no-store') {
+						headers['Cache-Control'] = 'no-cache';
+					}
 
 					const res = await fetch(baseUrl + item.endpoint, {
 						signal: AbortSignal.timeout(requestTimeout),
-						headers
+						headers,
+						cache
 					});
 
 					if (res.status === 429) {

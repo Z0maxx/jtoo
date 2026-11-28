@@ -69,3 +69,58 @@ export function fitText(
 		};
 	};
 }
+
+/**
+ * Sizes a list's text (its font-size, which its items size themselves from in `em`) at `max`, or
+ * smaller so its first few items fit its height whole. Each `[count, min]` target shrinks the text
+ * until the first `count` items (or all, when there are fewer) fit, down to that target's `min`,
+ * then the next target takes over from there: `[[2, 15], [1, 11]]` shrinks a little for two
+ * items, then further only so the first fits. The list is a wrapping flex column, so an item
+ * that doesn't fit moves into a second column. It needs a height of its own (e.g. a flex item
+ * with a basis), not its content's. Refits when the list resizes or its content changes.
+ * Anything passed after `targets` is only there to refit when it changes.
+ */
+export function fitItems(
+	max: number,
+	targets: [count: number, min: number][],
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- only read by svelte, to refit
+	..._refitOn: unknown[]
+): Attachment<HTMLElement> {
+	return (list) => {
+		// whether the last of the first `count` items is whole, in the first column
+		const fits = (count: number) => {
+			const items = list.children;
+			const last = items[Math.min(count, items.length) - 1];
+			if (!last) return true;
+			const box = list.getBoundingClientRect();
+			const first = items[0].getBoundingClientRect();
+			const rect = last.getBoundingClientRect();
+			return rect.left <= first.left + 0.5 && rect.bottom <= box.bottom + 0.5;
+		};
+		const fit = () => {
+			let size = max;
+			list.style.fontSize = `${size}px`;
+			if (!(list.clientHeight > 0)) return;
+			for (const [count, min] of targets) {
+				while (size > min && !fits(count)) {
+					size -= 0.5;
+					list.style.fontSize = `${size}px`;
+				}
+			}
+		};
+
+		const resized = new ResizeObserver(fit);
+		resized.observe(list);
+		// a new donation, or one leaving the list (only the font-size, an attribute, is set here,
+		// so fitting never sets this off)
+		const changed = new MutationObserver(fit);
+		changed.observe(list, { childList: true, subtree: true, characterData: true });
+		fit();
+		// text measured in a fallback font is the wrong height once the real one loads
+		document.fonts.ready.then(fit);
+		return () => {
+			resized.disconnect();
+			changed.disconnect();
+		};
+	};
+}

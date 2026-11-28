@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SceneFrame from '$lib/components/scene/SceneFrame.svelte';
+	import PicksStarted from '$lib/components/scene/PicksStarted.svelte';
 	import SceneHeader from '$lib/components/scene/SceneHeader.svelte';
 	import SceneTag from '$lib/components/scene/SceneTag.svelte';
 	import Flag from '$lib/components/util/Flag.svelte';
@@ -171,4 +172,5 @@
 	{:else}
 		<p class="text-3xl text-ctp-subtext0 italic" style:filter={getFiltersStyle()}>no players</p>
 	{/if}
+	<PicksStarted />
 </SceneFrame>

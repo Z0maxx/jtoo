@@ -24,6 +24,13 @@
 
 	let ksnWs: KSNWebSocket = getContext('ksnWs');
 	let mapPicksShown = $derived(showsMapPicks(ksnWs.messages.mapPicks?.session));
+
+	// the donation cards take whatever height the panel and the picks leave, so there's no gap
+	// between the rows. below about a full card's height (header, name and two lines of
+	// message) they shrink to a name and amount
+	const FULL_CARD_PX = 140;
+	let donationsHeight = $state(0);
+	let compactDonations = $derived(mapPicksShown && donationsHeight < FULL_CARD_PX);
 </script>
 
 <!-- the columns are spaced with margins, not a gap, so the leaderboard's space (its width and
@@ -44,22 +51,29 @@
 		</div>
 	{/if}
 
-	<div class="flex min-w-0 flex-1 flex-col gap-3.5">
-		<!-- there's no room for donation messages beside the map picks, so while the picks show
-		     the cards shrink to a name and amount -->
+	<!-- the panel and the picks keep their own height, the donation cards filling the rest above
+	     them. without a fundraising event the picks fill it instead. spaced with margins and
+	     padding, not a gap, so the picks' space slides open and shut with them -->
+	<div class="flex min-w-0 flex-1 flex-col">
 		{#if eventSet}
-			<DonationMessages
-				compact={mapPicksShown}
-				class={mapPicksShown ? 'h-22 shrink-0' : 'min-h-0 flex-1'}
-			/>
-		{/if}
-		<!-- the panel and the picks keep their full height at the bottom, the donation cards
-		     taking what's left above -->
-		<div class="mt-auto flex shrink-0 flex-col gap-3.5">
-			{#if eventSet}
-				<FundraisingPanel />
+			<div class="flex min-h-0 flex-1 flex-col" bind:clientHeight={donationsHeight}>
+				<DonationMessages
+					compact={compactDonations}
+					recentMessages={!mapPicksShown}
+					tight={mapPicksShown}
+					class="min-h-0 flex-1"
+				/>
+			</div>
+			<FundraisingPanel class="mt-3.5 shrink-0" />
+			<!-- the picks slide in under the panel, the donation cards shrinking smoothly to make
+			     room (and growing back as they slide out) -->
+			{#if mapPicksShown}
+				<div class="shrink-0 pt-3.5" transition:slide={{ duration: 500, easing: cubicInOut }}>
+					<MatchMapPicks class="h-26" />
+				</div>
 			{/if}
-			<MatchMapPicks class="h-26" />
-		</div>
+		{:else}
+			<MatchMapPicks class="min-h-26 flex-1" />
+		{/if}
 	</div>
 </div>
