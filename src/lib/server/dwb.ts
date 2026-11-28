@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { error } from '@sveltejs/kit';
+import { error, type RequestEvent } from '@sveltejs/kit';
 
 /**
  * The upstream DWB url for a participant, plus an optional sub path. The id comes from the
@@ -9,4 +9,40 @@ import { error } from '@sveltejs/kit';
 export function dwbParticipantUrl(id: string, subPath = ''): string {
 	if (!/^[\w-]+$/.test(id)) error(400, 'invalid participant id');
 	return `${env.DWB_API_URL}/participants/${id}${subPath}`;
+}
+
+/**
+ * A DWB response passed on to the overlay, uncached. DWB marks its responses cacheable for 4
+ * hours, which kept browsers (OBS's included) showing old donations; only what the client reads
+ * (the body, its type, the status and the ETag) is passed on.
+ */
+export function uncached(resp: Response): Response {
+	const headers = new Headers({ 'Cache-Control': 'no-store' });
+	for (const name of ['Content-Type', 'ETag']) {
+		const value = resp.headers.get(name);
+		if (value) headers.set(name, value);
+	}
+	return new Response(resp.body, { status: resp.status, headers });
+}
+
+export async function fetchDwbApi({
+	subPath,
+	requestEvent
+}: {
+	subPath?: string;
+	requestEvent: RequestEvent;
+}) {
+	const { params, url, fetch } = requestEvent;
+	const headers = new Headers();
+	const eTag = requestEvent.request.headers.get('If-None-Match');
+	if (eTag) {
+		headers.set('If-None-Match', eTag);
+	}
+
+	return await fetch(
+		`${dwbParticipantUrl(params.id ?? '', subPath)}?${url.searchParams.toString().replaceAll('+', '%20')}`,
+		{
+			headers
+		}
+	);
 }
