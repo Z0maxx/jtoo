@@ -75,6 +75,11 @@ export function createRateLimitedApi({
 					if (item.eTag) {
 						headers['If-None-Match'] = item.eTag;
 					}
+					// set by hand as well: browsers should add it for 'no-store', but OBS's older
+					// built-in chromium may not, and the cloudflare adapter only skips its cache for it
+					if (cache === 'no-store') {
+						headers['Cache-Control'] = 'no-cache';
+					}
 
 					const res = await fetch(baseUrl + item.endpoint, {
 						signal: AbortSignal.timeout(requestTimeout),
